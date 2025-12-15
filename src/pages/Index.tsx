@@ -3,14 +3,12 @@ import { useSettings } from '@/hooks/useSettings';
 import { CountdownTimer } from '@/components/CountdownTimer';
 import { VideoPlayer } from '@/components/VideoPlayer';
 import { QuestionForm } from '@/components/QuestionForm';
-import { AdminPanel } from '@/components/AdminPanel';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { BookOpen } from 'lucide-react';
 import mosqueImage from '@/assets/mosque-hero.jpg';
 
 const Index = () => {
-  const [showAdmin, setShowAdmin] = useState(false);
   const [logoTaps, setLogoTaps] = useState(0);
   const { data: settings, isLoading } = useSettings();
   const formSectionRef = useRef<HTMLDivElement>(null);
@@ -20,7 +18,7 @@ const Index = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && e.key === 'A') {
         e.preventDefault();
-        setShowAdmin(true);
+        window.location.href = '/admin';
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -32,7 +30,7 @@ const Index = () => {
     setLogoTaps((prev) => {
       const newCount = prev + 1;
       if (newCount >= 5) {
-        setShowAdmin(true);
+        window.location.href = '/admin';
         return 0;
       }
       setTimeout(() => setLogoTaps(0), 2000);
@@ -158,9 +156,6 @@ const Index = () => {
           <p>مسجد الإيمان – 150 مسكن</p>
         </div>
       </footer>
-
-      {/* Admin Panel */}
-      {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} />}
     </div>
   );
 };
