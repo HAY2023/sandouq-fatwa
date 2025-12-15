@@ -4,6 +4,7 @@ import { CountdownTimer } from '@/components/CountdownTimer';
 import { VideoPlayer } from '@/components/VideoPlayer';
 import { QuestionForm } from '@/components/QuestionForm';
 import { AdminPanel } from '@/components/AdminPanel';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { BookOpen } from 'lucide-react';
 import mosqueImage from '@/assets/mosque-hero.jpg';
@@ -66,15 +67,18 @@ const Index = () => {
               <p className="text-xs opacity-80">مسجد الإيمان</p>
             </div>
           </div>
-          {settings?.is_box_open && (
-            <Button 
-              onClick={scrollToForm}
-              variant="secondary"
-              className="bg-primary-foreground/90 text-foreground hover:bg-primary-foreground"
-            >
-              اطرح سؤالك
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            {settings?.is_box_open && (
+              <Button 
+                onClick={scrollToForm}
+                variant="secondary"
+                className="bg-primary-foreground/90 text-foreground hover:bg-primary-foreground"
+              >
+                اطرح سؤالك
+              </Button>
+            )}
+          </div>
         </div>
       </nav>
 

@@ -91,6 +91,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_questions_authenticated: {
+        Args: { p_password: string }
+        Returns: {
+          category: string
+          created_at: string
+          id: string
+          question_text: string
+        }[]
+      }
       get_questions_count_authenticated: {
         Args: { p_password: string }
         Returns: number
