@@ -3,12 +3,14 @@ import { useSubmitQuestion } from '@/hooks/useQuestions';
 import { QUESTION_CATEGORIES } from '@/lib/categories';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, Send, Tag, MessageSquare } from 'lucide-react';
 
 export function QuestionForm() {
   const [category, setCategory] = useState('');
+  const [customCategory, setCustomCategory] = useState('');
   const [questionText, setQuestionText] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
@@ -26,9 +28,20 @@ export function QuestionForm() {
       return;
     }
 
+    if (category === 'أخرى' && !customCategory.trim()) {
+      toast({
+        title: 'تنبيه',
+        description: 'يرجى كتابة نوع الفتوى',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const finalCategory = category === 'أخرى' ? `أخرى: ${customCategory.trim()}` : category;
+
     try {
       await submitQuestion.mutateAsync({
-        category,
+        category: finalCategory,
         question_text: questionText.trim(),
       });
       setIsSubmitted(true);
@@ -44,7 +57,15 @@ export function QuestionForm() {
   const handleReset = () => {
     setIsSubmitted(false);
     setCategory('');
+    setCustomCategory('');
     setQuestionText('');
+  };
+
+  const handleCategoryChange = (value: string) => {
+    setCategory(value);
+    if (value !== 'أخرى') {
+      setCustomCategory('');
+    }
   };
 
   if (isSubmitted) {
@@ -70,7 +91,7 @@ export function QuestionForm() {
           <span>نوع الفتوى</span>
           <span className="text-destructive">*</span>
         </label>
-        <Select value={category} onValueChange={setCategory}>
+        <Select value={category} onValueChange={handleCategoryChange}>
           <SelectTrigger className="w-full text-right bg-background">
             <SelectValue placeholder="اختر نوع الفتوى" />
           </SelectTrigger>
@@ -82,6 +103,16 @@ export function QuestionForm() {
             ))}
           </SelectContent>
         </Select>
+        
+        {category === 'أخرى' && (
+          <Input
+            value={customCategory}
+            onChange={(e) => setCustomCategory(e.target.value)}
+            placeholder="اكتب نوع الفتوى..."
+            className="mt-3 bg-background"
+            dir="rtl"
+          />
+        )}
       </div>
 
       <div>

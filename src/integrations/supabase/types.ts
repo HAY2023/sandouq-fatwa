@@ -91,6 +91,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_all_questions_authenticated: {
+        Args: { p_password: string }
+        Returns: boolean
+      }
       get_questions_authenticated: {
         Args: { p_password: string }
         Returns: {

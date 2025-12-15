@@ -78,6 +78,18 @@ export function useGetQuestionsCountAuthenticated() {
   });
 }
 
+export function useDeleteAllQuestionsAuthenticated() {
+  return useMutation({
+    mutationFn: async (password: string) => {
+      const { data, error } = await supabase.rpc('delete_all_questions_authenticated', {
+        p_password: password,
+      });
+      if (error) throw error;
+      return data as boolean;
+    },
+  });
+}
+
 export function useUpdateAdminPassword() {
   return useMutation({
     mutationFn: async (params: { oldPassword: string; newPassword: string }) => {
