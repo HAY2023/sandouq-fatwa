@@ -8,3 +8,8 @@ export const QUESTION_CATEGORIES = [
 ] as const;
 
 export type QuestionCategory = typeof QUESTION_CATEGORIES[number]['value'];
+
+export function getCategoryLabel(value: string): string {
+  const category = QUESTION_CATEGORIES.find(c => c.value === value);
+  return category?.label || value;
+}
