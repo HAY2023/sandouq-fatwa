@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSettings, useUpdateSettings } from '@/hooks/useSettings';
-import { useQuestionsCount } from '@/hooks/useQuestions';
+import { useSettings, useVerifyAdminPassword, useUpdateSettingsAuthenticated, useGetQuestionsCountAuthenticated } from '@/hooks/useSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,12 +14,15 @@ interface AdminPanelProps {
 export function AdminPanel({ onClose }: AdminPanelProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
+  const [storedPassword, setStoredPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [questionsCount, setQuestionsCount] = useState<number | null>(null);
   const { toast } = useToast();
   
   const { data: settings, isLoading: settingsLoading } = useSettings();
-  const { data: questionsCount } = useQuestionsCount();
-  const updateSettings = useUpdateSettings();
+  const verifyPassword = useVerifyAdminPassword();
+  const updateSettings = useUpdateSettingsAuthenticated();
+  const getQuestionsCount = useGetQuestionsCountAuthenticated();
 
   const [isBoxOpen, setIsBoxOpen] = useState(false);
   const [nextSessionDate, setNextSessionDate] = useState('');
@@ -35,30 +37,51 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     }
   }, [settings]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (isAuthenticated && storedPassword) {
+      getQuestionsCount.mutateAsync(storedPassword).then(count => {
+        if (count >= 0) setQuestionsCount(count);
+      });
+    }
+  }, [isAuthenticated, storedPassword]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simple password check - in production use proper hashing
-    if (password === 'admin123') {
-      setIsAuthenticated(true);
-    } else {
+    setIsLoading(true);
+    try {
+      const isValid = await verifyPassword.mutateAsync(password);
+      if (isValid) {
+        setIsAuthenticated(true);
+        setStoredPassword(password);
+      } else {
+        toast({
+          title: 'خطأ',
+          description: 'كلمة المرور غير صحيحة',
+          variant: 'destructive',
+        });
+      }
+    } catch {
       toast({
         title: 'خطأ',
-        description: 'كلمة المرور غير صحيحة',
+        description: 'حدث خطأ أثناء التحقق',
         variant: 'destructive',
       });
     }
+    setIsLoading(false);
   };
 
   const handleToggleBox = async () => {
-    if (!settings) return;
+    if (!settings || !storedPassword) return;
     setIsLoading(true);
     try {
-      await updateSettings.mutateAsync({
-        id: settings.id,
+      const success = await updateSettings.mutateAsync({
+        password: storedPassword,
         is_box_open: !isBoxOpen,
       });
-      setIsBoxOpen(!isBoxOpen);
-      toast({ title: 'تم التحديث', description: `الصندوق ${!isBoxOpen ? 'مفتوح' : 'مغلق'} الآن` });
+      if (success) {
+        setIsBoxOpen(!isBoxOpen);
+        toast({ title: 'تم التحديث', description: `الصندوق ${!isBoxOpen ? 'مفتوح' : 'مغلق'} الآن` });
+      }
     } catch {
       toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
     }
@@ -66,14 +89,16 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
   };
 
   const handleUpdateSession = async () => {
-    if (!settings || !nextSessionDate) return;
+    if (!settings || !nextSessionDate || !storedPassword) return;
     setIsLoading(true);
     try {
-      await updateSettings.mutateAsync({
-        id: settings.id,
+      const success = await updateSettings.mutateAsync({
+        password: storedPassword,
         next_session_date: nextSessionDate,
       });
-      toast({ title: 'تم التحديث', description: 'تم تحديث موعد الحلقة' });
+      if (success) {
+        toast({ title: 'تم التحديث', description: 'تم تحديث موعد الحلقة' });
+      }
     } catch {
       toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
     }
@@ -82,7 +107,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !settings) return;
+    if (!file || !settings || !storedPassword) return;
 
     setUploadingVideo(true);
     try {
@@ -97,13 +122,15 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
         .from('videos')
         .getPublicUrl(fileName);
 
-      await updateSettings.mutateAsync({
-        id: settings.id,
+      const success = await updateSettings.mutateAsync({
+        password: storedPassword,
         video_url: urlData.publicUrl,
         video_title: videoTitle || 'فيديو جديد',
       });
 
-      toast({ title: 'تم الرفع', description: 'تم رفع الفيديو بنجاح' });
+      if (success) {
+        toast({ title: 'تم الرفع', description: 'تم رفع الفيديو بنجاح' });
+      }
     } catch {
       toast({ title: 'خطأ', description: 'فشل رفع الفيديو', variant: 'destructive' });
     }
@@ -131,9 +158,9 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                 className="text-center"
               />
             </div>
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" disabled={isLoading}>
               <Lock className="w-4 h-4 ml-2" />
-              دخول
+              {isLoading ? 'جارٍ التحقق...' : 'دخول'}
             </Button>
           </form>
         </div>
@@ -165,7 +192,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
               {/* Questions Count */}
               <div className="bg-primary/10 rounded-xl p-6 text-center">
                 <MessageSquare className="w-10 h-10 text-primary mx-auto mb-3" />
-                <div className="text-4xl font-bold text-primary mb-1">{questionsCount || 0}</div>
+                <div className="text-4xl font-bold text-primary mb-1">{questionsCount ?? 0}</div>
                 <div className="text-muted-foreground">سؤال مستلم</div>
               </div>
 

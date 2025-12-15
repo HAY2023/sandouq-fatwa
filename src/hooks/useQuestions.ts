@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface Question {
@@ -6,20 +6,6 @@ export interface Question {
   category: string;
   question_text: string;
   created_at: string;
-}
-
-export function useQuestionsCount() {
-  return useQuery({
-    queryKey: ['questions-count'],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from('questions')
-        .select('*', { count: 'exact', head: true });
-      
-      if (error) throw error;
-      return count || 0;
-    },
-  });
 }
 
 export function useSubmitQuestion() {

@@ -5,13 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, Send } from 'lucide-react';
+import { CheckCircle, Send, Tag, MessageSquare } from 'lucide-react';
 
-interface QuestionFormProps {
-  onClose: () => void;
-}
-
-export function QuestionForm({ onClose }: QuestionFormProps) {
+export function QuestionForm() {
   const [category, setCategory] = useState('');
   const [questionText, setQuestionText] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -45,28 +41,38 @@ export function QuestionForm({ onClose }: QuestionFormProps) {
     }
   };
 
+  const handleReset = () => {
+    setIsSubmitted(false);
+    setCategory('');
+    setQuestionText('');
+  };
+
   if (isSubmitted) {
     return (
-      <div className="text-center py-12 px-6 animate-in fade-in duration-500">
+      <div className="text-center py-8 animate-in fade-in duration-500">
         <CheckCircle className="w-16 h-16 text-primary mx-auto mb-6" />
         <h3 className="text-2xl font-bold mb-4">وصل سؤالك</h3>
         <p className="text-muted-foreground text-lg mb-8 max-w-md mx-auto">
           سيتم الإجابة عليه في الحلقة القادمة إن شاء الله
         </p>
-        <Button onClick={onClose} variant="outline" size="lg">
-          العودة
+        <Button onClick={handleReset} variant="outline" size="lg">
+          إرسال سؤال آخر
         </Button>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 py-4">
+    <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <label className="block text-sm font-medium mb-2">تصنيف السؤال</label>
+        <label className="flex items-center gap-2 text-sm font-medium mb-2">
+          <Tag className="w-4 h-4 text-accent" />
+          <span>نوع الفتوى</span>
+          <span className="text-destructive">*</span>
+        </label>
         <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger className="w-full text-right">
-            <SelectValue placeholder="اختر التصنيف" />
+          <SelectTrigger className="w-full text-right bg-background">
+            <SelectValue placeholder="اختر نوع الفتوى" />
           </SelectTrigger>
           <SelectContent>
             {QUESTION_CATEGORIES.map((cat) => (
@@ -79,30 +85,29 @@ export function QuestionForm({ onClose }: QuestionFormProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">السؤال</label>
+        <label className="flex items-center gap-2 text-sm font-medium mb-2">
+          <MessageSquare className="w-4 h-4 text-accent" />
+          <span>السؤال</span>
+          <span className="text-destructive">*</span>
+        </label>
         <Textarea
           value={questionText}
           onChange={(e) => setQuestionText(e.target.value)}
           placeholder="اكتب سؤالك هنا..."
-          className="min-h-[150px] resize-none"
+          className="min-h-[120px] resize-none bg-background"
           dir="rtl"
         />
       </div>
 
-      <div className="flex gap-3 pt-4">
-        <Button
-          type="submit"
-          className="flex-1"
-          size="lg"
-          disabled={submitQuestion.isPending}
-        >
-          <Send className="w-4 h-4 ml-2" />
-          {submitQuestion.isPending ? 'جارٍ الإرسال...' : 'إرسال السؤال'}
-        </Button>
-        <Button type="button" variant="outline" size="lg" onClick={onClose}>
-          إلغاء
-        </Button>
-      </div>
+      <Button
+        type="submit"
+        className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
+        size="lg"
+        disabled={submitQuestion.isPending}
+      >
+        <Send className="w-4 h-4 ml-2" />
+        {submitQuestion.isPending ? 'جارٍ الإرسال...' : 'إرسال السؤال'}
+      </Button>
     </form>
   );
 }

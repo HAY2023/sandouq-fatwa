@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_credentials: {
+        Row: {
+          created_at: string
+          id: string
+          password_hash: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          password_hash: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          password_hash?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       questions: {
         Row: {
           category: string
@@ -37,7 +58,6 @@ export type Database = {
       }
       settings: {
         Row: {
-          admin_password_hash: string
           created_at: string
           id: string
           is_box_open: boolean
@@ -47,7 +67,6 @@ export type Database = {
           video_url: string | null
         }
         Insert: {
-          admin_password_hash: string
           created_at?: string
           id?: string
           is_box_open?: boolean
@@ -57,7 +76,6 @@ export type Database = {
           video_url?: string | null
         }
         Update: {
-          admin_password_hash?: string
           created_at?: string
           id?: string
           is_box_open?: boolean
@@ -73,7 +91,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_questions_count_authenticated: {
+        Args: { p_password: string }
+        Returns: number
+      }
+      update_admin_password: {
+        Args: { p_new_password: string; p_old_password: string }
+        Returns: boolean
+      }
+      update_settings_authenticated: {
+        Args: {
+          p_is_box_open?: boolean
+          p_next_session_date?: string
+          p_password: string
+          p_video_title?: string
+          p_video_url?: string
+        }
+        Returns: boolean
+      }
+      verify_admin_password: {
+        Args: { input_password: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
