@@ -90,6 +90,19 @@ export function useDeleteAllQuestionsAuthenticated() {
   });
 }
 
+export function useDeleteSelectedQuestionsAuthenticated() {
+  return useMutation({
+    mutationFn: async (params: { password: string; questionIds: string[] }) => {
+      const { data, error } = await supabase.rpc('delete_selected_questions_authenticated', {
+        p_password: params.password,
+        p_question_ids: params.questionIds,
+      });
+      if (error) throw error;
+      return data as boolean;
+    },
+  });
+}
+
 export function useUpdateAdminPassword() {
   return useMutation({
     mutationFn: async (params: { oldPassword: string; newPassword: string }) => {
