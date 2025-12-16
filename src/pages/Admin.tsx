@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSettings, useVerifyAdminPassword, useUpdateSettingsAuthenticated, useDeleteAllQuestionsAuthenticated } from '@/hooks/useSettings';
+import { useSettings, useVerifyAdminPassword, useUpdateSettingsAuthenticated, useDeleteAllQuestionsAuthenticated, useDeleteSelectedQuestionsAuthenticated } from '@/hooks/useSettings';
 import { useGetQuestionsAuthenticated, Question } from '@/hooks/useQuestionsList';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { exportToExcel, exportToPDF } from '@/lib/exportUtils';
@@ -13,7 +14,7 @@ import { getCategoryLabel } from '@/lib/categories';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { 
   Upload, Lock, MessageSquare, Calendar, Video, 
-  FileSpreadsheet, FileText, Bell, BellOff, Trash2, Settings, List, Home, AlertTriangle
+  FileSpreadsheet, FileText, Bell, BellOff, Trash2, Settings, List, Home, AlertTriangle, CheckSquare
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -36,6 +37,7 @@ const AdminPage = () => {
   const [questionsCount, setQuestionsCount] = useState<number | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
   const { toast } = useToast();
   
   const { data: settings, isLoading: settingsLoading } = useSettings();
@@ -43,6 +45,7 @@ const AdminPage = () => {
   const updateSettings = useUpdateSettingsAuthenticated();
   const getQuestions = useGetQuestionsAuthenticated();
   const deleteAllQuestions = useDeleteAllQuestionsAuthenticated();
+  const deleteSelectedQuestions = useDeleteSelectedQuestionsAuthenticated();
 
   const [isBoxOpen, setIsBoxOpen] = useState(false);
   const [nextSessionDate, setNextSessionDate] = useState('');
@@ -228,12 +231,49 @@ const AdminPage = () => {
       if (success) {
         setQuestions([]);
         setQuestionsCount(0);
+        setSelectedQuestions([]);
         toast({ title: 'تم الحذف', description: 'تم حذف جميع الأسئلة بنجاح' });
       }
     } catch {
       toast({ title: 'خطأ', description: 'فشل حذف الأسئلة', variant: 'destructive' });
     }
     setIsLoading(false);
+  };
+
+  const handleDeleteSelectedQuestions = async () => {
+    if (!storedPassword || selectedQuestions.length === 0) return;
+    setIsLoading(true);
+    try {
+      const success = await deleteSelectedQuestions.mutateAsync({
+        password: storedPassword,
+        questionIds: selectedQuestions,
+      });
+      if (success) {
+        setQuestions(prev => prev.filter(q => !selectedQuestions.includes(q.id)));
+        setQuestionsCount(prev => (prev ?? 0) - selectedQuestions.length);
+        toast({ title: 'تم الحذف', description: `تم حذف ${selectedQuestions.length} سؤال` });
+        setSelectedQuestions([]);
+      }
+    } catch {
+      toast({ title: 'خطأ', description: 'فشل حذف الأسئلة المحددة', variant: 'destructive' });
+    }
+    setIsLoading(false);
+  };
+
+  const toggleQuestionSelection = (questionId: string) => {
+    setSelectedQuestions(prev => 
+      prev.includes(questionId) 
+        ? prev.filter(id => id !== questionId)
+        : [...prev, questionId]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedQuestions.length === questions.length) {
+      setSelectedQuestions([]);
+    } else {
+      setSelectedQuestions(questions.map(q => q.id));
+    }
   };
 
   if (!isAuthenticated) {
@@ -324,7 +364,7 @@ const AdminPage = () => {
           {/* Questions Tab */}
           <TabsContent value="questions" className="space-y-4">
             <div className="flex flex-wrap gap-2 justify-between items-center">
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button 
                   variant="outline" 
                   size="sm"
@@ -343,37 +383,79 @@ const AdminPage = () => {
                   <FileText className="w-4 h-4 ml-2" />
                   PDF
                 </Button>
+                {questions.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={toggleSelectAll}
+                  >
+                    <CheckSquare className="w-4 h-4 ml-2" />
+                    {selectedQuestions.length === questions.length ? 'إلغاء التحديد' : 'تحديد الكل'}
+                  </Button>
+                )}
               </div>
               
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button 
-                    variant="destructive" 
-                    size="sm"
-                    disabled={questions.length === 0}
-                  >
-                    <Trash2 className="w-4 h-4 ml-2" />
-                    حذف الكل
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent dir="rtl">
-                  <AlertDialogHeader>
-                    <AlertDialogTitle className="flex items-center gap-2">
-                      <AlertTriangle className="w-5 h-5 text-destructive" />
-                      تأكيد الحذف
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      هل أنت متأكد من حذف جميع الأسئلة؟ لا يمكن التراجع عن هذا الإجراء.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter className="flex-row-reverse gap-2">
-                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDeleteAllQuestions} className="bg-destructive hover:bg-destructive/90">
+              <div className="flex gap-2">
+                {selectedQuestions.length > 0 && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        variant="destructive" 
+                        size="sm"
+                      >
+                        <Trash2 className="w-4 h-4 ml-2" />
+                        حذف المحدد ({selectedQuestions.length})
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent dir="rtl">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2">
+                          <AlertTriangle className="w-5 h-5 text-destructive" />
+                          تأكيد الحذف
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          هل أنت متأكد من حذف {selectedQuestions.length} سؤال؟ لا يمكن التراجع عن هذا الإجراء.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter className="flex-row-reverse gap-2">
+                        <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteSelectedQuestions} className="bg-destructive hover:bg-destructive/90">
+                          حذف المحدد
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      disabled={questions.length === 0}
+                    >
+                      <Trash2 className="w-4 h-4 ml-2" />
                       حذف الكل
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent dir="rtl">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="flex items-center gap-2">
+                        <AlertTriangle className="w-5 h-5 text-destructive" />
+                        تأكيد الحذف
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        هل أنت متأكد من حذف جميع الأسئلة؟ لا يمكن التراجع عن هذا الإجراء.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="flex-row-reverse gap-2">
+                      <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDeleteAllQuestions} className="bg-destructive hover:bg-destructive/90">
+                        حذف الكل
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             </div>
 
             <div className="space-y-3 max-h-[60vh] overflow-y-auto">
@@ -384,16 +466,32 @@ const AdminPage = () => {
                 </div>
               ) : (
                 questions.map((q, index) => (
-                  <div key={q.id} className="bg-card border border-border rounded-lg p-4">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded">
-                        {getCategoryLabel(q.category)}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        #{index + 1} - {new Date(q.created_at).toLocaleDateString('ar-SA')}
-                      </span>
+                  <div 
+                    key={q.id} 
+                    className={`bg-card border rounded-lg p-4 cursor-pointer transition-colors ${
+                      selectedQuestions.includes(q.id) ? 'border-primary bg-primary/5' : 'border-border'
+                    }`}
+                    onClick={() => toggleQuestionSelection(q.id)}
+                  >
+                    <div className="flex items-start gap-3">
+                      <Checkbox
+                        checked={selectedQuestions.includes(q.id)}
+                        onCheckedChange={() => toggleQuestionSelection(q.id)}
+                        className="mt-1"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded">
+                            {getCategoryLabel(q.category)}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            #{index + 1} - {new Date(q.created_at).toLocaleDateString('ar-SA')}
+                          </span>
+                        </div>
+                        <p className="text-sm">{q.question_text}</p>
+                      </div>
                     </div>
-                    <p className="text-sm">{q.question_text}</p>
                   </div>
                 ))
               )}

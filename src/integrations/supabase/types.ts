@@ -95,6 +95,10 @@ export type Database = {
         Args: { p_password: string }
         Returns: boolean
       }
+      delete_selected_questions_authenticated: {
+        Args: { p_password: string; p_question_ids: string[] }
+        Returns: boolean
+      }
       get_questions_authenticated: {
         Args: { p_password: string }
         Returns: {
