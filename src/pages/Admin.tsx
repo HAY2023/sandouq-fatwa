@@ -13,7 +13,7 @@ import { exportToExcel, exportToPDF } from '@/lib/exportUtils';
 import { getCategoryLabel } from '@/lib/categories';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { 
-  Upload, Lock, MessageSquare, Calendar, Video, 
+  Lock, MessageSquare, Calendar, Video, 
   FileSpreadsheet, FileText, Bell, BellOff, Trash2, Settings, List, Home, AlertTriangle, CheckSquare
 } from 'lucide-react';
 import {
@@ -50,7 +50,9 @@ const AdminPage = () => {
   const [isBoxOpen, setIsBoxOpen] = useState(false);
   const [nextSessionDate, setNextSessionDate] = useState('');
   const [videoTitle, setVideoTitle] = useState('');
-  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [videoUrl, setVideoUrl] = useState('');
+  const [showCountdown, setShowCountdown] = useState(true);
+  const [savingVideo, setSavingVideo] = useState(false);
 
   const playNotificationSound = () => {
     try {
@@ -78,6 +80,8 @@ const AdminPage = () => {
       setIsBoxOpen(settings.is_box_open);
       setNextSessionDate(settings.next_session_date || '');
       setVideoTitle(settings.video_title || '');
+      setVideoUrl(settings.video_url || '');
+      setShowCountdown(settings.show_countdown);
     }
   }, [settings]);
 
@@ -173,36 +177,40 @@ const AdminPage = () => {
     setIsLoading(false);
   };
 
-  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !settings || !storedPassword) return;
-
-    setUploadingVideo(true);
+  const handleSaveVideo = async () => {
+    if (!storedPassword || !videoUrl) return;
+    setSavingVideo(true);
     try {
-      const fileName = `video_${Date.now()}.${file.name.split('.').pop()}`;
-      const { error: uploadError } = await supabase.storage
-        .from('videos')
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage
-        .from('videos')
-        .getPublicUrl(fileName);
-
       const success = await updateSettings.mutateAsync({
         password: storedPassword,
-        video_url: urlData.publicUrl,
+        video_url: videoUrl,
         video_title: videoTitle || 'فيديو جديد',
       });
-
       if (success) {
-        toast({ title: 'تم الرفع', description: 'تم رفع الفيديو بنجاح' });
+        toast({ title: 'تم الحفظ', description: 'تم حفظ رابط الفيديو بنجاح' });
       }
     } catch {
-      toast({ title: 'خطأ', description: 'فشل رفع الفيديو', variant: 'destructive' });
+      toast({ title: 'خطأ', description: 'فشل حفظ الفيديو', variant: 'destructive' });
     }
-    setUploadingVideo(false);
+    setSavingVideo(false);
+  };
+
+  const handleToggleCountdown = async () => {
+    if (!storedPassword) return;
+    setIsLoading(true);
+    try {
+      const success = await updateSettings.mutateAsync({
+        password: storedPassword,
+        show_countdown: !showCountdown,
+      });
+      if (success) {
+        setShowCountdown(!showCountdown);
+        toast({ title: 'تم التحديث', description: `العداد التنازلي ${!showCountdown ? 'مفعّل' : 'معطّل'} الآن` });
+      }
+    } catch {
+      toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
+    }
+    setIsLoading(false);
   };
 
   const handleRemoveVideo = async () => {
@@ -215,6 +223,8 @@ const AdminPage = () => {
         video_title: '',
       });
       if (success) {
+        setVideoUrl('');
+        setVideoTitle('');
         toast({ title: 'تم الحذف', description: 'تم حذف الفيديو' });
       }
     } catch {
@@ -514,18 +524,27 @@ const AdminPage = () => {
                     حذف
                   </Button>
                 </div>
-                <video 
-                  src={settings.video_url} 
-                  className="w-full rounded-lg max-h-64 object-cover"
-                  controls
-                />
+                {settings.video_url.includes('youtube') || settings.video_url.includes('youtu.be') ? (
+                  <div className="text-sm text-muted-foreground bg-secondary/50 rounded-lg p-3">
+                    <span className="font-medium">رابط YouTube: </span>
+                    <a href={settings.video_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      {settings.video_url}
+                    </a>
+                  </div>
+                ) : (
+                  <video 
+                    src={settings.video_url} 
+                    className="w-full rounded-lg max-h-64 object-cover"
+                    controls
+                  />
+                )}
               </div>
             )}
 
             <div className="bg-card border border-border rounded-lg p-4 space-y-4">
               <h4 className="font-medium flex items-center gap-2">
                 <Video className="w-5 h-5 text-primary" />
-                رفع فيديو جديد
+                إضافة فيديو YouTube
               </h4>
               <Input
                 type="text"
@@ -533,21 +552,20 @@ const AdminPage = () => {
                 onChange={(e) => setVideoTitle(e.target.value)}
                 placeholder="عنوان الفيديو"
               />
-              <label className="block">
-                <div className="border-2 border-dashed border-border rounded-xl p-8 text-center cursor-pointer hover:border-primary/50 transition-colors">
-                  <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-muted-foreground">
-                    {uploadingVideo ? 'جارٍ الرفع...' : 'اضغط لاختيار فيديو'}
-                  </p>
-                </div>
-                <input
-                  type="file"
-                  accept="video/*"
-                  className="hidden"
-                  onChange={handleVideoUpload}
-                  disabled={uploadingVideo}
-                />
-              </label>
+              <Input
+                type="url"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                placeholder="رابط YouTube (مثال: https://www.youtube.com/watch?v=...)"
+                dir="ltr"
+              />
+              <Button 
+                onClick={handleSaveVideo} 
+                disabled={savingVideo || !videoUrl}
+                className="w-full"
+              >
+                {savingVideo ? 'جارٍ الحفظ...' : 'حفظ الفيديو'}
+              </Button>
             </div>
           </TabsContent>
 
@@ -563,6 +581,20 @@ const AdminPage = () => {
               <Switch
                 checked={isBoxOpen}
                 onCheckedChange={handleToggleBox}
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
+              <div>
+                <h3 className="font-medium">العداد التنازلي</h3>
+                <p className="text-sm text-muted-foreground">
+                  {showCountdown ? 'العداد ظاهر في الصفحة الرئيسية' : 'العداد مخفي'}
+                </p>
+              </div>
+              <Switch
+                checked={showCountdown}
+                onCheckedChange={handleToggleCountdown}
                 disabled={isLoading}
               />
             </div>

@@ -7,6 +7,7 @@ export interface Settings {
   next_session_date: string | null;
   video_url: string | null;
   video_title: string | null;
+  show_countdown: boolean;
 }
 
 export function useSettings() {
@@ -15,7 +16,7 @@ export function useSettings() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('settings')
-        .select('id, is_box_open, next_session_date, video_url, video_title')
+        .select('id, is_box_open, next_session_date, video_url, video_title, show_countdown')
         .maybeSingle();
       
       if (error) throw error;
@@ -47,6 +48,7 @@ export function useUpdateSettingsAuthenticated() {
       next_session_date?: string;
       video_url?: string;
       video_title?: string;
+      show_countdown?: boolean;
     }) => {
       const { data, error } = await supabase.rpc('update_settings_authenticated', {
         p_password: params.password,
@@ -54,6 +56,7 @@ export function useUpdateSettingsAuthenticated() {
         p_next_session_date: params.next_session_date,
         p_video_url: params.video_url,
         p_video_title: params.video_title,
+        p_show_countdown: params.show_countdown,
       });
       
       if (error) throw error;
