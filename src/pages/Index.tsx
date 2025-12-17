@@ -113,7 +113,7 @@ const Index = () => {
       )}
 
       {/* Countdown Timer */}
-      {settings?.next_session_date && (
+      {settings?.show_countdown && settings?.next_session_date && (
         <section className="py-8 px-4 bg-secondary/30">
           <div className="container mx-auto max-w-xl">
             <CountdownTimer targetDate={settings.next_session_date} />

@@ -62,6 +62,7 @@ export type Database = {
           id: string
           is_box_open: boolean
           next_session_date: string | null
+          show_countdown: boolean
           updated_at: string
           video_title: string | null
           video_url: string | null
@@ -71,6 +72,7 @@ export type Database = {
           id?: string
           is_box_open?: boolean
           next_session_date?: string | null
+          show_countdown?: boolean
           updated_at?: string
           video_title?: string | null
           video_url?: string | null
@@ -80,6 +82,7 @@ export type Database = {
           id?: string
           is_box_open?: boolean
           next_session_date?: string | null
+          show_countdown?: boolean
           updated_at?: string
           video_title?: string | null
           video_url?: string | null
@@ -116,16 +119,28 @@ export type Database = {
         Args: { p_new_password: string; p_old_password: string }
         Returns: boolean
       }
-      update_settings_authenticated: {
-        Args: {
-          p_is_box_open?: boolean
-          p_next_session_date?: string
-          p_password: string
-          p_video_title?: string
-          p_video_url?: string
-        }
-        Returns: boolean
-      }
+      update_settings_authenticated:
+        | {
+            Args: {
+              p_is_box_open?: boolean
+              p_next_session_date?: string
+              p_password: string
+              p_video_title?: string
+              p_video_url?: string
+            }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              p_is_box_open?: boolean
+              p_next_session_date?: string
+              p_password: string
+              p_show_countdown?: boolean
+              p_video_title?: string
+              p_video_url?: string
+            }
+            Returns: boolean
+          }
       verify_admin_password: {
         Args: { input_password: string }
         Returns: boolean
