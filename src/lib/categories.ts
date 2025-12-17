@@ -1,10 +1,19 @@
 export const QUESTION_CATEGORIES = [
-  { value: 'worship', label: 'العبادات' },
-  { value: 'transactions', label: 'المعاملات' },
+  { value: 'purification', label: 'الطهارة' },
+  { value: 'prayer', label: 'الصلاة' },
+  { value: 'zakat', label: 'الزكاة' },
+  { value: 'fasting', label: 'الصيام' },
+  { value: 'hajj', label: 'الحج والعمرة' },
+  { value: 'transactions', label: 'المعاملات والبيوع' },
   { value: 'family', label: 'الأسرة والنكاح' },
+  { value: 'divorce', label: 'الطلاق' },
+  { value: 'inheritance', label: 'الميراث' },
   { value: 'creed', label: 'العقيدة' },
   { value: 'morals', label: 'الأخلاق والسلوك' },
-  { value: 'other', label: 'أخرى' },
+  { value: 'oaths', label: 'الأيمان والنذور' },
+  { value: 'food', label: 'الأطعمة والأشربة' },
+  { value: 'clothing', label: 'اللباس والزينة' },
+  { value: 'أخرى', label: 'أخرى' },
 ] as const;
 
 export type QuestionCategory = typeof QUESTION_CATEGORIES[number]['value'];
