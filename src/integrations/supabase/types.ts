@@ -35,6 +35,30 @@ export type Database = {
         }
         Relationships: []
       }
+      announcements: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          message: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          message: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          message?: string
+          type?: string
+        }
+        Relationships: []
+      }
       questions: {
         Row: {
           category: string
@@ -89,17 +113,60 @@ export type Database = {
         }
         Relationships: []
       }
+      videos: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          title: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          title: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          title?: string
+          url?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      add_announcement_authenticated: {
+        Args: { p_message: string; p_password: string; p_type?: string }
+        Returns: string
+      }
+      add_video_authenticated: {
+        Args: { p_password: string; p_title: string; p_url: string }
+        Returns: string
+      }
       delete_all_questions_authenticated: {
         Args: { p_password: string }
         Returns: boolean
       }
+      delete_announcement_authenticated: {
+        Args: { p_announcement_id: string; p_password: string }
+        Returns: boolean
+      }
       delete_selected_questions_authenticated: {
         Args: { p_password: string; p_question_ids: string[] }
+        Returns: boolean
+      }
+      delete_video_authenticated: {
+        Args: { p_password: string; p_video_id: string }
         Returns: boolean
       }
       get_questions_authenticated: {
