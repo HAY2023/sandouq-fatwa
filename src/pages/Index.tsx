@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSettings } from '@/hooks/useSettings';
 import { CountdownTimer } from '@/components/CountdownTimer';
-import { VideoPlayer } from '@/components/VideoPlayer';
+import { VideoList } from '@/components/VideoList';
 import { QuestionForm } from '@/components/QuestionForm';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { AnnouncementBanner } from '@/components/AnnouncementBanner';
 import { Button } from '@/components/ui/button';
 import { BookOpen } from 'lucide-react';
 import mosqueImage from '@/assets/mosque-hero.jpg';
@@ -103,14 +104,19 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Announcements */}
+      <section className="py-4 px-4">
+        <div className="container mx-auto max-w-3xl">
+          <AnnouncementBanner />
+        </div>
+      </section>
+
       {/* Video Section */}
-      {settings?.video_url && settings?.video_title && (
-        <section className="py-12 px-4 bg-card">
-          <div className="container mx-auto max-w-3xl">
-            <VideoPlayer url={settings.video_url} title={settings.video_title} />
-          </div>
-        </section>
-      )}
+      <section className="py-12 px-4 bg-card">
+        <div className="container mx-auto max-w-3xl">
+          <VideoList />
+        </div>
+      </section>
 
       {/* Countdown Timer */}
       {settings?.show_countdown && settings?.next_session_date && (

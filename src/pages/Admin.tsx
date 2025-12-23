@@ -2,19 +2,22 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSettings, useVerifyAdminPassword, useUpdateSettingsAuthenticated, useDeleteAllQuestionsAuthenticated, useDeleteSelectedQuestionsAuthenticated } from '@/hooks/useSettings';
 import { useGetQuestionsAuthenticated, Question } from '@/hooks/useQuestionsList';
+import { useVideos, useAddVideo, useDeleteVideo } from '@/hooks/useVideos';
+import { useAnnouncements, useAddAnnouncement, useDeleteAnnouncement } from '@/hooks/useAnnouncements';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { exportToExcel, exportToPDF } from '@/lib/exportUtils';
 import { getCategoryLabel } from '@/lib/categories';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { 
   Lock, MessageSquare, Calendar, Video, 
-  FileSpreadsheet, FileText, Bell, BellOff, Trash2, Settings, List, Home, AlertTriangle, CheckSquare
+  FileSpreadsheet, FileText, Bell, BellOff, Trash2, Settings, List, Home, AlertTriangle, CheckSquare, Plus, Megaphone
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -41,11 +44,17 @@ const AdminPage = () => {
   const { toast } = useToast();
   
   const { data: settings, isLoading: settingsLoading } = useSettings();
+  const { data: videos, isLoading: videosLoading } = useVideos();
+  const { data: announcements } = useAnnouncements();
   const verifyPassword = useVerifyAdminPassword();
   const updateSettings = useUpdateSettingsAuthenticated();
   const getQuestions = useGetQuestionsAuthenticated();
   const deleteAllQuestions = useDeleteAllQuestionsAuthenticated();
   const deleteSelectedQuestions = useDeleteSelectedQuestionsAuthenticated();
+  const addVideo = useAddVideo();
+  const deleteVideo = useDeleteVideo();
+  const addAnnouncement = useAddAnnouncement();
+  const deleteAnnouncement = useDeleteAnnouncement();
 
   const [isBoxOpen, setIsBoxOpen] = useState(false);
   const [nextSessionDate, setNextSessionDate] = useState('');
@@ -53,6 +62,11 @@ const AdminPage = () => {
   const [videoUrl, setVideoUrl] = useState('');
   const [showCountdown, setShowCountdown] = useState(true);
   const [savingVideo, setSavingVideo] = useState(false);
+  
+  // Announcement states
+  const [announcementMessage, setAnnouncementMessage] = useState('');
+  const [announcementType, setAnnouncementType] = useState('info');
+  const [savingAnnouncement, setSavingAnnouncement] = useState(false);
 
   const playNotificationSound = () => {
     try {
@@ -164,9 +178,11 @@ const AdminPage = () => {
     if (!settings || !nextSessionDate || !storedPassword) return;
     setIsLoading(true);
     try {
+      // Convert datetime-local to ISO format
+      const isoDate = new Date(nextSessionDate).toISOString();
       const success = await updateSettings.mutateAsync({
         password: storedPassword,
-        next_session_date: nextSessionDate,
+        next_session_date: isoDate,
       });
       if (success) {
         toast({ title: 'تم التحديث', description: 'تم تحديث موعد الحلقة' });
@@ -178,21 +194,76 @@ const AdminPage = () => {
   };
 
   const handleSaveVideo = async () => {
-    if (!storedPassword || !videoUrl) return;
+    if (!storedPassword || !videoUrl || !videoTitle) return;
     setSavingVideo(true);
     try {
-      const success = await updateSettings.mutateAsync({
+      const result = await addVideo.mutateAsync({
         password: storedPassword,
-        video_url: videoUrl,
-        video_title: videoTitle || 'فيديو جديد',
+        title: videoTitle,
+        url: videoUrl,
       });
-      if (success) {
-        toast({ title: 'تم الحفظ', description: 'تم حفظ رابط الفيديو بنجاح' });
+      if (result) {
+        setVideoTitle('');
+        setVideoUrl('');
+        toast({ title: 'تم الحفظ', description: 'تم إضافة الفيديو بنجاح' });
+      } else {
+        toast({ title: 'خطأ', description: 'فشل إضافة الفيديو', variant: 'destructive' });
       }
     } catch {
       toast({ title: 'خطأ', description: 'فشل حفظ الفيديو', variant: 'destructive' });
     }
     setSavingVideo(false);
+  };
+
+  const handleDeleteVideo = async (videoId: string) => {
+    if (!storedPassword) return;
+    try {
+      const success = await deleteVideo.mutateAsync({
+        password: storedPassword,
+        videoId,
+      });
+      if (success) {
+        toast({ title: 'تم الحذف', description: 'تم حذف الفيديو' });
+      }
+    } catch {
+      toast({ title: 'خطأ', description: 'فشل الحذف', variant: 'destructive' });
+    }
+  };
+
+  const handleSaveAnnouncement = async () => {
+    if (!storedPassword || !announcementMessage) return;
+    setSavingAnnouncement(true);
+    try {
+      const result = await addAnnouncement.mutateAsync({
+        password: storedPassword,
+        message: announcementMessage,
+        type: announcementType,
+      });
+      if (result) {
+        setAnnouncementMessage('');
+        toast({ title: 'تم الحفظ', description: 'تم إضافة الإعلان بنجاح' });
+      } else {
+        toast({ title: 'خطأ', description: 'فشل إضافة الإعلان', variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'خطأ', description: 'فشل حفظ الإعلان', variant: 'destructive' });
+    }
+    setSavingAnnouncement(false);
+  };
+
+  const handleDeleteAnnouncement = async (announcementId: string) => {
+    if (!storedPassword) return;
+    try {
+      const success = await deleteAnnouncement.mutateAsync({
+        password: storedPassword,
+        announcementId,
+      });
+      if (success) {
+        toast({ title: 'تم الحذف', description: 'تم حذف الإعلان' });
+      }
+    } catch {
+      toast({ title: 'خطأ', description: 'فشل الحذف', variant: 'destructive' });
+    }
   };
 
   const handleToggleCountdown = async () => {
@@ -209,26 +280,6 @@ const AdminPage = () => {
       }
     } catch {
       toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
-    }
-    setIsLoading(false);
-  };
-
-  const handleRemoveVideo = async () => {
-    if (!storedPassword) return;
-    setIsLoading(true);
-    try {
-      const success = await updateSettings.mutateAsync({
-        password: storedPassword,
-        video_url: '',
-        video_title: '',
-      });
-      if (success) {
-        setVideoUrl('');
-        setVideoTitle('');
-        toast({ title: 'تم الحذف', description: 'تم حذف الفيديو' });
-      }
-    } catch {
-      toast({ title: 'خطأ', description: 'فشل الحذف', variant: 'destructive' });
     }
     setIsLoading(false);
   };
@@ -356,7 +407,7 @@ const AdminPage = () => {
         </div>
 
         <Tabs defaultValue="questions" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsList className="grid w-full grid-cols-4 mb-6">
             <TabsTrigger value="questions" className="flex items-center gap-2">
               <List className="w-4 h-4" />
               <span className="hidden sm:inline">الأسئلة</span>
@@ -364,6 +415,10 @@ const AdminPage = () => {
             <TabsTrigger value="videos" className="flex items-center gap-2">
               <Video className="w-4 h-4" />
               <span className="hidden sm:inline">الفيديو</span>
+            </TabsTrigger>
+            <TabsTrigger value="announcements" className="flex items-center gap-2">
+              <Megaphone className="w-4 h-4" />
+              <span className="hidden sm:inline">الإعلانات</span>
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings className="w-4 h-4" />
@@ -510,41 +565,49 @@ const AdminPage = () => {
 
           {/* Videos Tab */}
           <TabsContent value="videos" className="space-y-4">
-            {settings?.video_url && (
-              <div className="bg-card border border-border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-medium">{settings.video_title}</h4>
-                  <Button 
-                    variant="destructive" 
-                    size="sm"
-                    onClick={handleRemoveVideo}
-                    disabled={isLoading}
-                  >
-                    <Trash2 className="w-4 h-4 ml-1" />
-                    حذف
-                  </Button>
-                </div>
-                {settings.video_url.includes('youtube') || settings.video_url.includes('youtu.be') ? (
-                  <div className="text-sm text-muted-foreground bg-secondary/50 rounded-lg p-3">
-                    <span className="font-medium">رابط YouTube: </span>
-                    <a href={settings.video_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                      {settings.video_url}
-                    </a>
+            {/* Existing Videos */}
+            {videosLoading ? (
+              <div className="text-center py-4 text-muted-foreground">جارٍ تحميل الفيديوهات...</div>
+            ) : videos && videos.length > 0 ? (
+              <div className="space-y-3">
+                <h4 className="font-medium text-sm text-muted-foreground">الفيديوهات الحالية ({videos.length})</h4>
+                {videos.map((video) => (
+                  <div key={video.id} className="bg-card border border-border rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-medium">{video.title}</h4>
+                        <a 
+                          href={video.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="text-sm text-primary hover:underline"
+                        >
+                          {video.url}
+                        </a>
+                      </div>
+                      <Button 
+                        variant="destructive" 
+                        size="sm"
+                        onClick={() => handleDeleteVideo(video.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
-                ) : (
-                  <video 
-                    src={settings.video_url} 
-                    className="w-full rounded-lg max-h-64 object-cover"
-                    controls
-                  />
-                )}
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Video className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>لا توجد فيديوهات</p>
               </div>
             )}
 
+            {/* Add New Video */}
             <div className="bg-card border border-border rounded-lg p-4 space-y-4">
               <h4 className="font-medium flex items-center gap-2">
-                <Video className="w-5 h-5 text-primary" />
-                إضافة فيديو YouTube
+                <Plus className="w-5 h-5 text-primary" />
+                إضافة فيديو جديد
               </h4>
               <Input
                 type="text"
@@ -561,10 +624,83 @@ const AdminPage = () => {
               />
               <Button 
                 onClick={handleSaveVideo} 
-                disabled={savingVideo || !videoUrl}
+                disabled={savingVideo || !videoUrl || !videoTitle}
                 className="w-full"
               >
-                {savingVideo ? 'جارٍ الحفظ...' : 'حفظ الفيديو'}
+                <Plus className="w-4 h-4 ml-2" />
+                {savingVideo ? 'جارٍ الإضافة...' : 'إضافة الفيديو'}
+              </Button>
+            </div>
+          </TabsContent>
+
+          {/* Announcements Tab */}
+          <TabsContent value="announcements" className="space-y-4">
+            {/* Existing Announcements */}
+            {announcements && announcements.length > 0 ? (
+              <div className="space-y-3">
+                <h4 className="font-medium text-sm text-muted-foreground">الإعلانات الحالية ({announcements.length})</h4>
+                {announcements.map((ann) => (
+                  <div key={ann.id} className="bg-card border border-border rounded-lg p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex-1">
+                        <span className={`text-xs px-2 py-1 rounded ${
+                          ann.type === 'success' ? 'bg-green-500/20 text-green-600' :
+                          ann.type === 'warning' ? 'bg-amber-500/20 text-amber-600' :
+                          ann.type === 'error' ? 'bg-destructive/20 text-destructive' :
+                          'bg-primary/20 text-primary'
+                        }`}>
+                          {ann.type === 'success' ? 'نجاح' : ann.type === 'warning' ? 'تنبيه' : ann.type === 'error' ? 'خطأ' : 'معلومة'}
+                        </span>
+                        <p className="mt-2 text-sm">{ann.message}</p>
+                      </div>
+                      <Button 
+                        variant="destructive" 
+                        size="sm"
+                        onClick={() => handleDeleteAnnouncement(ann.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Megaphone className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>لا توجد إعلانات</p>
+              </div>
+            )}
+
+            {/* Add New Announcement */}
+            <div className="bg-card border border-border rounded-lg p-4 space-y-4">
+              <h4 className="font-medium flex items-center gap-2">
+                <Plus className="w-5 h-5 text-primary" />
+                إضافة إعلان جديد
+              </h4>
+              <Input
+                type="text"
+                value={announcementMessage}
+                onChange={(e) => setAnnouncementMessage(e.target.value)}
+                placeholder="نص الإعلان"
+              />
+              <Select value={announcementType} onValueChange={setAnnouncementType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="نوع الإعلان" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="info">معلومة</SelectItem>
+                  <SelectItem value="success">نجاح</SelectItem>
+                  <SelectItem value="warning">تنبيه</SelectItem>
+                  <SelectItem value="error">تحذير</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button 
+                onClick={handleSaveAnnouncement} 
+                disabled={savingAnnouncement || !announcementMessage}
+                className="w-full"
+              >
+                <Plus className="w-4 h-4 ml-2" />
+                {savingAnnouncement ? 'جارٍ الإضافة...' : 'إضافة الإعلان'}
               </Button>
             </div>
           </TabsContent>
