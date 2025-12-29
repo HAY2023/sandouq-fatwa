@@ -166,16 +166,9 @@ const Index = () => {
       </section>
 
       {/* Flash Messages - Right below hero */}
-      <section className="bg-background">
-        <div className="container mx-auto max-w-3xl">
+      <section className="bg-background py-4">
+        <div className="container mx-auto max-w-3xl px-4">
           <FlashMessageBanner />
-        </div>
-      </section>
-
-      {/* Announcements */}
-      <section className="py-4 px-4">
-        <div className="container mx-auto max-w-3xl">
-          <AnnouncementBanner />
         </div>
       </section>
 
@@ -185,6 +178,7 @@ const Index = () => {
           <VideoList />
         </div>
       </section>
+
 
       {/* Countdown Timer */}
       {settings?.show_countdown && settings?.next_session_date && (
@@ -198,6 +192,11 @@ const Index = () => {
       {/* Question Form Section */}
       <section ref={formSectionRef} className="py-16 px-4 islamic-pattern">
         <div className="container mx-auto max-w-xl">
+          {/* Announcements - Above question form */}
+          <div className="mb-8">
+            <AnnouncementBanner />
+          </div>
+          
           {settings?.is_box_open ? (
             <>
               <div className="text-center mb-8">

@@ -16,6 +16,20 @@
   animation: marquee 15s linear infinite;
 }
 
+/* Smooth marquee animation */
+@keyframes marquee-smooth {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee-smooth {
+  animation: marquee-smooth 20s linear infinite;
+}
+
 /* Shimmer animation for announcements */
 @keyframes shimmer {
   0% {
