@@ -4,6 +4,7 @@ import { useSettings, useVerifyAdminPassword, useUpdateSettingsAuthenticated, us
 import { useGetQuestionsAuthenticated, Question } from '@/hooks/useQuestionsList';
 import { useVideos, useAddVideo, useDeleteVideo } from '@/hooks/useVideos';
 import { useAnnouncements, useAddAnnouncement, useDeleteAnnouncement } from '@/hooks/useAnnouncements';
+import { useAllFlashMessages, useAddFlashMessage, useDeleteFlashMessage } from '@/hooks/useFlashMessages';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +18,7 @@ import { getCategoryLabel } from '@/lib/categories';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { 
   Lock, MessageSquare, Calendar, Video, 
-  FileSpreadsheet, FileText, Bell, BellOff, Trash2, Settings, List, Home, AlertTriangle, CheckSquare, Plus, Megaphone
+  FileSpreadsheet, FileText, Bell, BellOff, Trash2, Settings, List, Home, AlertTriangle, CheckSquare, Plus, Megaphone, Zap
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -46,6 +47,7 @@ const AdminPage = () => {
   const { data: settings, isLoading: settingsLoading } = useSettings();
   const { data: videos, isLoading: videosLoading } = useVideos();
   const { data: announcements } = useAnnouncements();
+  const { data: flashMessages } = useAllFlashMessages();
   const verifyPassword = useVerifyAdminPassword();
   const updateSettings = useUpdateSettingsAuthenticated();
   const getQuestions = useGetQuestionsAuthenticated();
@@ -55,6 +57,8 @@ const AdminPage = () => {
   const deleteVideo = useDeleteVideo();
   const addAnnouncement = useAddAnnouncement();
   const deleteAnnouncement = useDeleteAnnouncement();
+  const addFlashMessage = useAddFlashMessage();
+  const deleteFlashMessage = useDeleteFlashMessage();
 
   const [isBoxOpen, setIsBoxOpen] = useState(false);
   const [nextSessionDate, setNextSessionDate] = useState('');
@@ -67,6 +71,14 @@ const AdminPage = () => {
   const [announcementMessage, setAnnouncementMessage] = useState('');
   const [announcementType, setAnnouncementType] = useState('info');
   const [savingAnnouncement, setSavingAnnouncement] = useState(false);
+
+  // Flash message states
+  const [flashMessage, setFlashMessage] = useState('');
+  const [flashDirection, setFlashDirection] = useState('rtl');
+  const [flashColor, setFlashColor] = useState('#3b82f6');
+  const [flashStartDate, setFlashStartDate] = useState('');
+  const [flashEndDate, setFlashEndDate] = useState('');
+  const [savingFlash, setSavingFlash] = useState(false);
 
   const playNotificationSound = () => {
     try {
@@ -84,15 +96,33 @@ const AdminPage = () => {
       
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + 0.3);
-    } catch (e) {
-      console.log('Could not play notification sound');
+    } catch {
+      // Sound not supported
+    }
+  };
+
+  // Helper to format ISO date to datetime-local format
+  const formatDateForInput = (isoDate: string | null): string => {
+    if (!isoDate) return '';
+    try {
+      const date = new Date(isoDate);
+      if (isNaN(date.getTime())) return '';
+      // Format: YYYY-MM-DDTHH:mm
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    } catch {
+      return '';
     }
   };
 
   useEffect(() => {
     if (settings) {
       setIsBoxOpen(settings.is_box_open);
-      setNextSessionDate(settings.next_session_date || '');
+      setNextSessionDate(formatDateForInput(settings.next_session_date));
       setVideoTitle(settings.video_title || '');
       setVideoUrl(settings.video_url || '');
       setShowCountdown(settings.show_countdown);
@@ -135,7 +165,7 @@ const AdminPage = () => {
       setQuestions(data || []);
       setQuestionsCount(data?.length || 0);
     } catch {
-      console.error('Failed to load questions');
+      // Failed to load questions
     }
   };
 
@@ -167,8 +197,10 @@ const AdminPage = () => {
       if (success) {
         setIsBoxOpen(!isBoxOpen);
         toast({ title: 'تم التحديث', description: `الصندوق ${!isBoxOpen ? 'مفتوح' : 'مغلق'} الآن` });
+      } else {
+        toast({ title: 'خطأ', description: 'فشل التحديث - تحقق من كلمة المرور', variant: 'destructive' });
       }
-    } catch {
+    } catch (error) {
       toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
     }
     setIsLoading(false);
@@ -186,8 +218,10 @@ const AdminPage = () => {
       });
       if (success) {
         toast({ title: 'تم التحديث', description: 'تم تحديث موعد الحلقة' });
+      } else {
+        toast({ title: 'خطأ', description: 'فشل التحديث - تحقق من كلمة المرور', variant: 'destructive' });
       }
-    } catch {
+    } catch (error) {
       toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
     }
     setIsLoading(false);
@@ -260,6 +294,47 @@ const AdminPage = () => {
       });
       if (success) {
         toast({ title: 'تم الحذف', description: 'تم حذف الإعلان' });
+      }
+    } catch {
+      toast({ title: 'خطأ', description: 'فشل الحذف', variant: 'destructive' });
+    }
+  };
+
+  const handleSaveFlashMessage = async () => {
+    if (!storedPassword || !flashMessage) return;
+    setSavingFlash(true);
+    try {
+      const result = await addFlashMessage.mutateAsync({
+        password: storedPassword,
+        message: flashMessage,
+        text_direction: flashDirection,
+        color: flashColor,
+        start_date: flashStartDate ? new Date(flashStartDate).toISOString() : null,
+        end_date: flashEndDate ? new Date(flashEndDate).toISOString() : null,
+      });
+      if (result) {
+        setFlashMessage('');
+        setFlashStartDate('');
+        setFlashEndDate('');
+        toast({ title: 'تم الحفظ', description: 'تم إضافة رسالة الفلاش بنجاح' });
+      } else {
+        toast({ title: 'خطأ', description: 'فشل إضافة رسالة الفلاش', variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'خطأ', description: 'فشل حفظ رسالة الفلاش', variant: 'destructive' });
+    }
+    setSavingFlash(false);
+  };
+
+  const handleDeleteFlashMessage = async (flashMessageId: string) => {
+    if (!storedPassword) return;
+    try {
+      const success = await deleteFlashMessage.mutateAsync({
+        password: storedPassword,
+        flashMessageId,
+      });
+      if (success) {
+        toast({ title: 'تم الحذف', description: 'تم حذف رسالة الفلاش' });
       }
     } catch {
       toast({ title: 'خطأ', description: 'فشل الحذف', variant: 'destructive' });
@@ -407,7 +482,7 @@ const AdminPage = () => {
         </div>
 
         <Tabs defaultValue="questions" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
+          <TabsList className="grid w-full grid-cols-5 mb-6">
             <TabsTrigger value="questions" className="flex items-center gap-2">
               <List className="w-4 h-4" />
               <span className="hidden sm:inline">الأسئلة</span>
@@ -419,6 +494,10 @@ const AdminPage = () => {
             <TabsTrigger value="announcements" className="flex items-center gap-2">
               <Megaphone className="w-4 h-4" />
               <span className="hidden sm:inline">الإعلانات</span>
+            </TabsTrigger>
+            <TabsTrigger value="flash" className="flex items-center gap-2">
+              <Zap className="w-4 h-4" />
+              <span className="hidden sm:inline">فلاش</span>
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings className="w-4 h-4" />
@@ -705,6 +784,157 @@ const AdminPage = () => {
             </div>
           </TabsContent>
 
+          {/* Flash Messages Tab */}
+          <TabsContent value="flash" className="space-y-4">
+            {/* Existing Flash Messages */}
+            {flashMessages && flashMessages.length > 0 ? (
+              <div className="space-y-3">
+                <h4 className="font-medium text-sm text-muted-foreground">رسائل الفلاش الحالية ({flashMessages.length})</h4>
+                {flashMessages.map((msg) => (
+                  <div key={msg.id} className="bg-card border border-border rounded-lg p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div 
+                            className="w-4 h-4 rounded-full border"
+                            style={{ backgroundColor: msg.color }}
+                          />
+                          <span className="text-xs text-muted-foreground">
+                            {msg.text_direction === 'rtl' ? 'من اليمين لليسار' : 'من اليسار لليمين'}
+                          </span>
+                          {msg.start_date && (
+                            <span className="text-xs text-muted-foreground">
+                              من: {new Date(msg.start_date).toLocaleDateString('ar-SA')}
+                            </span>
+                          )}
+                          {msg.end_date && (
+                            <span className="text-xs text-muted-foreground">
+                              إلى: {new Date(msg.end_date).toLocaleDateString('ar-SA')}
+                            </span>
+                          )}
+                        </div>
+                        <p 
+                          className="text-sm p-2 rounded" 
+                          style={{ backgroundColor: msg.color, color: getContrastColor(msg.color) }}
+                          dir={msg.text_direction}
+                        >
+                          {msg.message}
+                        </p>
+                      </div>
+                      <Button 
+                        variant="destructive" 
+                        size="sm"
+                        onClick={() => handleDeleteFlashMessage(msg.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Zap className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>لا توجد رسائل فلاش</p>
+              </div>
+            )}
+
+            {/* Add New Flash Message */}
+            <div className="bg-card border border-border rounded-lg p-4 space-y-4">
+              <h4 className="font-medium flex items-center gap-2">
+                <Plus className="w-5 h-5 text-primary" />
+                إضافة رسالة فلاش جديدة
+              </h4>
+              
+              <Input
+                type="text"
+                value={flashMessage}
+                onChange={(e) => setFlashMessage(e.target.value)}
+                placeholder="نص الرسالة"
+              />
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm mb-2">اتجاه النص</label>
+                  <Select value={flashDirection} onValueChange={setFlashDirection}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="rtl">من اليمين لليسار</SelectItem>
+                      <SelectItem value="ltr">من اليسار لليمين</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm mb-2">اللون</label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      value={flashColor}
+                      onChange={(e) => setFlashColor(e.target.value)}
+                      className="w-12 h-10 p-1 cursor-pointer"
+                    />
+                    <Input
+                      type="text"
+                      value={flashColor}
+                      onChange={(e) => setFlashColor(e.target.value)}
+                      className="flex-1"
+                      dir="ltr"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm mb-2">تاريخ البداية (اختياري)</label>
+                  <Input
+                    type="datetime-local"
+                    value={flashStartDate}
+                    onChange={(e) => setFlashStartDate(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">اتركه فارغاً للظهور فوراً</p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm mb-2">تاريخ النهاية (اختياري)</label>
+                  <Input
+                    type="datetime-local"
+                    value={flashEndDate}
+                    onChange={(e) => setFlashEndDate(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">اتركه فارغاً لعدم الانتهاء</p>
+                </div>
+              </div>
+
+              {/* Preview */}
+              {flashMessage && (
+                <div>
+                  <label className="block text-sm mb-2">معاينة:</label>
+                  <div 
+                    className="p-3 rounded-lg flex items-center gap-2"
+                    style={{ backgroundColor: flashColor, color: getContrastColor(flashColor) }}
+                    dir={flashDirection}
+                  >
+                    <Zap className="w-5 h-5 flex-shrink-0" />
+                    <p className="text-sm font-medium">{flashMessage}</p>
+                  </div>
+                </div>
+              )}
+
+              <Button 
+                onClick={handleSaveFlashMessage} 
+                disabled={savingFlash || !flashMessage}
+                className="w-full"
+              >
+                <Plus className="w-4 h-4 ml-2" />
+                {savingFlash ? 'جارٍ الإضافة...' : 'إضافة رسالة الفلاش'}
+              </Button>
+            </div>
+          </TabsContent>
+
           {/* Settings Tab */}
           <TabsContent value="settings" className="space-y-4">
             <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
@@ -747,7 +977,7 @@ const AdminPage = () => {
                   onChange={(e) => setNextSessionDate(e.target.value)}
                   className="flex-1"
                 />
-                <Button onClick={handleUpdateSession} disabled={isLoading}>
+                <Button onClick={handleUpdateSession} disabled={isLoading || !nextSessionDate}>
                   حفظ
                 </Button>
               </div>
@@ -758,5 +988,15 @@ const AdminPage = () => {
     </div>
   );
 };
+
+// Helper function to determine text color based on background
+function getContrastColor(hexColor: string): string {
+  const hex = hexColor.replace('#', '');
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.5 ? '#000000' : '#ffffff';
+}
 
 export default AdminPage;

@@ -59,6 +59,39 @@ export type Database = {
         }
         Relationships: []
       }
+      flash_messages: {
+        Row: {
+          color: string
+          created_at: string
+          end_date: string | null
+          id: string
+          is_active: boolean
+          message: string
+          start_date: string | null
+          text_direction: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          message: string
+          start_date?: string | null
+          text_direction?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          message?: string
+          start_date?: string | null
+          text_direction?: string
+        }
+        Relationships: []
+      }
       questions: {
         Row: {
           category: string
@@ -149,6 +182,17 @@ export type Database = {
         Args: { p_message: string; p_password: string; p_type?: string }
         Returns: string
       }
+      add_flash_message_authenticated: {
+        Args: {
+          p_color?: string
+          p_end_date?: string
+          p_message: string
+          p_password: string
+          p_start_date?: string
+          p_text_direction?: string
+        }
+        Returns: string
+      }
       add_video_authenticated: {
         Args: { p_password: string; p_title: string; p_url: string }
         Returns: string
@@ -159,6 +203,10 @@ export type Database = {
       }
       delete_announcement_authenticated: {
         Args: { p_announcement_id: string; p_password: string }
+        Returns: boolean
+      }
+      delete_flash_message_authenticated: {
+        Args: { p_flash_message_id: string; p_password: string }
         Returns: boolean
       }
       delete_selected_questions_authenticated: {
