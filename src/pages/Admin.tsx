@@ -84,7 +84,7 @@ const AdminPage = () => {
   const [flashColor, setFlashColor] = useState('#3b82f6');
   const [flashStartDate, setFlashStartDate] = useState('');
   const [flashEndDate, setFlashEndDate] = useState('');
-  const [flashFontSize, setFlashFontSize] = useState('md');
+  const [flashFontSize, setFlashFontSize] = useState<'sm' | 'md' | 'lg' | 'xl'>('md');
   const [savingFlash, setSavingFlash] = useState(false);
 
   // DnD sensors
@@ -926,7 +926,7 @@ const AdminPage = () => {
                 
                 <div>
                   <label className="block text-sm mb-2">حجم الخط</label>
-                  <Select value={flashFontSize} onValueChange={setFlashFontSize}>
+                  <Select value={flashFontSize} onValueChange={(v) => setFlashFontSize(v as 'sm' | 'md' | 'lg' | 'xl')}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>

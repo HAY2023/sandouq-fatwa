@@ -10,6 +10,7 @@ export interface FlashMessage {
   end_date: string | null;
   is_active: boolean;
   created_at: string;
+  font_size?: 'sm' | 'md' | 'lg' | 'xl' | null;
 }
 
 export function useFlashMessages() {
@@ -66,6 +67,7 @@ export function useAddFlashMessage() {
       color?: string;
       start_date?: string | null;
       end_date?: string | null;
+      font_size?: 'sm' | 'md' | 'lg' | 'xl';
     }) => {
       const { data, error } = await supabase.rpc('add_flash_message_authenticated', {
         p_password: params.password,
@@ -74,6 +76,7 @@ export function useAddFlashMessage() {
         p_color: params.color || '#3b82f6',
         p_start_date: params.start_date || null,
         p_end_date: params.end_date || null,
+        p_font_size: params.font_size || 'md',
       });
       
       if (error) throw error;
