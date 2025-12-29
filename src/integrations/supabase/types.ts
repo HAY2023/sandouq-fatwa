@@ -120,6 +120,7 @@ export type Database = {
           is_box_open: boolean
           next_session_date: string | null
           show_countdown: boolean
+          show_question_count: boolean | null
           updated_at: string
           video_title: string | null
           video_url: string | null
@@ -130,6 +131,7 @@ export type Database = {
           is_box_open?: boolean
           next_session_date?: string | null
           show_countdown?: boolean
+          show_question_count?: boolean | null
           updated_at?: string
           video_title?: string | null
           video_url?: string | null
@@ -140,6 +142,7 @@ export type Database = {
           is_box_open?: boolean
           next_session_date?: string | null
           show_countdown?: boolean
+          show_question_count?: boolean | null
           updated_at?: string
           video_title?: string | null
           video_url?: string | null
@@ -217,6 +220,7 @@ export type Database = {
         Args: { p_password: string; p_video_id: string }
         Returns: boolean
       }
+      get_public_questions_count: { Args: never; Returns: number }
       get_questions_authenticated: {
         Args: { p_password: string }
         Returns: {
@@ -229,6 +233,10 @@ export type Database = {
       get_questions_count_authenticated: {
         Args: { p_password: string }
         Returns: number
+      }
+      reorder_videos_authenticated: {
+        Args: { p_password: string; p_video_ids: string[] }
+        Returns: boolean
       }
       update_admin_password: {
         Args: { p_new_password: string; p_old_password: string }

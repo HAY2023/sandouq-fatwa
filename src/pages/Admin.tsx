@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSettings, useVerifyAdminPassword, useUpdateSettingsAuthenticated, useDeleteAllQuestionsAuthenticated, useDeleteSelectedQuestionsAuthenticated } from '@/hooks/useSettings';
 import { useGetQuestionsAuthenticated, Question } from '@/hooks/useQuestionsList';
-import { useVideos, useAddVideo, useDeleteVideo } from '@/hooks/useVideos';
+import { useVideos, useAddVideo, useDeleteVideo, useReorderVideos, Video as VideoType } from '@/hooks/useVideos';
 import { useAnnouncements, useAddAnnouncement, useDeleteAnnouncement } from '@/hooks/useAnnouncements';
 import { useAllFlashMessages, useAddFlashMessage, useDeleteFlashMessage } from '@/hooks/useFlashMessages';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,9 +16,12 @@ import { useToast } from '@/hooks/use-toast';
 import { exportToExcel, exportToPDF } from '@/lib/exportUtils';
 import { getCategoryLabel } from '@/lib/categories';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { SortableVideoItem } from '@/components/SortableVideoItem';
 import { 
   Lock, MessageSquare, Calendar, Video, 
-  FileSpreadsheet, FileText, Bell, BellOff, Trash2, Settings, List, Home, AlertTriangle, CheckSquare, Plus, Megaphone, Zap
+  FileSpreadsheet, FileText, Bell, BellOff, Trash2, Settings, List, Home, AlertTriangle, CheckSquare, Plus, Megaphone, Zap, Hash
 } from 'lucide-react';
 import {
   AlertDialog,

@@ -64,3 +64,22 @@ export function useDeleteVideo() {
     },
   });
 }
+
+export function useReorderVideos() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (params: { password: string; videoIds: string[] }) => {
+      const { data, error } = await supabase.rpc('reorder_videos_authenticated', {
+        p_password: params.password,
+        p_video_ids: params.videoIds,
+      });
+      
+      if (error) throw error;
+      return data as boolean;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['videos'] });
+    },
+  });
+}
