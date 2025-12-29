@@ -4,13 +4,16 @@ import { useSubmitQuestion } from '@/hooks/useQuestions';
 import { QUESTION_CATEGORIES } from '@/lib/categories';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, Send, Tag, MessageSquare } from 'lucide-react';
+import { VoiceInput } from '@/components/VoiceInput';
 
 export function QuestionForm() {
   const { t, i18n } = useTranslation();
   const [category, setCategory] = useState('');
+  const [customCategory, setCustomCategory] = useState('');
   const [questionText, setQuestionText] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
@@ -30,9 +33,21 @@ export function QuestionForm() {
       return;
     }
 
+    // التحقق من الفئة المخصصة
+    if (category === 'other' && !customCategory.trim()) {
+      toast({
+        title: t('common.alert'),
+        description: 'يرجى كتابة نوع الفتوى',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const finalCategory = category === 'other' ? customCategory.trim() : category;
+
     try {
       await submitQuestion.mutateAsync({
-        category: category,
+        category: finalCategory,
         question_text: questionText.trim(),
       });
       setIsSubmitted(true);
@@ -48,7 +63,12 @@ export function QuestionForm() {
   const handleReset = () => {
     setIsSubmitted(false);
     setCategory('');
+    setCustomCategory('');
     setQuestionText('');
+  };
+
+  const handleVoiceTranscript = (transcript: string) => {
+    setQuestionText((prev) => prev ? `${prev} ${transcript}` : transcript);
   };
 
   if (isSubmitted) {
@@ -74,7 +94,10 @@ export function QuestionForm() {
           <span>{t('form.categoryLabel')}</span>
           <span className="text-destructive">{t('form.required')}</span>
         </label>
-        <Select value={category} onValueChange={setCategory}>
+        <Select value={category} onValueChange={(val) => {
+          setCategory(val);
+          if (val !== 'other') setCustomCategory('');
+        }}>
           <SelectTrigger className={`w-full bg-background ${isRTL ? 'text-right' : 'text-left'}`}>
             <SelectValue placeholder={t('form.categoryPlaceholder')} />
           </SelectTrigger>
@@ -86,6 +109,18 @@ export function QuestionForm() {
             ))}
           </SelectContent>
         </Select>
+
+        {/* حقل الفئة المخصصة عند اختيار "آخر" */}
+        {category === 'other' && (
+          <Input
+            value={customCategory}
+            onChange={(e) => setCustomCategory(e.target.value)}
+            placeholder="اكتب نوع الفتوى (مثال: الحج، الزكاة، المعاملات...)"
+            className="mt-3 bg-background"
+            dir={isRTL ? 'rtl' : 'ltr'}
+            required
+          />
+        )}
       </div>
 
       <div>
@@ -94,13 +129,24 @@ export function QuestionForm() {
           <span>{t('form.questionLabel')}</span>
           <span className="text-destructive">{t('form.required')}</span>
         </label>
-        <Textarea
-          value={questionText}
-          onChange={(e) => setQuestionText(e.target.value)}
-          placeholder={t('form.questionPlaceholder')}
-          className="min-h-[120px] resize-none bg-background"
-          dir={isRTL ? 'rtl' : 'ltr'}
-        />
+        <div className="flex gap-2">
+          <Textarea
+            value={questionText}
+            onChange={(e) => setQuestionText(e.target.value)}
+            placeholder={t('form.questionPlaceholder')}
+            className="min-h-[120px] resize-none bg-background flex-1"
+            dir={isRTL ? 'rtl' : 'ltr'}
+          />
+          <div className="flex flex-col justify-end">
+            <VoiceInput 
+              onTranscript={handleVoiceTranscript}
+              disabled={submitQuestion.isPending}
+            />
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground mt-2">
+          💡 يمكنك استخدام زر الميكروفون للتسجيل الصوتي
+        </p>
       </div>
 
       <Button

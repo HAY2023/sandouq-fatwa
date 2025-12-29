@@ -6,6 +6,7 @@ import { useVideos, useAddVideo, useDeleteVideo, useReorderVideos, Video as Vide
 import { useAnnouncements, useAddAnnouncement, useDeleteAnnouncement } from '@/hooks/useAnnouncements';
 import { useAllFlashMessages, useAddFlashMessage, useDeleteFlashMessage } from '@/hooks/useFlashMessages';
 import { supabase } from '@/integrations/supabase/client';
+import { logAdminAccess } from '@/hooks/useAdminAccessLog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -194,6 +195,9 @@ const AdminPage = () => {
     setIsLoading(true);
     try {
       const isValid = await verifyPassword.mutateAsync(password);
+      // تسجيل محاولة الدخول
+      logAdminAccess(isValid, true);
+      
       if (isValid) {
         setIsAuthenticated(true);
         setStoredPassword(password);
@@ -201,6 +205,7 @@ const AdminPage = () => {
         toast({ title: 'خطأ', description: 'كلمة المرور غير صحيحة', variant: 'destructive' });
       }
     } catch {
+      logAdminAccess(false, true);
       toast({ title: 'خطأ', description: 'حدث خطأ أثناء التحقق', variant: 'destructive' });
     }
     setIsLoading(false);

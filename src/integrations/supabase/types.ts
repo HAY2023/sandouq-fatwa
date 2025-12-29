@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_access_logs: {
+        Row: {
+          accessed_at: string
+          browser: string | null
+          city: string | null
+          country: string | null
+          device_type: string | null
+          id: string
+          ip_address: string | null
+          is_authorized: boolean | null
+          os: string | null
+          password_attempted: boolean | null
+          screen_size: string | null
+        }
+        Insert: {
+          accessed_at?: string
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          device_type?: string | null
+          id?: string
+          ip_address?: string | null
+          is_authorized?: boolean | null
+          os?: string | null
+          password_attempted?: boolean | null
+          screen_size?: string | null
+        }
+        Update: {
+          accessed_at?: string
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          device_type?: string | null
+          id?: string
+          ip_address?: string | null
+          is_authorized?: boolean | null
+          os?: string | null
+          password_attempted?: boolean | null
+          screen_size?: string | null
+        }
+        Relationships: []
+      }
       admin_credentials: {
         Row: {
           created_at: string
@@ -131,18 +173,27 @@ export type Database = {
           created_at: string
           id: string
           question_text: string
+          review_status: string | null
+          reviewed_text: string | null
+          reviewer_notes: string | null
         }
         Insert: {
           category: string
           created_at?: string
           id?: string
           question_text: string
+          review_status?: string | null
+          reviewed_text?: string | null
+          reviewer_notes?: string | null
         }
         Update: {
           category?: string
           created_at?: string
           id?: string
           question_text?: string
+          review_status?: string | null
+          reviewed_text?: string | null
+          reviewer_notes?: string | null
         }
         Relationships: []
       }
@@ -266,6 +317,22 @@ export type Database = {
         Args: { p_password: string; p_video_id: string }
         Returns: boolean
       }
+      get_admin_access_logs_authenticated: {
+        Args: { p_password: string }
+        Returns: {
+          accessed_at: string
+          browser: string
+          city: string
+          country: string
+          device_type: string
+          id: string
+          ip_address: string
+          is_authorized: boolean
+          os: string
+          password_attempted: boolean
+          screen_size: string
+        }[]
+      }
       get_public_questions_count: { Args: never; Returns: number }
       get_questions_authenticated: {
         Args: { p_password: string }
@@ -279,6 +346,20 @@ export type Database = {
       get_questions_count_authenticated: {
         Args: { p_password: string }
         Returns: number
+      }
+      log_admin_access: {
+        Args: {
+          p_browser: string
+          p_city: string
+          p_country: string
+          p_device_type: string
+          p_ip_address: string
+          p_is_authorized: boolean
+          p_os: string
+          p_password_attempted?: boolean
+          p_screen_size: string
+        }
+        Returns: string
       }
       reorder_videos_authenticated: {
         Args: { p_password: string; p_video_ids: string[] }
@@ -294,6 +375,16 @@ export type Database = {
           p_notify_every_n_questions?: number
           p_notify_on_question?: boolean
           p_password: string
+        }
+        Returns: boolean
+      }
+      update_question_review_authenticated: {
+        Args: {
+          p_password: string
+          p_question_id: string
+          p_review_status: string
+          p_reviewed_text?: string
+          p_reviewer_notes?: string
         }
         Returns: boolean
       }
