@@ -5,6 +5,7 @@ import { VideoList } from '@/components/VideoList';
 import { QuestionForm } from '@/components/QuestionForm';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { AnnouncementBanner } from '@/components/AnnouncementBanner';
+import { FlashMessageBanner } from '@/components/FlashMessageBanner';
 import { Button } from '@/components/ui/button';
 import { BookOpen } from 'lucide-react';
 import mosqueImage from '@/assets/mosque-hero.jpg';
@@ -101,6 +102,13 @@ const Index = () => {
             نجمع استفساراتكم الشرعية ويتم الإجابة عليها في حلقات دورية بإذن الله
           </p>
           <div className="w-12 h-1 bg-primary mx-auto mt-6" />
+        </div>
+      </section>
+
+      {/* Flash Messages - Right below hero */}
+      <section className="bg-background">
+        <div className="container mx-auto max-w-3xl">
+          <FlashMessageBanner />
         </div>
       </section>
 
