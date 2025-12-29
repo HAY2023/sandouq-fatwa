@@ -11,6 +11,7 @@ import { FlashMessageBanner } from '@/components/FlashMessageBanner';
 import { QuestionCounter } from '@/components/QuestionCounter';
 import { Button } from '@/components/ui/button';
 import { BookOpen, Menu, X } from 'lucide-react';
+import { useBrowserNotifications } from '@/hooks/useBrowserNotifications';
 import mosqueImage from '@/assets/mosque-hero.jpg';
 
 const Index = () => {
@@ -20,6 +21,9 @@ const Index = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { data: settings, isLoading } = useSettings();
   const formSectionRef = useRef<HTMLDivElement>(null);
+
+  // تفعيل إشعارات المتصفح
+  useBrowserNotifications();
 
   const isRTL = i18n.language === 'ar';
 

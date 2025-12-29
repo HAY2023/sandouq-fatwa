@@ -1,6 +1,5 @@
 import { useAnnouncements } from '@/hooks/useAnnouncements';
-import { AlertCircle, CheckCircle, AlertTriangle, Info, X, Megaphone } from 'lucide-react';
-import { useState } from 'react';
+import { AlertCircle, CheckCircle, AlertTriangle, Info, Megaphone } from 'lucide-react';
 
 const iconMap = {
   info: Info,
@@ -18,21 +17,14 @@ const colorMap = {
 
 export function AnnouncementBanner() {
   const { data: announcements, isLoading } = useAnnouncements();
-  const [dismissed, setDismissed] = useState<string[]>([]);
 
   if (isLoading || !announcements || announcements.length === 0) {
     return null;
   }
 
-  const visibleAnnouncements = announcements.filter(a => !dismissed.includes(a.id));
-
-  if (visibleAnnouncements.length === 0) {
-    return null;
-  }
-
   return (
     <div className="w-full max-w-4xl mx-auto space-y-4">
-      {visibleAnnouncements.map((announcement) => {
+      {announcements.map((announcement) => {
         const Icon = iconMap[announcement.type] || Info;
         const colorClass = colorMap[announcement.type] || colorMap.info;
 
@@ -48,26 +40,20 @@ export function AnnouncementBanner() {
             {/* خلفية متحركة */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
             
-            <div className="relative flex items-center gap-4 p-6">
-              <div className="flex-shrink-0 p-3 bg-white/20 rounded-full">
-                <Megaphone className="w-8 h-8" />
+            <div className="relative flex items-center gap-4 p-6 md:p-8">
+              <div className="flex-shrink-0 p-4 bg-white/20 rounded-full">
+                <Megaphone className="w-10 h-10 md:w-12 md:h-12" />
               </div>
               
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <Icon className="w-5 h-5" />
-                  <span className="text-sm font-medium opacity-90">إعلان هام</span>
+                <div className="flex items-center gap-2 mb-2">
+                  <Icon className="w-6 h-6" />
+                  <span className="text-lg font-semibold opacity-90">إعلان هام</span>
                 </div>
-                <p className="text-xl font-bold leading-relaxed">{announcement.message}</p>
+                <p className="text-2xl md:text-3xl lg:text-4xl font-bold leading-relaxed">
+                  {announcement.message}
+                </p>
               </div>
-              
-              <button
-                onClick={() => setDismissed(prev => [...prev, announcement.id])}
-                className="p-2 hover:bg-white/20 transition-colors rounded-full flex-shrink-0"
-                aria-label="إغلاق"
-              >
-                <X className="w-5 h-5" />
-              </button>
             </div>
           </div>
         );

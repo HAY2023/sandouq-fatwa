@@ -10,12 +10,26 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
+  build: {
+    // تحسين السرعة
+    target: 'esnext',
+    minify: 'esbuild',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          supabase: ['@supabase/supabase-js'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-select', '@radix-ui/react-tabs'],
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "icon-192.png", "icon-512.png"],
+      includeAssets: ["favicon.jpg"],
       manifest: {
         name: "صندوق فتوى - مسجد الإيمان",
         short_name: "صندوق فتوى",
@@ -29,19 +43,32 @@ export default defineConfig(({ mode }) => ({
         lang: "ar",
         icons: [
           {
-            src: "/icon-192.png",
+            src: "/favicon.jpg",
             sizes: "192x192",
-            type: "image/png",
+            type: "image/jpeg",
           },
           {
-            src: "/icon-512.png",
+            src: "/favicon.jpg",
             sizes: "512x512",
-            type: "image/png",
+            type: "image/jpeg",
           },
         ],
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp}"],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/bagmmxiclfysesjdcgrk\.supabase\.co\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'supabase-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60,
+              },
+            },
+          },
+        ],
       },
     }),
   ].filter(Boolean),
