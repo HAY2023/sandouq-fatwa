@@ -59,6 +59,7 @@ export function useUpdateSettingsAuthenticated() {
         p_video_url: params.video_url,
         p_video_title: params.video_title,
         p_show_countdown: params.show_countdown,
+        p_show_question_count: params.show_question_count,
       });
       
       if (error) throw error;

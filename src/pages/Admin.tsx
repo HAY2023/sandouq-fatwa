@@ -58,6 +58,7 @@ const AdminPage = () => {
   const deleteSelectedQuestions = useDeleteSelectedQuestionsAuthenticated();
   const addVideo = useAddVideo();
   const deleteVideo = useDeleteVideo();
+  const reorderVideos = useReorderVideos();
   const addAnnouncement = useAddAnnouncement();
   const deleteAnnouncement = useDeleteAnnouncement();
   const addFlashMessage = useAddFlashMessage();
@@ -68,7 +69,9 @@ const AdminPage = () => {
   const [videoTitle, setVideoTitle] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [showCountdown, setShowCountdown] = useState(true);
+  const [showQuestionCount, setShowQuestionCount] = useState(false);
   const [savingVideo, setSavingVideo] = useState(false);
+  const [localVideos, setLocalVideos] = useState<VideoType[]>([]);
   
   // Announcement states
   const [announcementMessage, setAnnouncementMessage] = useState('');
@@ -81,7 +84,16 @@ const AdminPage = () => {
   const [flashColor, setFlashColor] = useState('#3b82f6');
   const [flashStartDate, setFlashStartDate] = useState('');
   const [flashEndDate, setFlashEndDate] = useState('');
+  const [flashFontSize, setFlashFontSize] = useState('md');
   const [savingFlash, setSavingFlash] = useState(false);
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const playNotificationSound = () => {
     try {
@@ -104,13 +116,11 @@ const AdminPage = () => {
     }
   };
 
-  // Helper to format ISO date to datetime-local format
   const formatDateForInput = (isoDate: string | null): string => {
     if (!isoDate) return '';
     try {
       const date = new Date(isoDate);
       if (isNaN(date.getTime())) return '';
-      // Format: YYYY-MM-DDTHH:mm
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
@@ -129,8 +139,15 @@ const AdminPage = () => {
       setVideoTitle(settings.video_title || '');
       setVideoUrl(settings.video_url || '');
       setShowCountdown(settings.show_countdown);
+      setShowQuestionCount(settings.show_question_count ?? false);
     }
   }, [settings]);
+
+  useEffect(() => {
+    if (videos) {
+      setLocalVideos(videos);
+    }
+  }, [videos]);
 
   useEffect(() => {
     if (isAuthenticated && storedPassword) {
@@ -213,7 +230,6 @@ const AdminPage = () => {
     if (!settings || !nextSessionDate || !storedPassword) return;
     setIsLoading(true);
     try {
-      // Convert datetime-local to ISO format
       const isoDate = new Date(nextSessionDate).toISOString();
       const success = await updateSettings.mutateAsync({
         password: storedPassword,
@@ -267,6 +283,31 @@ const AdminPage = () => {
     }
   };
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      const oldIndex = localVideos.findIndex(v => v.id === active.id);
+      const newIndex = localVideos.findIndex(v => v.id === over.id);
+      
+      const newVideos = arrayMove(localVideos, oldIndex, newIndex);
+      setLocalVideos(newVideos);
+      
+      // Save to database
+      try {
+        await reorderVideos.mutateAsync({
+          password: storedPassword,
+          videoIds: newVideos.map(v => v.id),
+        });
+        toast({ title: 'تم الحفظ', description: 'تم تحديث ترتيب الفيديوهات' });
+      } catch {
+        toast({ title: 'خطأ', description: 'فشل حفظ الترتيب', variant: 'destructive' });
+        // Revert on error
+        if (videos) setLocalVideos(videos);
+      }
+    }
+  };
+
   const handleSaveAnnouncement = async () => {
     if (!storedPassword || !announcementMessage) return;
     setSavingAnnouncement(true);
@@ -314,6 +355,7 @@ const AdminPage = () => {
         color: flashColor,
         start_date: flashStartDate ? new Date(flashStartDate).toISOString() : null,
         end_date: flashEndDate ? new Date(flashEndDate).toISOString() : null,
+        font_size: flashFontSize,
       });
       if (result) {
         setFlashMessage('');
@@ -355,6 +397,24 @@ const AdminPage = () => {
       if (success) {
         setShowCountdown(!showCountdown);
         toast({ title: 'تم التحديث', description: `العداد التنازلي ${!showCountdown ? 'مفعّل' : 'معطّل'} الآن` });
+      }
+    } catch {
+      toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
+    }
+    setIsLoading(false);
+  };
+
+  const handleToggleQuestionCount = async () => {
+    if (!storedPassword) return;
+    setIsLoading(true);
+    try {
+      const success = await updateSettings.mutateAsync({
+        password: storedPassword,
+        show_question_count: !showQuestionCount,
+      });
+      if (success) {
+        setShowQuestionCount(!showQuestionCount);
+        toast({ title: 'تم التحديث', description: `عداد الأسئلة ${!showQuestionCount ? 'مفعّل' : 'معطّل'} الآن` });
       }
     } catch {
       toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
@@ -650,33 +710,27 @@ const AdminPage = () => {
             {/* Existing Videos */}
             {videosLoading ? (
               <div className="text-center py-4 text-muted-foreground">جارٍ تحميل الفيديوهات...</div>
-            ) : videos && videos.length > 0 ? (
+            ) : localVideos && localVideos.length > 0 ? (
               <div className="space-y-3">
-                <h4 className="font-medium text-sm text-muted-foreground">الفيديوهات الحالية ({videos.length})</h4>
-                {videos.map((video) => (
-                  <div key={video.id} className="bg-card border border-border rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h4 className="font-medium">{video.title}</h4>
-                        <a 
-                          href={video.url} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="text-sm text-primary hover:underline"
-                        >
-                          {video.url}
-                        </a>
-                      </div>
-                      <Button 
-                        variant="destructive" 
-                        size="sm"
-                        onClick={() => handleDeleteVideo(video.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                <h4 className="font-medium text-sm text-muted-foreground">الفيديوهات الحالية ({localVideos.length}) - اسحب لإعادة الترتيب</h4>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={localVideos.map(v => v.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {localVideos.map((video) => (
+                      <SortableVideoItem
+                        key={video.id}
+                        video={video}
+                        onDelete={handleDeleteVideo}
+                      />
+                    ))}
+                  </SortableContext>
+                </DndContext>
               </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
@@ -731,7 +785,7 @@ const AdminPage = () => {
                           ann.type === 'error' ? 'bg-destructive/20 text-destructive' :
                           'bg-primary/20 text-primary'
                         }`}>
-                          {ann.type === 'success' ? 'نجاح' : ann.type === 'warning' ? 'تنبيه' : ann.type === 'error' ? 'خطأ' : 'معلومة'}
+                          {ann.type === 'success' ? 'نجاح' : ann.type === 'warning' ? 'تنبيه' : ann.type === 'error' ? 'خطأ' : 'إعلان'}
                         </span>
                         <p className="mt-2 text-sm">{ann.message}</p>
                       </div>
@@ -770,7 +824,7 @@ const AdminPage = () => {
                   <SelectValue placeholder="نوع الإعلان" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="info">معلومة</SelectItem>
+                  <SelectItem value="info">إعلان</SelectItem>
                   <SelectItem value="success">نجاح</SelectItem>
                   <SelectItem value="warning">تنبيه</SelectItem>
                   <SelectItem value="error">تحذير</SelectItem>
@@ -856,7 +910,7 @@ const AdminPage = () => {
                 placeholder="نص الرسالة"
               />
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm mb-2">اتجاه النص</label>
                   <Select value={flashDirection} onValueChange={setFlashDirection}>
@@ -866,6 +920,21 @@ const AdminPage = () => {
                     <SelectContent>
                       <SelectItem value="rtl">من اليمين لليسار</SelectItem>
                       <SelectItem value="ltr">من اليسار لليمين</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm mb-2">حجم الخط</label>
+                  <Select value={flashFontSize} onValueChange={setFlashFontSize}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sm">صغير</SelectItem>
+                      <SelectItem value="md">متوسط</SelectItem>
+                      <SelectItem value="lg">كبير</SelectItem>
+                      <SelectItem value="xl">كبير جداً</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -917,12 +986,18 @@ const AdminPage = () => {
                 <div>
                   <label className="block text-sm mb-2">معاينة:</label>
                   <div 
-                    className="p-3 rounded-lg flex items-center gap-2"
+                    className="p-3 rounded-lg flex items-center gap-2 overflow-hidden"
                     style={{ backgroundColor: flashColor, color: getContrastColor(flashColor) }}
                     dir={flashDirection}
                   >
                     <Zap className="w-5 h-5 flex-shrink-0" />
-                    <p className="text-sm font-medium">{flashMessage}</p>
+                    <div className="animate-marquee whitespace-nowrap">
+                      <p className={`inline-block font-medium ${
+                        flashFontSize === 'sm' ? 'text-sm' :
+                        flashFontSize === 'lg' ? 'text-lg' :
+                        flashFontSize === 'xl' ? 'text-xl' : 'text-base'
+                      }`}>{flashMessage}</p>
+                    </div>
                   </div>
                 </div>
               )}
@@ -964,6 +1039,23 @@ const AdminPage = () => {
               <Switch
                 checked={showCountdown}
                 onCheckedChange={handleToggleCountdown}
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
+              <div>
+                <h3 className="font-medium flex items-center gap-2">
+                  <Hash className="w-4 h-4" />
+                  عداد الأسئلة
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {showQuestionCount ? 'عداد الأسئلة ظاهر تحت الصندوق' : 'عداد الأسئلة مخفي'}
+                </p>
+              </div>
+              <Switch
+                checked={showQuestionCount}
+                onCheckedChange={handleToggleQuestionCount}
                 disabled={isLoading}
               />
             </div>

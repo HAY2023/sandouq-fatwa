@@ -1,5 +1,5 @@
 import { useAnnouncements } from '@/hooks/useAnnouncements';
-import { AlertCircle, CheckCircle, AlertTriangle, Info, X } from 'lucide-react';
+import { AlertCircle, CheckCircle, AlertTriangle, Info, X, Megaphone } from 'lucide-react';
 import { useState } from 'react';
 
 const iconMap = {
@@ -10,10 +10,10 @@ const iconMap = {
 };
 
 const colorMap = {
-  info: 'bg-primary/10 text-primary border-primary/20',
-  success: 'bg-green-500/10 text-green-600 border-green-500/20',
-  warning: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
-  error: 'bg-destructive/10 text-destructive border-destructive/20',
+  info: 'bg-primary text-primary-foreground',
+  success: 'bg-green-600 text-white',
+  warning: 'bg-amber-500 text-white',
+  error: 'bg-destructive text-destructive-foreground',
 };
 
 export function AnnouncementBanner() {
@@ -31,7 +31,7 @@ export function AnnouncementBanner() {
   }
 
   return (
-    <div className="space-y-2">
+    <div className="w-full max-w-4xl mx-auto space-y-4">
       {visibleAnnouncements.map((announcement) => {
         const Icon = iconMap[announcement.type] || Info;
         const colorClass = colorMap[announcement.type] || colorMap.info;
@@ -39,16 +39,36 @@ export function AnnouncementBanner() {
         return (
           <div
             key={announcement.id}
-            className={`flex items-center gap-3 px-4 py-3 border rounded-lg ${colorClass}`}
+            className={`
+              relative overflow-hidden rounded-xl shadow-xl
+              ${colorClass}
+              transform transition-all duration-300 hover:scale-[1.02]
+            `}
           >
-            <Icon className="w-5 h-5 flex-shrink-0" />
-            <p className="flex-1 text-sm font-medium">{announcement.message}</p>
-            <button
-              onClick={() => setDismissed(prev => [...prev, announcement.id])}
-              className="p-1 hover:opacity-70 transition-opacity"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            {/* خلفية متحركة */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
+            
+            <div className="relative flex items-center gap-4 p-6">
+              <div className="flex-shrink-0 p-3 bg-white/20 rounded-full">
+                <Megaphone className="w-8 h-8" />
+              </div>
+              
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <Icon className="w-5 h-5" />
+                  <span className="text-sm font-medium opacity-90">إعلان هام</span>
+                </div>
+                <p className="text-xl font-bold leading-relaxed">{announcement.message}</p>
+              </div>
+              
+              <button
+                onClick={() => setDismissed(prev => [...prev, announcement.id])}
+                className="p-2 hover:bg-white/20 transition-colors rounded-full flex-shrink-0"
+                aria-label="إغلاق"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         );
       })}

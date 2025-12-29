@@ -13,7 +13,6 @@ export const QUESTION_CATEGORIES = [
   { value: 'oaths', label: 'الأيمان والنذور' },
   { value: 'food', label: 'الأطعمة والأشربة' },
   { value: 'clothing', label: 'اللباس والزينة' },
-  { value: 'أخرى', label: 'أخرى' },
 ] as const;
 
 export type QuestionCategory = typeof QUESTION_CATEGORIES[number]['value'];

@@ -64,6 +64,7 @@ export type Database = {
           color: string
           created_at: string
           end_date: string | null
+          font_size: string | null
           id: string
           is_active: boolean
           message: string
@@ -74,6 +75,7 @@ export type Database = {
           color?: string
           created_at?: string
           end_date?: string | null
+          font_size?: string | null
           id?: string
           is_active?: boolean
           message: string
@@ -84,11 +86,42 @@ export type Database = {
           color?: string
           created_at?: string
           end_date?: string | null
+          font_size?: string | null
           id?: string
           is_active?: boolean
           message?: string
           start_date?: string | null
           text_direction?: string
+        }
+        Relationships: []
+      }
+      notification_settings: {
+        Row: {
+          admin_fcm_token: string | null
+          created_at: string | null
+          id: string
+          notify_every_n_questions: number | null
+          notify_on_question: boolean | null
+          questions_since_last_notification: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          admin_fcm_token?: string | null
+          created_at?: string | null
+          id?: string
+          notify_every_n_questions?: number | null
+          notify_on_question?: boolean | null
+          questions_since_last_notification?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          admin_fcm_token?: string | null
+          created_at?: string | null
+          id?: string
+          notify_every_n_questions?: number | null
+          notify_on_question?: boolean | null
+          questions_since_last_notification?: number | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -185,17 +218,30 @@ export type Database = {
         Args: { p_message: string; p_password: string; p_type?: string }
         Returns: string
       }
-      add_flash_message_authenticated: {
-        Args: {
-          p_color?: string
-          p_end_date?: string
-          p_message: string
-          p_password: string
-          p_start_date?: string
-          p_text_direction?: string
-        }
-        Returns: string
-      }
+      add_flash_message_authenticated:
+        | {
+            Args: {
+              p_color?: string
+              p_end_date?: string
+              p_message: string
+              p_password: string
+              p_start_date?: string
+              p_text_direction?: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_color?: string
+              p_end_date?: string
+              p_font_size?: string
+              p_message: string
+              p_password: string
+              p_start_date?: string
+              p_text_direction?: string
+            }
+            Returns: string
+          }
       add_video_authenticated: {
         Args: { p_password: string; p_title: string; p_url: string }
         Returns: string
@@ -242,6 +288,15 @@ export type Database = {
         Args: { p_new_password: string; p_old_password: string }
         Returns: boolean
       }
+      update_notification_settings_authenticated: {
+        Args: {
+          p_admin_fcm_token?: string
+          p_notify_every_n_questions?: number
+          p_notify_on_question?: boolean
+          p_password: string
+        }
+        Returns: boolean
+      }
       update_settings_authenticated:
         | {
             Args: {
@@ -259,6 +314,18 @@ export type Database = {
               p_next_session_date?: string
               p_password: string
               p_show_countdown?: boolean
+              p_video_title?: string
+              p_video_url?: string
+            }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              p_is_box_open?: boolean
+              p_next_session_date?: string
+              p_password: string
+              p_show_countdown?: boolean
+              p_show_question_count?: boolean
               p_video_title?: string
               p_video_url?: string
             }
