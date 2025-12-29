@@ -4,7 +4,6 @@ import { useSubmitQuestion } from '@/hooks/useQuestions';
 import { QUESTION_CATEGORIES } from '@/lib/categories';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, Send, Tag, MessageSquare } from 'lucide-react';
@@ -12,26 +11,12 @@ import { CheckCircle, Send, Tag, MessageSquare } from 'lucide-react';
 export function QuestionForm() {
   const { t, i18n } = useTranslation();
   const [category, setCategory] = useState('');
-  const [customCategory, setCustomCategory] = useState('');
   const [questionText, setQuestionText] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
   const submitQuestion = useSubmitQuestion();
 
   const isRTL = i18n.language === 'ar';
-
-  // Get translated categories
-  const getTranslatedCategory = (value: string) => {
-    const categoryMap: Record<string, string> = {
-      'العبادات': t('categories.worship'),
-      'المعاملات': t('categories.transactions'),
-      'الأسرة والأحوال الشخصية': t('categories.family'),
-      'الأطعمة والأشربة': t('categories.food'),
-      'الأخلاق والسلوك': t('categories.ethics'),
-      'أخرى': t('categories.other'),
-    };
-    return categoryMap[value] || value;
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,20 +30,9 @@ export function QuestionForm() {
       return;
     }
 
-    if (category === 'أخرى' && !customCategory.trim()) {
-      toast({
-        title: t('common.alert'),
-        description: t('toast.customCategoryRequired'),
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    const finalCategory = category === 'أخرى' ? `أخرى: ${customCategory.trim()}` : category;
-
     try {
       await submitQuestion.mutateAsync({
-        category: finalCategory,
+        category: category,
         question_text: questionText.trim(),
       });
       setIsSubmitted(true);
@@ -74,15 +48,7 @@ export function QuestionForm() {
   const handleReset = () => {
     setIsSubmitted(false);
     setCategory('');
-    setCustomCategory('');
     setQuestionText('');
-  };
-
-  const handleCategoryChange = (value: string) => {
-    setCategory(value);
-    if (value !== 'أخرى') {
-      setCustomCategory('');
-    }
   };
 
   if (isSubmitted) {
@@ -108,28 +74,18 @@ export function QuestionForm() {
           <span>{t('form.categoryLabel')}</span>
           <span className="text-destructive">{t('form.required')}</span>
         </label>
-        <Select value={category} onValueChange={handleCategoryChange}>
+        <Select value={category} onValueChange={setCategory}>
           <SelectTrigger className={`w-full bg-background ${isRTL ? 'text-right' : 'text-left'}`}>
             <SelectValue placeholder={t('form.categoryPlaceholder')} />
           </SelectTrigger>
           <SelectContent>
             {QUESTION_CATEGORIES.map((cat) => (
               <SelectItem key={cat.value} value={cat.value}>
-                {getTranslatedCategory(cat.value)}
+                {cat.label}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        
-        {category === 'أخرى' && (
-          <Input
-            value={customCategory}
-            onChange={(e) => setCustomCategory(e.target.value)}
-            placeholder={t('form.customCategoryPlaceholder')}
-            className="mt-3 bg-background"
-            dir={isRTL ? 'rtl' : 'ltr'}
-          />
-        )}
       </div>
 
       <div>
