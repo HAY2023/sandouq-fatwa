@@ -1,16 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSettings, useVerifyAdminPassword, useUpdateSettingsAuthenticated, useDeleteAllQuestionsAuthenticated, useDeleteSelectedQuestionsAuthenticated } from '@/hooks/useSettings';
-import { useGetQuestionsAuthenticated, useGetAccessLogsAuthenticated, useUpdateQuestionReview, Question, AccessLog } from '@/hooks/useQuestionsList';
+import { useGetQuestionsAuthenticated, useGetAccessLogsAuthenticated, Question, AccessLog } from '@/hooks/useQuestionsList';
 import { useVideos, useAddVideo, useDeleteVideo, useReorderVideos, Video as VideoType } from '@/hooks/useVideos';
 import { useAnnouncements, useAddAnnouncement, useDeleteAnnouncement } from '@/hooks/useAnnouncements';
 import { useAllFlashMessages, useAddFlashMessage, useDeleteFlashMessage } from '@/hooks/useFlashMessages';
 import { supabase } from '@/integrations/supabase/client';
 import { logAdminAccess } from '@/hooks/useAdminAccessLog';
-import { validateWithToast, questionSchema, announcementSchema, flashMessageSchema, videoSchema, passwordSchema, reviewSchema } from '@/lib/validations';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -25,7 +23,7 @@ import { SortableVideoItem } from '@/components/SortableVideoItem';
 import { 
   Lock, MessageSquare, Calendar, Video, 
   FileSpreadsheet, FileText, Bell, BellOff, Trash2, Settings, List, Home, AlertTriangle, CheckSquare, Plus, Megaphone, Zap, Hash,
-  Shield, ClipboardCheck, MapPin, Monitor, Globe, CheckCircle, XCircle, Clock, Edit3, Save, X
+  Shield, MapPin, Monitor, Globe, CheckCircle, XCircle, Clock, Wifi, Smartphone, Fingerprint, ChevronDown, ChevronUp
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -50,9 +48,7 @@ const AdminPage = () => {
   const [accessLogs, setAccessLogs] = useState<AccessLog[]>([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
-  const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
-  const [editedText, setEditedText] = useState('');
-  const [reviewerNotes, setReviewerNotes] = useState('');
+  const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
   const { toast } = useToast();
   
   const { data: settings, isLoading: settingsLoading } = useSettings();
@@ -63,7 +59,6 @@ const AdminPage = () => {
   const updateSettings = useUpdateSettingsAuthenticated();
   const getQuestions = useGetQuestionsAuthenticated();
   const getAccessLogs = useGetAccessLogsAuthenticated();
-  const updateQuestionReview = useUpdateQuestionReview();
   const deleteAllQuestions = useDeleteAllQuestionsAuthenticated();
   const deleteSelectedQuestions = useDeleteSelectedQuestionsAuthenticated();
   const addVideo = useAddVideo();
@@ -500,53 +495,8 @@ const AdminPage = () => {
     }
   };
 
-  const handleStartEdit = (question: Question) => {
-    setEditingQuestionId(question.id);
-    setEditedText(question.reviewed_text || question.question_text);
-    setReviewerNotes(question.reviewer_notes || '');
-  };
-
-  const handleCancelEdit = () => {
-    setEditingQuestionId(null);
-    setEditedText('');
-    setReviewerNotes('');
-  };
-
-  const handleSaveReview = async (questionId: string, status: string) => {
-    if (!storedPassword) return;
-    
-    const validation = validateWithToast(reviewSchema, {
-      review_status: status,
-      reviewed_text: editedText || undefined,
-      reviewer_notes: reviewerNotes || undefined,
-    }, (msg) => toast({ title: 'خطأ', description: msg, variant: 'destructive' }));
-    
-    if (!validation) return;
-
-    setIsLoading(true);
-    try {
-      const success = await updateQuestionReview.mutateAsync({
-        password: storedPassword,
-        questionId,
-        review_status: status,
-        reviewed_text: editedText || undefined,
-        reviewer_notes: reviewerNotes || undefined,
-      });
-      if (success) {
-        setQuestions(prev => prev.map(q => 
-          q.id === questionId 
-            ? { ...q, review_status: status, reviewed_text: editedText, reviewer_notes: reviewerNotes }
-            : q
-        ));
-        setEditingQuestionId(null);
-        setEditedText('');
-        setReviewerNotes('');
-        toast({ title: 'تم الحفظ', description: 'تم حفظ المراجعة بنجاح' });
-      }
-    } catch {
-      toast({ title: 'خطأ', description: 'فشل حفظ المراجعة', variant: 'destructive' });
-    }
-    setIsLoading(false);
+  const toggleLogExpand = (logId: string) => {
+    setExpandedLogId(expandedLogId === logId ? null : logId);
   };
 
   if (!isAuthenticated) {
@@ -619,14 +569,10 @@ const AdminPage = () => {
         </div>
 
         <Tabs defaultValue="questions" className="w-full">
-          <TabsList className="grid w-full grid-cols-7 mb-6">
+          <TabsList className="grid w-full grid-cols-6 mb-6">
             <TabsTrigger value="questions" className="flex items-center gap-1">
               <List className="w-4 h-4" />
               <span className="hidden md:inline">الأسئلة</span>
-            </TabsTrigger>
-            <TabsTrigger value="review" className="flex items-center gap-1">
-              <ClipboardCheck className="w-4 h-4" />
-              <span className="hidden md:inline">المراجعة</span>
             </TabsTrigger>
             <TabsTrigger value="videos" className="flex items-center gap-1">
               <Video className="w-4 h-4" />
@@ -787,117 +733,13 @@ const AdminPage = () => {
             </div>
           </TabsContent>
 
-          {/* Review Tab - المراجعة اللغوية */}
-          <TabsContent value="review" className="space-y-4">
-            <div className="flex gap-2 mb-4">
-              <div className="flex items-center gap-2 bg-amber-500/20 text-amber-600 px-3 py-1 rounded-full text-sm">
-                <Clock className="w-4 h-4" />
-                معلق: {questions.filter(q => q.review_status === 'pending' || !q.review_status).length}
-              </div>
-              <div className="flex items-center gap-2 bg-green-500/20 text-green-600 px-3 py-1 rounded-full text-sm">
-                <CheckCircle className="w-4 h-4" />
-                تمت المراجعة: {questions.filter(q => q.review_status === 'approved').length}
-              </div>
-            </div>
-
-            <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-              {questions.filter(q => q.review_status === 'pending' || !q.review_status).length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <ClipboardCheck className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg">لا توجد أسئلة تحتاج مراجعة</p>
-                </div>
-              ) : (
-                questions
-                  .filter(q => q.review_status === 'pending' || !q.review_status)
-                  .map((q) => (
-                    <div key={q.id} className="bg-card border border-border rounded-lg p-4 space-y-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded">
-                          {getCategoryLabel(q.category)}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(q.created_at).toLocaleDateString('ar-SA')}
-                        </span>
-                      </div>
-                      
-                      {editingQuestionId === q.id ? (
-                        <div className="space-y-3">
-                          <div>
-                            <label className="block text-sm mb-1 text-muted-foreground">النص الأصلي:</label>
-                            <p className="text-sm bg-muted/50 p-2 rounded">{q.question_text}</p>
-                          </div>
-                          <div>
-                            <label className="block text-sm mb-1">النص المعدل:</label>
-                            <Textarea
-                              value={editedText}
-                              onChange={(e) => setEditedText(e.target.value)}
-                              className="min-h-[100px]"
-                              placeholder="أدخل النص المعدل..."
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm mb-1">ملاحظات المراجع:</label>
-                            <Input
-                              value={reviewerNotes}
-                              onChange={(e) => setReviewerNotes(e.target.value)}
-                              placeholder="ملاحظات اختيارية..."
-                            />
-                          </div>
-                          <div className="flex gap-2">
-                            <Button 
-                              size="sm" 
-                              onClick={() => handleSaveReview(q.id, 'approved')}
-                              disabled={isLoading}
-                              className="bg-green-600 hover:bg-green-700"
-                            >
-                              <CheckCircle className="w-4 h-4 ml-1" />
-                              موافقة
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => handleSaveReview(q.id, 'reviewed')}
-                              disabled={isLoading}
-                            >
-                              <Save className="w-4 h-4 ml-1" />
-                              حفظ
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="ghost"
-                              onClick={handleCancelEdit}
-                            >
-                              <X className="w-4 h-4 ml-1" />
-                              إلغاء
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <p className="text-sm">{q.question_text}</p>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => handleStartEdit(q)}
-                          >
-                            <Edit3 className="w-4 h-4 ml-1" />
-                            مراجعة
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  ))
-              )}
-            </div>
-          </TabsContent>
-
-          {/* Access Logs Tab - سجل الدخول */}
+          {/* Logs Tab - سجل الدخول */}
           <TabsContent value="logs" className="space-y-4">
-            <div className="flex justify-between items-center mb-4">
-              <h4 className="font-medium flex items-center gap-2">
+            <div className="flex justify-between items-center">
+              <h3 className="font-medium flex items-center gap-2">
                 <Shield className="w-5 h-5 text-primary" />
                 سجل محاولات الدخول
-              </h4>
+              </h3>
               <Button variant="outline" size="sm" onClick={loadAccessLogs}>
                 تحديث
               </Button>
@@ -913,44 +755,155 @@ const AdminPage = () => {
                 accessLogs.map((log) => (
                   <div 
                     key={log.id} 
-                    className={`bg-card border rounded-lg p-4 ${
+                    className={`bg-card border rounded-lg overflow-hidden ${
                       log.is_authorized ? 'border-green-500/30' : 'border-destructive/30'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        {log.is_authorized ? (
-                          <CheckCircle className="w-5 h-5 text-green-500" />
-                        ) : (
-                          <XCircle className="w-5 h-5 text-destructive" />
+                    {/* Header */}
+                    <div 
+                      className="p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => toggleLogExpand(log.id)}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          {log.is_authorized ? (
+                            <CheckCircle className="w-5 h-5 text-green-500" />
+                          ) : (
+                            <XCircle className="w-5 h-5 text-destructive" />
+                          )}
+                          <span className={log.is_authorized ? 'text-green-500 font-medium' : 'text-destructive font-medium'}>
+                            {log.is_authorized ? 'دخول مصرح' : 'محاولة فاشلة'}
+                          </span>
+                          {log.fingerprint_id && (
+                            <span className="text-xs bg-muted px-2 py-1 rounded flex items-center gap-1">
+                              <Fingerprint className="w-3 h-3" />
+                              {log.fingerprint_id.slice(0, 8)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {new Date(log.accessed_at).toLocaleString('ar-SA')}
+                          </span>
+                          {expandedLogId === log.id ? (
+                            <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Globe className="w-4 h-4" />
+                          <span>{log.ip_address || 'غير معروف'}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <MapPin className="w-4 h-4" />
+                          <span>{log.country && log.city ? `${log.city}, ${log.country}` : 'غير معروف'}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Smartphone className="w-4 h-4" />
+                          <span>{log.device_type || 'غير معروف'}</span>
+                        </div>
+                        <div className="text-muted-foreground">
+                          {log.browser} / {log.os}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Expanded Details */}
+                    {expandedLogId === log.id && (
+                      <div className="border-t border-border bg-muted/30 p-4 space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                          {/* معلومات الموقع */}
+                          <div className="space-y-2">
+                            <h4 className="font-medium flex items-center gap-2 text-primary">
+                              <MapPin className="w-4 h-4" />
+                              معلومات الموقع
+                            </h4>
+                            <div className="bg-card rounded-lg p-3 space-y-1">
+                              <p><span className="text-muted-foreground">الدولة:</span> {log.country || 'غير معروف'}</p>
+                              <p><span className="text-muted-foreground">المدينة:</span> {log.city || 'غير معروف'}</p>
+                              <p><span className="text-muted-foreground">المنطقة:</span> {log.region || 'غير معروف'}</p>
+                              <p><span className="text-muted-foreground">الرمز البريدي:</span> {log.postal || 'غير معروف'}</p>
+                              {log.latitude && log.longitude && (
+                                <p><span className="text-muted-foreground">الإحداثيات:</span> {log.latitude}, {log.longitude}</p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* معلومات الشبكة */}
+                          <div className="space-y-2">
+                            <h4 className="font-medium flex items-center gap-2 text-primary">
+                              <Wifi className="w-4 h-4" />
+                              معلومات الشبكة
+                            </h4>
+                            <div className="bg-card rounded-lg p-3 space-y-1">
+                              <p><span className="text-muted-foreground">IP:</span> {log.ip_address || 'غير معروف'}</p>
+                              <p><span className="text-muted-foreground">مزود الخدمة:</span> {log.isp || log.org || 'غير معروف'}</p>
+                              <p><span className="text-muted-foreground">ASN:</span> {log.asn || 'غير معروف'}</p>
+                              <p><span className="text-muted-foreground">نوع الاتصال:</span> {log.network_type || 'غير معروف'}</p>
+                              <p><span className="text-muted-foreground">نوع الشبكة:</span> {log.connection_type || 'غير معروف'}</p>
+                            </div>
+                          </div>
+
+                          {/* معلومات الجهاز */}
+                          <div className="space-y-2">
+                            <h4 className="font-medium flex items-center gap-2 text-primary">
+                              <Monitor className="w-4 h-4" />
+                              معلومات الجهاز
+                            </h4>
+                            <div className="bg-card rounded-lg p-3 space-y-1">
+                              <p><span className="text-muted-foreground">النوع:</span> {log.device_type || 'غير معروف'}</p>
+                              <p><span className="text-muted-foreground">المتصفح:</span> {log.browser || 'غير معروف'}</p>
+                              <p><span className="text-muted-foreground">النظام:</span> {log.os || 'غير معروف'}</p>
+                              <p><span className="text-muted-foreground">حجم الشاشة:</span> {log.screen_size || 'غير معروف'}</p>
+                              <p><span className="text-muted-foreground">عمق الألوان:</span> {log.color_depth || 'غير معروف'}</p>
+                              <p><span className="text-muted-foreground">كثافة البكسل:</span> {log.pixel_ratio || 'غير معروف'}</p>
+                              <p><span className="text-muted-foreground">دعم اللمس:</span> {log.touch_support ? 'نعم' : 'لا'}</p>
+                            </div>
+                          </div>
+
+                          {/* معلومات المتصفح */}
+                          <div className="space-y-2">
+                            <h4 className="font-medium flex items-center gap-2 text-primary">
+                              <Globe className="w-4 h-4" />
+                              معلومات المتصفح
+                            </h4>
+                            <div className="bg-card rounded-lg p-3 space-y-1">
+                              <p><span className="text-muted-foreground">اللغة:</span> {log.language || 'غير معروف'}</p>
+                              <p><span className="text-muted-foreground">المنطقة الزمنية:</span> {log.timezone || 'غير معروف'}</p>
+                              <p><span className="text-muted-foreground">عدد الأنوية:</span> {log.hardware_concurrency || 'غير معروف'}</p>
+                              <p><span className="text-muted-foreground">الذاكرة:</span> {log.device_memory ? `${log.device_memory} GB` : 'غير معروف'}</p>
+                              <p><span className="text-muted-foreground">المصدر:</span> {log.referrer || 'مباشر'}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* User Agent */}
+                        {log.user_agent && (
+                          <div className="space-y-2">
+                            <h4 className="font-medium text-primary">User Agent</h4>
+                            <div className="bg-card rounded-lg p-3">
+                              <p className="text-xs text-muted-foreground break-all font-mono" dir="ltr">
+                                {log.user_agent}
+                              </p>
+                            </div>
+                          </div>
                         )}
-                        <span className={log.is_authorized ? 'text-green-500 font-medium' : 'text-destructive font-medium'}>
-                          {log.is_authorized ? 'دخول مصرح' : 'محاولة فاشلة'}
-                        </span>
+
+                        {/* Fingerprint */}
+                        {log.fingerprint_id && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Fingerprint className="w-4 h-4 text-primary" />
+                            <span className="text-muted-foreground">بصمة المتصفح:</span>
+                            <code className="bg-muted px-2 py-1 rounded text-xs">{log.fingerprint_id}</code>
+                          </div>
+                        )}
                       </div>
-                      <span className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {new Date(log.accessed_at).toLocaleString('ar-SA')}
-                      </span>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Globe className="w-4 h-4" />
-                        <span>{log.ip_address || 'غير معروف'}</span>
-                      </div>
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <MapPin className="w-4 h-4" />
-                        <span>{log.country && log.city ? `${log.city}, ${log.country}` : 'غير معروف'}</span>
-                      </div>
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Monitor className="w-4 h-4" />
-                        <span>{log.device_type || 'غير معروف'}</span>
-                      </div>
-                      <div className="text-muted-foreground">
-                        {log.browser} / {log.os}
-                      </div>
-                    </div>
+                    )}
                   </div>
                 ))
               )}
@@ -1285,7 +1238,7 @@ const AdminPage = () => {
               <div>
                 <h3 className="font-medium">العداد التنازلي</h3>
                 <p className="text-sm text-muted-foreground">
-                  {showCountdown ? 'العداد ظاهر في الصفحة الرئيسية' : 'العداد مخفي'}
+                  {showCountdown ? 'يظهر العداد التنازلي للحلقة القادمة' : 'العداد التنازلي مخفي'}
                 </p>
               </div>
               <Switch
@@ -1302,7 +1255,7 @@ const AdminPage = () => {
                   عداد الأسئلة
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  {showQuestionCount ? 'عداد الأسئلة ظاهر تحت الصندوق' : 'عداد الأسئلة مخفي'}
+                  {showQuestionCount ? 'يظهر عدد الأسئلة المستلمة للزوار' : 'عداد الأسئلة مخفي عن الزوار'}
                 </p>
               </div>
               <Switch
@@ -1312,22 +1265,19 @@ const AdminPage = () => {
               />
             </div>
 
-            <div className="bg-card border border-border rounded-lg p-4 space-y-3">
+            <div className="bg-card border border-border rounded-lg p-4 space-y-4">
               <div className="flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-primary" />
                 <h3 className="font-medium">موعد الحلقة القادمة</h3>
               </div>
-              <div className="flex gap-3">
-                <Input
-                  type="datetime-local"
-                  value={nextSessionDate}
-                  onChange={(e) => setNextSessionDate(e.target.value)}
-                  className="flex-1"
-                />
-                <Button onClick={handleUpdateSession} disabled={isLoading || !nextSessionDate}>
-                  حفظ
-                </Button>
-              </div>
+              <Input
+                type="datetime-local"
+                value={nextSessionDate}
+                onChange={(e) => setNextSessionDate(e.target.value)}
+              />
+              <Button onClick={handleUpdateSession} disabled={isLoading || !nextSessionDate}>
+                {isLoading ? 'جارٍ الحفظ...' : 'حفظ الموعد'}
+              </Button>
             </div>
           </TabsContent>
         </Tabs>
@@ -1336,7 +1286,7 @@ const AdminPage = () => {
   );
 };
 
-// Helper function to determine text color based on background
+// Helper function to get contrast color
 function getContrastColor(hexColor: string): string {
   const hex = hexColor.replace('#', '');
   const r = parseInt(hex.substr(0, 2), 16);

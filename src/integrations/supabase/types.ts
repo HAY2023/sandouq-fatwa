@@ -321,16 +321,35 @@ export type Database = {
         Args: { p_password: string }
         Returns: {
           accessed_at: string
+          asn: string
           browser: string
           city: string
+          color_depth: number
+          connection_type: string
           country: string
+          device_memory: number
           device_type: string
+          fingerprint_id: string
+          hardware_concurrency: number
           id: string
           ip_address: string
           is_authorized: boolean
+          isp: string
+          language: string
+          latitude: number
+          longitude: number
+          network_type: string
+          org: string
           os: string
           password_attempted: boolean
+          pixel_ratio: number
+          postal: string
+          referrer: string
+          region: string
           screen_size: string
+          timezone: string
+          touch_support: boolean
+          user_agent: string
         }[]
       }
       get_public_questions_count: { Args: never; Returns: number }

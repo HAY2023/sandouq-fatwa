@@ -23,6 +23,25 @@ export interface AccessLog {
   screen_size: string | null;
   is_authorized: boolean | null;
   password_attempted: boolean | null;
+  user_agent: string | null;
+  timezone: string | null;
+  language: string | null;
+  hardware_concurrency: number | null;
+  device_memory: number | null;
+  network_type: string | null;
+  isp: string | null;
+  referrer: string | null;
+  fingerprint_id: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  asn: string | null;
+  org: string | null;
+  region: string | null;
+  postal: string | null;
+  connection_type: string | null;
+  touch_support: boolean | null;
+  color_depth: number | null;
+  pixel_ratio: number | null;
 }
 
 export function useGetQuestionsAuthenticated() {
@@ -47,28 +66,6 @@ export function useGetAccessLogsAuthenticated() {
       
       if (error) throw error;
       return data as AccessLog[];
-    },
-  });
-}
-
-export function useUpdateQuestionReview() {
-  return useMutation({
-    mutationFn: async (params: {
-      password: string;
-      questionId: string;
-      review_status: string;
-      reviewed_text?: string;
-      reviewer_notes?: string;
-    }) => {
-      const { data, error } = await supabase.rpc('update_question_review_authenticated', {
-        p_password: params.password,
-        p_question_id: params.questionId,
-        p_review_status: params.review_status,
-        p_reviewed_text: params.reviewed_text || null,
-        p_reviewer_notes: params.reviewer_notes || null,
-      });
-      if (error) throw error;
-      return data;
     },
   });
 }
