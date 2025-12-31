@@ -341,6 +341,9 @@ export type Database = {
           created_at: string
           id: string
           question_text: string
+          review_status: string
+          reviewed_text: string
+          reviewer_notes: string
         }[]
       }
       get_questions_count_authenticated: {

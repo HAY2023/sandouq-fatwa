@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSubmitQuestion } from '@/hooks/useQuestions';
 import { QUESTION_CATEGORIES } from '@/lib/categories';
+import { validateWithToast, questionSchema } from '@/lib/validations';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -24,14 +25,18 @@ export function QuestionForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!category || !questionText.trim()) {
-      toast({
-        title: t('common.alert'),
-        description: t('toast.categoryRequired'),
-        variant: 'destructive',
-      });
-      return;
-    }
+    // التحقق من صحة المدخلات باستخدام Zod
+    const validation = validateWithToast(
+      questionSchema,
+      {
+        category,
+        question_text: questionText.trim(),
+        customCategory: category === 'other' ? customCategory.trim() : undefined,
+      },
+      (msg) => toast({ title: t('common.alert'), description: msg, variant: 'destructive' })
+    );
+
+    if (!validation) return;
 
     // التحقق من الفئة المخصصة
     if (category === 'other' && !customCategory.trim()) {

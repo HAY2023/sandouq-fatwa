@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSettings, useVerifyAdminPassword, useUpdateSettingsAuthenticated, useDeleteAllQuestionsAuthenticated, useDeleteSelectedQuestionsAuthenticated } from '@/hooks/useSettings';
-import { useGetQuestionsAuthenticated, Question } from '@/hooks/useQuestionsList';
+import { useGetQuestionsAuthenticated, useGetAccessLogsAuthenticated, useUpdateQuestionReview, Question, AccessLog } from '@/hooks/useQuestionsList';
 import { useVideos, useAddVideo, useDeleteVideo, useReorderVideos, Video as VideoType } from '@/hooks/useVideos';
 import { useAnnouncements, useAddAnnouncement, useDeleteAnnouncement } from '@/hooks/useAnnouncements';
 import { useAllFlashMessages, useAddFlashMessage, useDeleteFlashMessage } from '@/hooks/useFlashMessages';
 import { supabase } from '@/integrations/supabase/client';
 import { logAdminAccess } from '@/hooks/useAdminAccessLog';
+import { validateWithToast, questionSchema, announcementSchema, flashMessageSchema, videoSchema, passwordSchema, reviewSchema } from '@/lib/validations';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -22,7 +24,8 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSo
 import { SortableVideoItem } from '@/components/SortableVideoItem';
 import { 
   Lock, MessageSquare, Calendar, Video, 
-  FileSpreadsheet, FileText, Bell, BellOff, Trash2, Settings, List, Home, AlertTriangle, CheckSquare, Plus, Megaphone, Zap, Hash
+  FileSpreadsheet, FileText, Bell, BellOff, Trash2, Settings, List, Home, AlertTriangle, CheckSquare, Plus, Megaphone, Zap, Hash,
+  Shield, ClipboardCheck, MapPin, Monitor, Globe, CheckCircle, XCircle, Clock, Edit3, Save, X
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -44,8 +47,12 @@ const AdminPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [questionsCount, setQuestionsCount] = useState<number | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [accessLogs, setAccessLogs] = useState<AccessLog[]>([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
+  const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
+  const [editedText, setEditedText] = useState('');
+  const [reviewerNotes, setReviewerNotes] = useState('');
   const { toast } = useToast();
   
   const { data: settings, isLoading: settingsLoading } = useSettings();
@@ -55,6 +62,8 @@ const AdminPage = () => {
   const verifyPassword = useVerifyAdminPassword();
   const updateSettings = useUpdateSettingsAuthenticated();
   const getQuestions = useGetQuestionsAuthenticated();
+  const getAccessLogs = useGetAccessLogsAuthenticated();
+  const updateQuestionReview = useUpdateQuestionReview();
   const deleteAllQuestions = useDeleteAllQuestionsAuthenticated();
   const deleteSelectedQuestions = useDeleteSelectedQuestionsAuthenticated();
   const addVideo = useAddVideo();
@@ -153,8 +162,19 @@ const AdminPage = () => {
   useEffect(() => {
     if (isAuthenticated && storedPassword) {
       loadQuestions();
+      loadAccessLogs();
     }
   }, [isAuthenticated, storedPassword]);
+
+  const loadAccessLogs = async () => {
+    if (!storedPassword) return;
+    try {
+      const data = await getAccessLogs.mutateAsync(storedPassword);
+      setAccessLogs(data || []);
+    } catch {
+      // Failed to load access logs
+    }
+  };
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -480,6 +500,55 @@ const AdminPage = () => {
     }
   };
 
+  const handleStartEdit = (question: Question) => {
+    setEditingQuestionId(question.id);
+    setEditedText(question.reviewed_text || question.question_text);
+    setReviewerNotes(question.reviewer_notes || '');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingQuestionId(null);
+    setEditedText('');
+    setReviewerNotes('');
+  };
+
+  const handleSaveReview = async (questionId: string, status: string) => {
+    if (!storedPassword) return;
+    
+    const validation = validateWithToast(reviewSchema, {
+      review_status: status,
+      reviewed_text: editedText || undefined,
+      reviewer_notes: reviewerNotes || undefined,
+    }, (msg) => toast({ title: 'خطأ', description: msg, variant: 'destructive' }));
+    
+    if (!validation) return;
+
+    setIsLoading(true);
+    try {
+      const success = await updateQuestionReview.mutateAsync({
+        password: storedPassword,
+        questionId,
+        review_status: status,
+        reviewed_text: editedText || undefined,
+        reviewer_notes: reviewerNotes || undefined,
+      });
+      if (success) {
+        setQuestions(prev => prev.map(q => 
+          q.id === questionId 
+            ? { ...q, review_status: status, reviewed_text: editedText, reviewer_notes: reviewerNotes }
+            : q
+        ));
+        setEditingQuestionId(null);
+        setEditedText('');
+        setReviewerNotes('');
+        toast({ title: 'تم الحفظ', description: 'تم حفظ المراجعة بنجاح' });
+      }
+    } catch {
+      toast({ title: 'خطأ', description: 'فشل حفظ المراجعة', variant: 'destructive' });
+    }
+    setIsLoading(false);
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4" dir="rtl">
@@ -550,26 +619,34 @@ const AdminPage = () => {
         </div>
 
         <Tabs defaultValue="questions" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-6">
-            <TabsTrigger value="questions" className="flex items-center gap-2">
+          <TabsList className="grid w-full grid-cols-7 mb-6">
+            <TabsTrigger value="questions" className="flex items-center gap-1">
               <List className="w-4 h-4" />
-              <span className="hidden sm:inline">الأسئلة</span>
+              <span className="hidden md:inline">الأسئلة</span>
             </TabsTrigger>
-            <TabsTrigger value="videos" className="flex items-center gap-2">
+            <TabsTrigger value="review" className="flex items-center gap-1">
+              <ClipboardCheck className="w-4 h-4" />
+              <span className="hidden md:inline">المراجعة</span>
+            </TabsTrigger>
+            <TabsTrigger value="videos" className="flex items-center gap-1">
               <Video className="w-4 h-4" />
-              <span className="hidden sm:inline">الفيديو</span>
+              <span className="hidden md:inline">الفيديو</span>
             </TabsTrigger>
-            <TabsTrigger value="announcements" className="flex items-center gap-2">
+            <TabsTrigger value="announcements" className="flex items-center gap-1">
               <Megaphone className="w-4 h-4" />
-              <span className="hidden sm:inline">الإعلانات</span>
+              <span className="hidden md:inline">الإعلانات</span>
             </TabsTrigger>
-            <TabsTrigger value="flash" className="flex items-center gap-2">
+            <TabsTrigger value="flash" className="flex items-center gap-1">
               <Zap className="w-4 h-4" />
-              <span className="hidden sm:inline">فلاش</span>
+              <span className="hidden md:inline">فلاش</span>
             </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
+            <TabsTrigger value="logs" className="flex items-center gap-1">
+              <Shield className="w-4 h-4" />
+              <span className="hidden md:inline">السجل</span>
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex items-center gap-1">
               <Settings className="w-4 h-4" />
-              <span className="hidden sm:inline">الإعدادات</span>
+              <span className="hidden md:inline">الإعدادات</span>
             </TabsTrigger>
           </TabsList>
 
@@ -702,6 +779,176 @@ const AdminPage = () => {
                           </span>
                         </div>
                         <p className="text-sm">{q.question_text}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Review Tab - المراجعة اللغوية */}
+          <TabsContent value="review" className="space-y-4">
+            <div className="flex gap-2 mb-4">
+              <div className="flex items-center gap-2 bg-amber-500/20 text-amber-600 px-3 py-1 rounded-full text-sm">
+                <Clock className="w-4 h-4" />
+                معلق: {questions.filter(q => q.review_status === 'pending' || !q.review_status).length}
+              </div>
+              <div className="flex items-center gap-2 bg-green-500/20 text-green-600 px-3 py-1 rounded-full text-sm">
+                <CheckCircle className="w-4 h-4" />
+                تمت المراجعة: {questions.filter(q => q.review_status === 'approved').length}
+              </div>
+            </div>
+
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+              {questions.filter(q => q.review_status === 'pending' || !q.review_status).length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <ClipboardCheck className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg">لا توجد أسئلة تحتاج مراجعة</p>
+                </div>
+              ) : (
+                questions
+                  .filter(q => q.review_status === 'pending' || !q.review_status)
+                  .map((q) => (
+                    <div key={q.id} className="bg-card border border-border rounded-lg p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded">
+                          {getCategoryLabel(q.category)}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(q.created_at).toLocaleDateString('ar-SA')}
+                        </span>
+                      </div>
+                      
+                      {editingQuestionId === q.id ? (
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-sm mb-1 text-muted-foreground">النص الأصلي:</label>
+                            <p className="text-sm bg-muted/50 p-2 rounded">{q.question_text}</p>
+                          </div>
+                          <div>
+                            <label className="block text-sm mb-1">النص المعدل:</label>
+                            <Textarea
+                              value={editedText}
+                              onChange={(e) => setEditedText(e.target.value)}
+                              className="min-h-[100px]"
+                              placeholder="أدخل النص المعدل..."
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm mb-1">ملاحظات المراجع:</label>
+                            <Input
+                              value={reviewerNotes}
+                              onChange={(e) => setReviewerNotes(e.target.value)}
+                              placeholder="ملاحظات اختيارية..."
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm" 
+                              onClick={() => handleSaveReview(q.id, 'approved')}
+                              disabled={isLoading}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <CheckCircle className="w-4 h-4 ml-1" />
+                              موافقة
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleSaveReview(q.id, 'reviewed')}
+                              disabled={isLoading}
+                            >
+                              <Save className="w-4 h-4 ml-1" />
+                              حفظ
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              onClick={handleCancelEdit}
+                            >
+                              <X className="w-4 h-4 ml-1" />
+                              إلغاء
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <p className="text-sm">{q.question_text}</p>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleStartEdit(q)}
+                          >
+                            <Edit3 className="w-4 h-4 ml-1" />
+                            مراجعة
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Access Logs Tab - سجل الدخول */}
+          <TabsContent value="logs" className="space-y-4">
+            <div className="flex justify-between items-center mb-4">
+              <h4 className="font-medium flex items-center gap-2">
+                <Shield className="w-5 h-5 text-primary" />
+                سجل محاولات الدخول
+              </h4>
+              <Button variant="outline" size="sm" onClick={loadAccessLogs}>
+                تحديث
+              </Button>
+            </div>
+
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+              {accessLogs.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Shield className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg">لا توجد سجلات</p>
+                </div>
+              ) : (
+                accessLogs.map((log) => (
+                  <div 
+                    key={log.id} 
+                    className={`bg-card border rounded-lg p-4 ${
+                      log.is_authorized ? 'border-green-500/30' : 'border-destructive/30'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        {log.is_authorized ? (
+                          <CheckCircle className="w-5 h-5 text-green-500" />
+                        ) : (
+                          <XCircle className="w-5 h-5 text-destructive" />
+                        )}
+                        <span className={log.is_authorized ? 'text-green-500 font-medium' : 'text-destructive font-medium'}>
+                          {log.is_authorized ? 'دخول مصرح' : 'محاولة فاشلة'}
+                        </span>
+                      </div>
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {new Date(log.accessed_at).toLocaleString('ar-SA')}
+                      </span>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <Globe className="w-4 h-4" />
+                        <span>{log.ip_address || 'غير معروف'}</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <MapPin className="w-4 h-4" />
+                        <span>{log.country && log.city ? `${log.city}, ${log.country}` : 'غير معروف'}</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <Monitor className="w-4 h-4" />
+                        <span>{log.device_type || 'غير معروف'}</span>
+                      </div>
+                      <div className="text-muted-foreground">
+                        {log.browser} / {log.os}
                       </div>
                     </div>
                   </div>
