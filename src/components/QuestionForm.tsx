@@ -19,13 +19,12 @@ export function QuestionForm() {
   const [questionText, setQuestionText] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isCorrecting, setIsCorrecting] = useState(false);
-  const [showCorrectionPreview, setShowCorrectionPreview] = useState(false);
-  const [correctedText, setCorrectedText] = useState('');
   const { toast } = useToast();
   const submitQuestion = useSubmitQuestion();
 
   const isRTL = i18n.language === 'ar';
 
+  // تصحيح تلقائي بدون معاينة
   const handleCorrectQuestion = async () => {
     if (!questionText.trim() || questionText.trim().length < 10) {
       toast({
@@ -45,11 +44,10 @@ export function QuestionForm() {
       if (error) throw error;
 
       if (data.hasCorrections && data.corrected) {
-        setCorrectedText(data.corrected);
-        setShowCorrectionPreview(true);
+        setQuestionText(data.corrected);
         toast({
           title: '✨ تم التصحيح',
-          description: 'راجع التصحيحات واختر قبولها أو رفضها',
+          description: 'تم تصحيح السؤال تلقائياً',
         });
       } else {
         toast({
@@ -66,21 +64,6 @@ export function QuestionForm() {
       });
     }
     setIsCorrecting(false);
-  };
-
-  const acceptCorrection = () => {
-    setQuestionText(correctedText);
-    setShowCorrectionPreview(false);
-    setCorrectedText('');
-    toast({
-      title: 'تم',
-      description: 'تم تطبيق التصحيحات',
-    });
-  };
-
-  const rejectCorrection = () => {
-    setShowCorrectionPreview(false);
-    setCorrectedText('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -129,8 +112,6 @@ export function QuestionForm() {
     setCategory('');
     setCustomCategory('');
     setQuestionText('');
-    setCorrectedText('');
-    setShowCorrectionPreview(false);
   };
 
   const handleVoiceTranscript = (transcript: string) => {
@@ -197,10 +178,7 @@ export function QuestionForm() {
         <div className="flex gap-2">
           <Textarea
             value={questionText}
-            onChange={(e) => {
-              setQuestionText(e.target.value);
-              if (showCorrectionPreview) setShowCorrectionPreview(false);
-            }}
+            onChange={(e) => setQuestionText(e.target.value)}
             placeholder={t('form.questionPlaceholder')}
             className="min-h-[120px] resize-none bg-background flex-1"
             dir={isRTL ? 'rtl' : 'ltr'}
@@ -216,7 +194,7 @@ export function QuestionForm() {
               size="icon"
               onClick={handleCorrectQuestion}
               disabled={isCorrecting || !questionText.trim() || questionText.trim().length < 10}
-              title="تصحيح السؤال بالذكاء الاصطناعي"
+              title="تصحيح السؤال تلقائياً"
               className="h-10 w-10"
             >
               {isCorrecting ? (
@@ -227,42 +205,6 @@ export function QuestionForm() {
             </Button>
           </div>
         </div>
-        
-        {/* معاينة التصحيح */}
-        {showCorrectionPreview && correctedText && (
-          <div className="mt-4 p-4 border border-primary/30 rounded-lg bg-primary/5 space-y-3">
-            <div className="flex items-center gap-2 text-primary font-medium">
-              <Sparkles className="w-4 h-4" />
-              <span>التصحيح المقترح:</span>
-            </div>
-            <div className="bg-background rounded-lg p-3 text-sm" dir={isRTL ? 'rtl' : 'ltr'}>
-              {correctedText}
-            </div>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                size="sm"
-                onClick={acceptCorrection}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <CheckCircle className="w-4 h-4 ml-1" />
-                قبول
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={rejectCorrection}
-              >
-                رفض
-              </Button>
-            </div>
-          </div>
-        )}
-        
-        <p className="text-xs text-muted-foreground mt-2">
-          💡 يمكنك استخدام زر الميكروفون للتسجيل الصوتي أو زر ✨ لتصحيح السؤال
-        </p>
       </div>
 
       <Button
