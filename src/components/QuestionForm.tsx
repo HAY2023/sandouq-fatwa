@@ -3,12 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { useSubmitQuestion } from '@/hooks/useQuestions';
 import { QUESTION_CATEGORIES } from '@/lib/categories';
 import { validateWithToast, questionSchema } from '@/lib/validations';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, Send, Tag, MessageSquare } from 'lucide-react';
+import { CheckCircle, Send, Tag, MessageSquare, Sparkles, Loader2 } from 'lucide-react';
 import { VoiceInput } from '@/components/VoiceInput';
 
 export function QuestionForm() {
@@ -17,15 +18,74 @@ export function QuestionForm() {
   const [customCategory, setCustomCategory] = useState('');
   const [questionText, setQuestionText] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isCorrecting, setIsCorrecting] = useState(false);
+  const [showCorrectionPreview, setShowCorrectionPreview] = useState(false);
+  const [correctedText, setCorrectedText] = useState('');
   const { toast } = useToast();
   const submitQuestion = useSubmitQuestion();
 
   const isRTL = i18n.language === 'ar';
 
+  const handleCorrectQuestion = async () => {
+    if (!questionText.trim() || questionText.trim().length < 10) {
+      toast({
+        title: 'تنبيه',
+        description: 'يرجى كتابة سؤال أطول للتصحيح',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsCorrecting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('correct-question', {
+        body: { question: questionText.trim() }
+      });
+
+      if (error) throw error;
+
+      if (data.hasCorrections && data.corrected) {
+        setCorrectedText(data.corrected);
+        setShowCorrectionPreview(true);
+        toast({
+          title: '✨ تم التصحيح',
+          description: 'راجع التصحيحات واختر قبولها أو رفضها',
+        });
+      } else {
+        toast({
+          title: '✓ ممتاز!',
+          description: 'سؤالك مكتوب بشكل صحيح',
+        });
+      }
+    } catch (error) {
+      console.error('Error correcting question:', error);
+      toast({
+        title: 'خطأ',
+        description: 'فشل التصحيح، حاول مرة أخرى',
+        variant: 'destructive',
+      });
+    }
+    setIsCorrecting(false);
+  };
+
+  const acceptCorrection = () => {
+    setQuestionText(correctedText);
+    setShowCorrectionPreview(false);
+    setCorrectedText('');
+    toast({
+      title: 'تم',
+      description: 'تم تطبيق التصحيحات',
+    });
+  };
+
+  const rejectCorrection = () => {
+    setShowCorrectionPreview(false);
+    setCorrectedText('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // التحقق من صحة المدخلات باستخدام Zod
     const validation = validateWithToast(
       questionSchema,
       {
@@ -38,7 +98,6 @@ export function QuestionForm() {
 
     if (!validation) return;
 
-    // التحقق من الفئة المخصصة
     if (category === 'other' && !customCategory.trim()) {
       toast({
         title: t('common.alert'),
@@ -70,6 +129,8 @@ export function QuestionForm() {
     setCategory('');
     setCustomCategory('');
     setQuestionText('');
+    setCorrectedText('');
+    setShowCorrectionPreview(false);
   };
 
   const handleVoiceTranscript = (transcript: string) => {
@@ -115,7 +176,6 @@ export function QuestionForm() {
           </SelectContent>
         </Select>
 
-        {/* حقل الفئة المخصصة عند اختيار "آخر" */}
         {category === 'other' && (
           <Input
             value={customCategory}
@@ -137,20 +197,71 @@ export function QuestionForm() {
         <div className="flex gap-2">
           <Textarea
             value={questionText}
-            onChange={(e) => setQuestionText(e.target.value)}
+            onChange={(e) => {
+              setQuestionText(e.target.value);
+              if (showCorrectionPreview) setShowCorrectionPreview(false);
+            }}
             placeholder={t('form.questionPlaceholder')}
             className="min-h-[120px] resize-none bg-background flex-1"
             dir={isRTL ? 'rtl' : 'ltr'}
           />
-          <div className="flex flex-col justify-end">
+          <div className="flex flex-col gap-2 justify-end">
             <VoiceInput 
               onTranscript={handleVoiceTranscript}
-              disabled={submitQuestion.isPending}
+              disabled={submitQuestion.isPending || isCorrecting}
             />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={handleCorrectQuestion}
+              disabled={isCorrecting || !questionText.trim() || questionText.trim().length < 10}
+              title="تصحيح السؤال بالذكاء الاصطناعي"
+              className="h-10 w-10"
+            >
+              {isCorrecting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4" />
+              )}
+            </Button>
           </div>
         </div>
+        
+        {/* معاينة التصحيح */}
+        {showCorrectionPreview && correctedText && (
+          <div className="mt-4 p-4 border border-primary/30 rounded-lg bg-primary/5 space-y-3">
+            <div className="flex items-center gap-2 text-primary font-medium">
+              <Sparkles className="w-4 h-4" />
+              <span>التصحيح المقترح:</span>
+            </div>
+            <div className="bg-background rounded-lg p-3 text-sm" dir={isRTL ? 'rtl' : 'ltr'}>
+              {correctedText}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                onClick={acceptCorrection}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <CheckCircle className="w-4 h-4 ml-1" />
+                قبول
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={rejectCorrection}
+              >
+                رفض
+              </Button>
+            </div>
+          </div>
+        )}
+        
         <p className="text-xs text-muted-foreground mt-2">
-          💡 يمكنك استخدام زر الميكروفون للتسجيل الصوتي
+          💡 يمكنك استخدام زر الميكروفون للتسجيل الصوتي أو زر ✨ لتصحيح السؤال
         </p>
       </div>
 
@@ -158,7 +269,7 @@ export function QuestionForm() {
         type="submit"
         className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
         size="lg"
-        disabled={submitQuestion.isPending}
+        disabled={submitQuestion.isPending || isCorrecting}
       >
         <Send className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
         {submitQuestion.isPending ? t('form.submitting') : t('form.submit')}
