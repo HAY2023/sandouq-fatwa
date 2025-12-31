@@ -238,6 +238,13 @@ const AdminPage = () => {
     }
   };
 
+  // طلب إذن الإشعارات عند تسجيل الدخول
+  useEffect(() => {
+    if (isAuthenticated && 'Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, [isAuthenticated]);
+
   useEffect(() => {
     if (!isAuthenticated) return;
 
@@ -246,12 +253,23 @@ const AdminPage = () => {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'questions' },
-        () => {
+        (payload) => {
           if (soundEnabled) {
             playNotificationSound();
           }
           loadQuestions();
-          toast({ title: 'سؤال جديد', description: 'تم استلام سؤال جديد' });
+          
+          // إرسال إشعار المتصفح
+          if ('Notification' in window && Notification.permission === 'granted') {
+            const question = payload.new as { category?: string; question_text?: string };
+            new Notification('📩 سؤال جديد!', {
+              body: `فئة: ${getCategoryLabel(question.category || 'other')}\n${question.question_text?.slice(0, 50) || ''}...`,
+              icon: '/favicon.jpg',
+              tag: 'new-question',
+            });
+          }
+          
+          toast({ title: '📩 سؤال جديد', description: 'تم استلام سؤال جديد' });
         }
       )
       .subscribe();
