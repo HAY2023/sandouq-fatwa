@@ -17,42 +17,99 @@ export type Database = {
       admin_access_logs: {
         Row: {
           accessed_at: string
+          asn: string | null
           browser: string | null
           city: string | null
+          color_depth: number | null
+          connection_type: string | null
           country: string | null
+          device_memory: number | null
           device_type: string | null
+          fingerprint_id: string | null
+          hardware_concurrency: number | null
           id: string
           ip_address: string | null
           is_authorized: boolean | null
+          isp: string | null
+          language: string | null
+          latitude: number | null
+          longitude: number | null
+          network_type: string | null
+          org: string | null
           os: string | null
           password_attempted: boolean | null
+          pixel_ratio: number | null
+          postal: string | null
+          referrer: string | null
+          region: string | null
           screen_size: string | null
+          timezone: string | null
+          touch_support: boolean | null
+          user_agent: string | null
         }
         Insert: {
           accessed_at?: string
+          asn?: string | null
           browser?: string | null
           city?: string | null
+          color_depth?: number | null
+          connection_type?: string | null
           country?: string | null
+          device_memory?: number | null
           device_type?: string | null
+          fingerprint_id?: string | null
+          hardware_concurrency?: number | null
           id?: string
           ip_address?: string | null
           is_authorized?: boolean | null
+          isp?: string | null
+          language?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          network_type?: string | null
+          org?: string | null
           os?: string | null
           password_attempted?: boolean | null
+          pixel_ratio?: number | null
+          postal?: string | null
+          referrer?: string | null
+          region?: string | null
           screen_size?: string | null
+          timezone?: string | null
+          touch_support?: boolean | null
+          user_agent?: string | null
         }
         Update: {
           accessed_at?: string
+          asn?: string | null
           browser?: string | null
           city?: string | null
+          color_depth?: number | null
+          connection_type?: string | null
           country?: string | null
+          device_memory?: number | null
           device_type?: string | null
+          fingerprint_id?: string | null
+          hardware_concurrency?: number | null
           id?: string
           ip_address?: string | null
           is_authorized?: boolean | null
+          isp?: string | null
+          language?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          network_type?: string | null
+          org?: string | null
           os?: string | null
           password_attempted?: boolean | null
+          pixel_ratio?: number | null
+          postal?: string | null
+          referrer?: string | null
+          region?: string | null
           screen_size?: string | null
+          timezone?: string | null
+          touch_support?: boolean | null
+          user_agent?: string | null
         }
         Relationships: []
       }
@@ -371,15 +428,34 @@ export type Database = {
       }
       log_admin_access: {
         Args: {
+          p_asn?: string
           p_browser: string
           p_city: string
+          p_color_depth?: number
+          p_connection_type?: string
           p_country: string
+          p_device_memory?: number
           p_device_type: string
+          p_fingerprint_id?: string
+          p_hardware_concurrency?: number
           p_ip_address: string
           p_is_authorized: boolean
+          p_isp?: string
+          p_language?: string
+          p_latitude?: number
+          p_longitude?: number
+          p_network_type?: string
+          p_org?: string
           p_os: string
           p_password_attempted?: boolean
+          p_pixel_ratio?: number
+          p_postal?: string
+          p_referrer?: string
+          p_region?: string
           p_screen_size: string
+          p_timezone?: string
+          p_touch_support?: boolean
+          p_user_agent?: string
         }
         Returns: string
       }

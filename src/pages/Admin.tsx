@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSettings, useVerifyAdminPassword, useUpdateSettingsAuthenticated, useDeleteAllQuestionsAuthenticated, useDeleteSelectedQuestionsAuthenticated } from '@/hooks/useSettings';
 import { useGetQuestionsAuthenticated, useGetAccessLogsAuthenticated, Question, AccessLog } from '@/hooks/useQuestionsList';
@@ -20,10 +20,11 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableVideoItem } from '@/components/SortableVideoItem';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { 
   Lock, MessageSquare, Calendar, Video, 
   FileSpreadsheet, FileText, Bell, BellOff, Trash2, Settings, List, Home, AlertTriangle, CheckSquare, Plus, Megaphone, Zap, Hash,
-  Shield, MapPin, Monitor, Globe, CheckCircle, XCircle, Clock, Wifi, Smartphone, Fingerprint, ChevronDown, ChevronUp
+  Shield, MapPin, Monitor, Globe, CheckCircle, XCircle, Clock, Wifi, Smartphone, Fingerprint, ChevronDown, ChevronUp, Search, Filter, BarChart3
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -49,6 +50,12 @@ const AdminPage = () => {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
+  
+  // فلاتر السجل
+  const [logSearchIP, setLogSearchIP] = useState('');
+  const [logFilterStatus, setLogFilterStatus] = useState<'all' | 'authorized' | 'failed'>('all');
+  const [logFilterDate, setLogFilterDate] = useState('');
+  
   const { toast } = useToast();
   
   const { data: settings, isLoading: settingsLoading } = useSettings();
@@ -99,6 +106,66 @@ const AdminPage = () => {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  // إحصائيات الأسئلة
+  const questionStats = useMemo(() => {
+    const categoryCount: Record<string, number> = {};
+    questions.forEach(q => {
+      const cat = getCategoryLabel(q.category);
+      categoryCount[cat] = (categoryCount[cat] || 0) + 1;
+    });
+    
+    const categoryData = Object.entries(categoryCount).map(([name, value]) => ({ name, value }));
+    
+    // إحصائيات حسب التاريخ (آخر 7 أيام)
+    const last7Days: Record<string, number> = {};
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toLocaleDateString('ar-SA', { weekday: 'short', day: 'numeric' });
+      last7Days[dateStr] = 0;
+    }
+    
+    questions.forEach(q => {
+      const qDate = new Date(q.created_at);
+      const daysDiff = Math.floor((today.getTime() - qDate.getTime()) / (1000 * 60 * 60 * 24));
+      if (daysDiff >= 0 && daysDiff < 7) {
+        const dateStr = qDate.toLocaleDateString('ar-SA', { weekday: 'short', day: 'numeric' });
+        if (last7Days[dateStr] !== undefined) {
+          last7Days[dateStr]++;
+        }
+      }
+    });
+    
+    const dailyData = Object.entries(last7Days).map(([name, count]) => ({ name, count }));
+    
+    return { categoryData, dailyData };
+  }, [questions]);
+
+  // فلترة السجلات
+  const filteredLogs = useMemo(() => {
+    return accessLogs.filter(log => {
+      // فلتر البحث بـ IP
+      if (logSearchIP && !log.ip_address?.toLowerCase().includes(logSearchIP.toLowerCase())) {
+        return false;
+      }
+      
+      // فلتر الحالة
+      if (logFilterStatus === 'authorized' && !log.is_authorized) return false;
+      if (logFilterStatus === 'failed' && log.is_authorized) return false;
+      
+      // فلتر التاريخ
+      if (logFilterDate) {
+        const logDate = new Date(log.accessed_at).toISOString().split('T')[0];
+        if (logDate !== logFilterDate) return false;
+      }
+      
+      return true;
+    });
+  }, [accessLogs, logSearchIP, logFilterStatus, logFilterDate]);
+
+  const CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
   const playNotificationSound = () => {
     try {
@@ -166,8 +233,8 @@ const AdminPage = () => {
     try {
       const data = await getAccessLogs.mutateAsync(storedPassword);
       setAccessLogs(data || []);
-    } catch {
-      // Failed to load access logs
+    } catch (error) {
+      console.error('Failed to load access logs:', error);
     }
   };
 
@@ -210,7 +277,6 @@ const AdminPage = () => {
     setIsLoading(true);
     try {
       const isValid = await verifyPassword.mutateAsync(password);
-      // تسجيل محاولة الدخول
       logAdminAccess(isValid, true);
       
       if (isValid) {
@@ -240,7 +306,7 @@ const AdminPage = () => {
       } else {
         toast({ title: 'خطأ', description: 'فشل التحديث - تحقق من كلمة المرور', variant: 'destructive' });
       }
-    } catch (error) {
+    } catch {
       toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
     }
     setIsLoading(false);
@@ -260,7 +326,7 @@ const AdminPage = () => {
       } else {
         toast({ title: 'خطأ', description: 'فشل التحديث - تحقق من كلمة المرور', variant: 'destructive' });
       }
-    } catch (error) {
+    } catch {
       toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
     }
     setIsLoading(false);
@@ -313,7 +379,6 @@ const AdminPage = () => {
       const newVideos = arrayMove(localVideos, oldIndex, newIndex);
       setLocalVideos(newVideos);
       
-      // Save to database
       try {
         await reorderVideos.mutateAsync({
           password: storedPassword,
@@ -322,7 +387,6 @@ const AdminPage = () => {
         toast({ title: 'تم الحفظ', description: 'تم تحديث ترتيب الفيديوهات' });
       } catch {
         toast({ title: 'خطأ', description: 'فشل حفظ الترتيب', variant: 'destructive' });
-        // Revert on error
         if (videos) setLocalVideos(videos);
       }
     }
@@ -561,15 +625,19 @@ const AdminPage = () => {
         </div>
       </header>
 
-      <main className="container mx-auto p-4 md:p-6 max-w-4xl">
+      <main className="container mx-auto p-4 md:p-6 max-w-5xl">
         {/* Questions Count Summary */}
         <div className="bg-primary/10 rounded-xl p-4 mb-6 text-center">
           <div className="text-3xl font-bold text-primary">{questionsCount ?? 0}</div>
           <div className="text-sm text-muted-foreground">سؤال مستلم</div>
         </div>
 
-        <Tabs defaultValue="questions" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 mb-6">
+        <Tabs defaultValue="stats" className="w-full">
+          <TabsList className="grid w-full grid-cols-7 mb-6">
+            <TabsTrigger value="stats" className="flex items-center gap-1">
+              <BarChart3 className="w-4 h-4" />
+              <span className="hidden md:inline">إحصائيات</span>
+            </TabsTrigger>
             <TabsTrigger value="questions" className="flex items-center gap-1">
               <List className="w-4 h-4" />
               <span className="hidden md:inline">الأسئلة</span>
@@ -595,6 +663,90 @@ const AdminPage = () => {
               <span className="hidden md:inline">الإعدادات</span>
             </TabsTrigger>
           </TabsList>
+
+          {/* Statistics Tab */}
+          <TabsContent value="stats" className="space-y-6">
+            <h3 className="text-lg font-medium flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-primary" />
+              إحصائيات الأسئلة
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* الأسئلة حسب الفئة */}
+              <div className="bg-card border border-border rounded-lg p-4">
+                <h4 className="font-medium mb-4 text-center">الأسئلة حسب الفئة</h4>
+                {questionStats.categoryData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={questionStats.categoryData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {questionStats.categoryData.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+                    لا توجد بيانات
+                  </div>
+                )}
+              </div>
+
+              {/* الأسئلة حسب اليوم */}
+              <div className="bg-card border border-border rounded-lg p-4">
+                <h4 className="font-medium mb-4 text-center">الأسئلة في آخر 7 أيام</h4>
+                {questions.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={questionStats.dailyData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" fontSize={12} />
+                      <YAxis fontSize={12} />
+                      <Tooltip />
+                      <Bar dataKey="count" fill="#3b82f6" name="عدد الأسئلة" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+                    لا توجد بيانات
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* ملخص الإحصائيات */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-card border border-border rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-primary">{questions.length}</div>
+                <div className="text-sm text-muted-foreground">إجمالي الأسئلة</div>
+              </div>
+              <div className="bg-card border border-border rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-green-500">{questionStats.categoryData.length}</div>
+                <div className="text-sm text-muted-foreground">فئات مختلفة</div>
+              </div>
+              <div className="bg-card border border-border rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-amber-500">
+                  {accessLogs.filter(l => l.is_authorized).length}
+                </div>
+                <div className="text-sm text-muted-foreground">دخول ناجح</div>
+              </div>
+              <div className="bg-card border border-border rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-destructive">
+                  {accessLogs.filter(l => !l.is_authorized).length}
+                </div>
+                <div className="text-sm text-muted-foreground">محاولات فاشلة</div>
+              </div>
+            </div>
+          </TabsContent>
 
           {/* Questions Tab */}
           <TabsContent value="questions" className="space-y-4">
@@ -735,24 +887,81 @@ const AdminPage = () => {
 
           {/* Logs Tab - سجل الدخول */}
           <TabsContent value="logs" className="space-y-4">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <h3 className="font-medium flex items-center gap-2">
                 <Shield className="w-5 h-5 text-primary" />
-                سجل محاولات الدخول
+                سجل محاولات الدخول ({filteredLogs.length})
               </h3>
               <Button variant="outline" size="sm" onClick={loadAccessLogs}>
                 تحديث
               </Button>
             </div>
 
-            <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-              {accessLogs.length === 0 ? (
+            {/* فلاتر البحث */}
+            <div className="bg-card border border-border rounded-lg p-4 space-y-4">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Filter className="w-4 h-4" />
+                البحث والفلترة
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm mb-1">البحث بـ IP</label>
+                  <div className="relative">
+                    <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      value={logSearchIP}
+                      onChange={(e) => setLogSearchIP(e.target.value)}
+                      placeholder="ابحث بعنوان IP..."
+                      className="pr-10"
+                      dir="ltr"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm mb-1">الحالة</label>
+                  <Select value={logFilterStatus} onValueChange={(v) => setLogFilterStatus(v as typeof logFilterStatus)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">الكل</SelectItem>
+                      <SelectItem value="authorized">دخول ناجح</SelectItem>
+                      <SelectItem value="failed">محاولات فاشلة</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-sm mb-1">التاريخ</label>
+                  <Input
+                    type="date"
+                    value={logFilterDate}
+                    onChange={(e) => setLogFilterDate(e.target.value)}
+                  />
+                </div>
+              </div>
+              {(logSearchIP || logFilterStatus !== 'all' || logFilterDate) && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => {
+                    setLogSearchIP('');
+                    setLogFilterStatus('all');
+                    setLogFilterDate('');
+                  }}
+                >
+                  مسح الفلاتر
+                </Button>
+              )}
+            </div>
+
+            <div className="space-y-3 max-h-[50vh] overflow-y-auto">
+              {filteredLogs.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <Shield className="w-16 h-16 mx-auto mb-4 opacity-50" />
                   <p className="text-lg">لا توجد سجلات</p>
                 </div>
               ) : (
-                accessLogs.map((log) => (
+                filteredLogs.map((log) => (
                   <div 
                     key={log.id} 
                     className={`bg-card border rounded-lg overflow-hidden ${
@@ -912,7 +1121,6 @@ const AdminPage = () => {
 
           {/* Videos Tab */}
           <TabsContent value="videos" className="space-y-4">
-            {/* Existing Videos */}
             {videosLoading ? (
               <div className="text-center py-4 text-muted-foreground">جارٍ تحميل الفيديوهات...</div>
             ) : localVideos && localVideos.length > 0 ? (
@@ -944,7 +1152,6 @@ const AdminPage = () => {
               </div>
             )}
 
-            {/* Add New Video */}
             <div className="bg-card border border-border rounded-lg p-4 space-y-4">
               <h4 className="font-medium flex items-center gap-2">
                 <Plus className="w-5 h-5 text-primary" />
@@ -976,7 +1183,6 @@ const AdminPage = () => {
 
           {/* Announcements Tab */}
           <TabsContent value="announcements" className="space-y-4">
-            {/* Existing Announcements */}
             {announcements && announcements.length > 0 ? (
               <div className="space-y-3">
                 <h4 className="font-medium text-sm text-muted-foreground">الإعلانات الحالية ({announcements.length})</h4>
@@ -1012,7 +1218,6 @@ const AdminPage = () => {
               </div>
             )}
 
-            {/* Add New Announcement */}
             <div className="bg-card border border-border rounded-lg p-4 space-y-4">
               <h4 className="font-medium flex items-center gap-2">
                 <Plus className="w-5 h-5 text-primary" />
@@ -1048,7 +1253,6 @@ const AdminPage = () => {
 
           {/* Flash Messages Tab */}
           <TabsContent value="flash" className="space-y-4">
-            {/* Existing Flash Messages */}
             {flashMessages && flashMessages.length > 0 ? (
               <div className="space-y-3">
                 <h4 className="font-medium text-sm text-muted-foreground">رسائل الفلاش الحالية ({flashMessages.length})</h4>
@@ -1101,7 +1305,6 @@ const AdminPage = () => {
               </div>
             )}
 
-            {/* Add New Flash Message */}
             <div className="bg-card border border-border rounded-lg p-4 space-y-4">
               <h4 className="font-medium flex items-center gap-2">
                 <Plus className="w-5 h-5 text-primary" />
@@ -1186,7 +1389,6 @@ const AdminPage = () => {
                 </div>
               </div>
 
-              {/* Preview */}
               {flashMessage && (
                 <div>
                   <label className="block text-sm mb-2">معاينة:</label>
