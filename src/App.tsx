@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import SecurityLogs from "./pages/SecurityLogs";
+import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/security-logs" element={<SecurityLogs />} />
+              <Route path="/install" element={<Install />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
