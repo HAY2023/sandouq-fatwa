@@ -32,62 +32,36 @@ export function CountdownTimer({ targetDate }: CountdownTimerProps) {
 
   if (isExpired) {
     return (
-      <div className="text-center p-8 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent rounded-2xl border-2 border-primary/30 shadow-2xl backdrop-blur-sm">
-        <div className="animate-pulse">
-          <p className="text-2xl md:text-3xl text-primary font-bold">🎉 الحلقة الآن أو قريبًا جدًا 🎉</p>
-        </div>
+      <div className="text-center p-6 bg-primary/5 rounded-lg border border-primary/20">
+        <p className="text-xl md:text-2xl text-primary font-semibold">الحلقة الآن أو قريبًا جدًا</p>
       </div>
     );
   }
 
   const timeUnits = [
-    { value: timeLeft.days, label: 'يوم', icon: '📅' },
-    { value: timeLeft.hours, label: 'ساعة', icon: '🕐' },
-    { value: timeLeft.minutes, label: 'دقيقة', icon: '⏱️' },
-    { value: timeLeft.seconds, label: 'ثانية', icon: '⚡' },
+    { value: timeLeft.days, label: 'يوم' },
+    { value: timeLeft.hours, label: 'ساعة' },
+    { value: timeLeft.minutes, label: 'دقيقة' },
+    { value: timeLeft.seconds, label: 'ثانية' },
   ];
 
   return (
-    <div className="text-center py-8">
-      <h3 className="text-2xl md:text-3xl mb-8 text-foreground font-bold">
-        ⏰ الحلقة القادمة بعد
+    <div className="text-center py-6">
+      <h3 className="text-xl md:text-2xl mb-6 text-foreground font-semibold">
+        الحلقة القادمة بعد
       </h3>
-      <div className="flex justify-center gap-3 md:gap-6 flex-wrap" dir="ltr">
+      <div className="flex justify-center gap-2 md:gap-4 flex-wrap" dir="ltr">
         {timeUnits.map((unit, index) => (
           <div
             key={index}
-            className={`
-              relative overflow-hidden
-              bg-gradient-to-br from-card via-card to-card/80
-              border-2 border-primary/30 rounded-2xl 
-              p-4 md:p-6 min-w-[80px] md:min-w-[110px]
-              shadow-xl hover:shadow-2xl
-              transform hover:scale-105 transition-all duration-300
-              ${index === 3 ? 'animate-pulse' : ''}
-            `}
+            className="bg-card border border-border rounded-lg p-3 md:p-5 min-w-[70px] md:min-w-[90px] shadow-sm"
           >
-            {/* خلفية متدرجة */}
-            <div className="absolute inset-0 bg-gradient-to-t from-primary/10 to-transparent" />
-            
-            {/* أيقونة */}
-            <div className="relative text-2xl mb-2">{unit.icon}</div>
-            
-            {/* الرقم */}
-            <div className={`
-              relative text-4xl md:text-5xl font-black text-primary
-              drop-shadow-lg
-              ${index === 3 ? 'animate-bounce' : ''}
-            `}>
+            <div className="text-3xl md:text-4xl font-bold text-primary tabular-nums">
               {String(unit.value).padStart(2, '0')}
             </div>
-            
-            {/* التسمية */}
-            <div className="relative text-sm md:text-base text-muted-foreground mt-2 font-medium">
+            <div className="text-sm text-muted-foreground mt-1 font-medium">
               {unit.label}
             </div>
-            
-            {/* تأثير لامع */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform -skew-x-12 animate-shimmer" />
           </div>
         ))}
       </div>
