@@ -82,7 +82,6 @@ const AdminPage = () => {
   const [videoUrl, setVideoUrl] = useState('');
   const [showCountdown, setShowCountdown] = useState(true);
   const [showQuestionCount, setShowQuestionCount] = useState(false);
-  const [showInstallPage, setShowInstallPage] = useState(true);
   const [savingVideo, setSavingVideo] = useState(false);
   const [localVideos, setLocalVideos] = useState<VideoType[]>([]);
   
@@ -213,7 +212,6 @@ const AdminPage = () => {
       setVideoUrl(settings.video_url || '');
       setShowCountdown(settings.show_countdown);
       setShowQuestionCount(settings.show_question_count ?? false);
-      setShowInstallPage(settings.show_install_page ?? true);
     }
   }, [settings]);
 
@@ -519,24 +517,6 @@ const AdminPage = () => {
       if (success) {
         setShowQuestionCount(!showQuestionCount);
         toast({ title: 'تم التحديث', description: `عداد الأسئلة ${!showQuestionCount ? 'مفعّل' : 'معطّل'} الآن` });
-      }
-    } catch {
-      toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
-    }
-    setIsLoading(false);
-  };
-
-  const handleToggleInstallPage = async () => {
-    if (!storedPassword) return;
-    setIsLoading(true);
-    try {
-      const success = await updateSettings.mutateAsync({
-        password: storedPassword,
-        show_install_page: !showInstallPage,
-      });
-      if (success) {
-        setShowInstallPage(!showInstallPage);
-        toast({ title: 'تم التحديث', description: `صفحة التثبيت ${!showInstallPage ? 'مفعّلة' : 'معطّلة'} الآن` });
       }
     } catch {
       toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
@@ -1501,23 +1481,6 @@ const AdminPage = () => {
               <Switch
                 checked={showQuestionCount}
                 onCheckedChange={handleToggleQuestionCount}
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
-              <div>
-                <h3 className="font-medium flex items-center gap-2">
-                  <Smartphone className="w-4 h-4" />
-                  صفحة التثبيت
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {showInstallPage ? 'صفحة التثبيت متاحة للزوار (/install)' : 'صفحة التثبيت معطّلة'}
-                </p>
-              </div>
-              <Switch
-                checked={showInstallPage}
-                onCheckedChange={handleToggleInstallPage}
                 disabled={isLoading}
               />
             </div>

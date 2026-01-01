@@ -288,7 +288,6 @@ export type Database = {
           is_box_open: boolean
           next_session_date: string | null
           show_countdown: boolean
-          show_install_page: boolean | null
           show_question_count: boolean | null
           updated_at: string
           video_title: string | null
@@ -300,7 +299,6 @@ export type Database = {
           is_box_open?: boolean
           next_session_date?: string | null
           show_countdown?: boolean
-          show_install_page?: boolean | null
           show_question_count?: boolean | null
           updated_at?: string
           video_title?: string | null
@@ -312,7 +310,6 @@ export type Database = {
           is_box_open?: boolean
           next_session_date?: string | null
           show_countdown?: boolean
-          show_install_page?: boolean | null
           show_question_count?: boolean | null
           updated_at?: string
           video_title?: string | null
@@ -567,32 +564,18 @@ export type Database = {
         }
         Returns: boolean
       }
-      update_settings_authenticated:
-        | {
-            Args: {
-              p_is_box_open?: boolean
-              p_next_session_date?: string
-              p_password: string
-              p_show_countdown?: boolean
-              p_show_question_count?: boolean
-              p_video_title?: string
-              p_video_url?: string
-            }
-            Returns: boolean
-          }
-        | {
-            Args: {
-              p_is_box_open?: boolean
-              p_next_session_date?: string
-              p_password: string
-              p_show_countdown?: boolean
-              p_show_install_page?: boolean
-              p_show_question_count?: boolean
-              p_video_title?: string
-              p_video_url?: string
-            }
-            Returns: boolean
-          }
+      update_settings_authenticated: {
+        Args: {
+          p_is_box_open?: boolean
+          p_next_session_date?: string
+          p_password: string
+          p_show_countdown?: boolean
+          p_show_question_count?: boolean
+          p_video_title?: string
+          p_video_url?: string
+        }
+        Returns: boolean
+      }
       verify_admin_password: {
         Args: { input_password: string }
         Returns: boolean
