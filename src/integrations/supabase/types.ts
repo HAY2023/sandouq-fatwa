@@ -158,6 +158,33 @@ export type Database = {
         }
         Relationships: []
       }
+      blocked_users: {
+        Row: {
+          blocked_at: string | null
+          blocked_by: string | null
+          fingerprint_id: string | null
+          id: string
+          ip_address: string | null
+          reason: string | null
+        }
+        Insert: {
+          blocked_at?: string | null
+          blocked_by?: string | null
+          fingerprint_id?: string | null
+          id?: string
+          ip_address?: string | null
+          reason?: string | null
+        }
+        Update: {
+          blocked_at?: string | null
+          blocked_by?: string | null
+          fingerprint_id?: string | null
+          id?: string
+          ip_address?: string | null
+          reason?: string | null
+        }
+        Relationships: []
+      }
       flash_messages: {
         Row: {
           color: string
@@ -354,6 +381,19 @@ export type Database = {
         Args: { p_password: string; p_title: string; p_url: string }
         Returns: string
       }
+      block_user_authenticated: {
+        Args: {
+          p_fingerprint_id: string
+          p_ip_address: string
+          p_password: string
+          p_reason?: string
+        }
+        Returns: string
+      }
+      delete_access_log_authenticated: {
+        Args: { p_log_id: string; p_password: string }
+        Returns: boolean
+      }
       delete_all_questions_authenticated: {
         Args: { p_password: string }
         Returns: boolean
@@ -409,6 +449,16 @@ export type Database = {
           user_agent: string
         }[]
       }
+      get_blocked_users_authenticated: {
+        Args: { p_password: string }
+        Returns: {
+          blocked_at: string
+          fingerprint_id: string
+          id: string
+          ip_address: string
+          reason: string
+        }[]
+      }
       get_public_questions_count: { Args: never; Returns: number }
       get_questions_authenticated: {
         Args: { p_password: string }
@@ -425,6 +475,30 @@ export type Database = {
       get_questions_count_authenticated: {
         Args: { p_password: string }
         Returns: number
+      }
+      get_security_logs_authenticated: {
+        Args: { p_password: string }
+        Returns: {
+          accessed_at: string
+          browser: string
+          city: string
+          country: string
+          device_type: string
+          fingerprint_id: string
+          id: string
+          ip_address: string
+          is_authorized: boolean
+          isp: string
+          language: string
+          org: string
+          os: string
+          password_attempted: boolean
+          timezone: string
+        }[]
+      }
+      is_user_blocked: {
+        Args: { p_fingerprint: string; p_ip: string }
+        Returns: boolean
       }
       log_admin_access: {
         Args: {
@@ -463,6 +537,10 @@ export type Database = {
         Args: { p_password: string; p_video_ids: string[] }
         Returns: boolean
       }
+      unblock_user_authenticated: {
+        Args: { p_blocked_id: string; p_password: string }
+        Returns: boolean
+      }
       update_admin_password: {
         Args: { p_new_password: string; p_old_password: string }
         Returns: boolean
@@ -499,6 +577,10 @@ export type Database = {
         Returns: boolean
       }
       verify_admin_password: {
+        Args: { input_password: string }
+        Returns: boolean
+      }
+      verify_security_password: {
         Args: { input_password: string }
         Returns: boolean
       }
