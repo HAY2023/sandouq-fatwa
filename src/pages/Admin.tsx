@@ -24,7 +24,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { 
   Lock, MessageSquare, Calendar, Video, 
   FileSpreadsheet, FileText, Bell, BellOff, Trash2, Settings, List, Home, AlertTriangle, CheckSquare, Plus, Megaphone, Zap, Hash,
-  Shield, MapPin, Monitor, Globe, CheckCircle, XCircle, Clock, Wifi, Smartphone, Fingerprint, ChevronDown, ChevronUp, Search, Filter, BarChart3
+  Shield, MapPin, Monitor, Globe, CheckCircle, XCircle, Clock, Wifi, Smartphone, Fingerprint, ChevronDown, ChevronUp, Search, Filter, BarChart3, BellRing
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -99,6 +99,11 @@ const AdminPage = () => {
   const [flashEndDate, setFlashEndDate] = useState('');
   const [flashFontSize, setFlashFontSize] = useState<'sm' | 'md' | 'lg' | 'xl'>('md');
   const [savingFlash, setSavingFlash] = useState(false);
+  
+  // Notification settings states
+  const [notifyOnQuestion, setNotifyOnQuestion] = useState(true);
+  const [notifyEveryN, setNotifyEveryN] = useState(10);
+  const [savingNotification, setSavingNotification] = useState(false);
 
   // DnD sensors
   const sensors = useSensors(
@@ -1535,6 +1540,52 @@ const AdminPage = () => {
               <Button onClick={handleUpdateSession} disabled={isLoading || !nextSessionDate}>
                 {isLoading ? 'جارٍ الحفظ...' : 'حفظ الموعد'}
               </Button>
+            </div>
+
+            {/* قسم الإشعارات */}
+            <div className="bg-card border border-border rounded-lg p-4 space-y-4">
+              <div className="flex items-center gap-2">
+                <BellRing className="w-5 h-5 text-primary" />
+                <h3 className="font-medium">إشعارات الأسئلة الجديدة</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                تلقي إشعارات في المتصفح عند وصول أسئلة جديدة أثناء تواجدك في لوحة التحكم
+              </p>
+              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <div>
+                  <p className="font-medium text-sm">إشعارات الصوت</p>
+                  <p className="text-xs text-muted-foreground">تشغيل صوت عند وصول سؤال جديد</p>
+                </div>
+                <Switch
+                  checked={soundEnabled}
+                  onCheckedChange={setSoundEnabled}
+                />
+              </div>
+              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <div>
+                  <p className="font-medium text-sm">إشعارات المتصفح</p>
+                  <p className="text-xs text-muted-foreground">عرض إشعار في المتصفح</p>
+                </div>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => {
+                    if ('Notification' in window) {
+                      Notification.requestPermission().then(permission => {
+                        if (permission === 'granted') {
+                          new Notification('تم تفعيل الإشعارات!', { 
+                            body: 'ستصلك إشعارات عند وصول أسئلة جديدة',
+                            icon: '/favicon.jpg' 
+                          });
+                        }
+                      });
+                    }
+                  }}
+                >
+                  <Bell className="w-4 h-4 ml-2" />
+                  تفعيل
+                </Button>
+              </div>
             </div>
           </TabsContent>
         </Tabs>
