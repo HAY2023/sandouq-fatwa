@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { useSettings } from '@/hooks/useSettings';
 import { CountdownTimer } from '@/components/CountdownTimer';
 import { VideoList } from '@/components/VideoList';
@@ -10,7 +11,7 @@ import { AnnouncementBanner } from '@/components/AnnouncementBanner';
 import { FlashMessageBanner } from '@/components/FlashMessageBanner';
 import { QuestionCounter } from '@/components/QuestionCounter';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Menu, X } from 'lucide-react';
+import { BookOpen, Menu, X, Download } from 'lucide-react';
 import { useBrowserNotifications } from '@/hooks/useBrowserNotifications';
 import mosqueImage from '@/assets/mosque-hero.jpg';
 
@@ -231,8 +232,18 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="py-8 px-4 bg-card border-t border-border">
-        <div className="container mx-auto text-center text-sm text-muted-foreground">
-          <p>{t('footer.mosqueName')}</p>
+        <div className="container mx-auto text-center">
+          {settings?.show_install_page && (
+            <div className="mb-4">
+              <Link to="/install">
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Download className="w-4 h-4" />
+                  {t('footer.installApp', 'تثبيت التطبيق')}
+                </Button>
+              </Link>
+            </div>
+          )}
+          <p className="text-sm text-muted-foreground">{t('footer.mosqueName')}</p>
         </div>
       </footer>
     </div>
