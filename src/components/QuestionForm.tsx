@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSubmitQuestion } from '@/hooks/useQuestions';
+import { useOfflineQuestions } from '@/hooks/useOfflineQuestions';
 import { QUESTION_CATEGORIES } from '@/lib/categories';
 import { validateWithToast, questionSchema } from '@/lib/validations';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, Send, Tag, MessageSquare, Sparkles, Loader2 } from 'lucide-react';
+import { CheckCircle, Send, Tag, MessageSquare, Sparkles, Loader2, WifiOff, CloudUpload } from 'lucide-react';
 import { VoiceInput } from '@/components/VoiceInput';
 
 export function QuestionForm() {
@@ -21,15 +22,38 @@ export function QuestionForm() {
   const [isCorrecting, setIsCorrecting] = useState(false);
   const { toast } = useToast();
   const submitQuestion = useSubmitQuestion();
+  const { isOnline, pendingCount, saveForLater, isSyncing } = useOfflineQuestions();
 
   const isRTL = i18n.language === 'ar';
 
-  // تصحيح تلقائي بدون معاينة
+  const correctionMessages = {
+    ar: {
+      short: 'يرجى كتابة سؤال أطول للتصحيح',
+      corrected: 'تم تصحيح السؤال تلقائياً',
+      correct: 'سؤالك مكتوب بشكل صحيح',
+      error: 'فشل التصحيح، حاول مرة أخرى',
+    },
+    fr: {
+      short: 'Veuillez écrire une question plus longue',
+      corrected: 'Question corrigée automatiquement',
+      correct: 'Votre question est correcte',
+      error: 'Échec de la correction, réessayez',
+    },
+    en: {
+      short: 'Please write a longer question',
+      corrected: 'Question automatically corrected',
+      correct: 'Your question is correct',
+      error: 'Correction failed, try again',
+    },
+  };
+
+  const msgs = correctionMessages[i18n.language as keyof typeof correctionMessages] || correctionMessages.ar;
+
   const handleCorrectQuestion = async () => {
     if (!questionText.trim() || questionText.trim().length < 10) {
       toast({
-        title: 'تنبيه',
-        description: 'يرجى كتابة سؤال أطول للتصحيح',
+        title: t('common.alert'),
+        description: msgs.short,
         variant: 'destructive',
       });
       return;
@@ -46,20 +70,20 @@ export function QuestionForm() {
       if (data.hasCorrections && data.corrected) {
         setQuestionText(data.corrected);
         toast({
-          title: '✨ تم التصحيح',
-          description: 'تم تصحيح السؤال تلقائياً',
+          title: '✨',
+          description: msgs.corrected,
         });
       } else {
         toast({
-          title: '✓ ممتاز!',
-          description: 'سؤالك مكتوب بشكل صحيح',
+          title: '✓',
+          description: msgs.correct,
         });
       }
     } catch (error) {
       console.error('Error correcting question:', error);
       toast({
-        title: 'خطأ',
-        description: 'فشل التصحيح، حاول مرة أخرى',
+        title: t('common.error'),
+        description: msgs.error,
         variant: 'destructive',
       });
     }
@@ -84,13 +108,20 @@ export function QuestionForm() {
     if (category === 'other' && !customCategory.trim()) {
       toast({
         title: t('common.alert'),
-        description: 'يرجى كتابة نوع الفتوى',
+        description: i18n.language === 'ar' ? 'يرجى كتابة نوع الفتوى' : 'Please specify the category',
         variant: 'destructive',
       });
       return;
     }
 
     const finalCategory = category === 'other' ? customCategory.trim() : category;
+
+    // إذا كان غير متصل، احفظ للإرسال لاحقاً
+    if (!isOnline) {
+      await saveForLater(finalCategory, questionText.trim());
+      setIsSubmitted(true);
+      return;
+    }
 
     try {
       await submitQuestion.mutateAsync({
@@ -99,11 +130,17 @@ export function QuestionForm() {
       });
       setIsSubmitted(true);
     } catch {
-      toast({
-        title: t('common.error'),
-        description: t('toast.submitError'),
-        variant: 'destructive',
-      });
+      // إذا فشل الإرسال، احفظ للإرسال لاحقاً
+      if (!isOnline) {
+        await saveForLater(finalCategory, questionText.trim());
+        setIsSubmitted(true);
+      } else {
+        toast({
+          title: t('common.error'),
+          description: t('toast.submitError'),
+          variant: 'destructive',
+        });
+      }
     }
   };
 
@@ -124,7 +161,10 @@ export function QuestionForm() {
         <CheckCircle className="w-16 h-16 text-primary mx-auto mb-6" />
         <h3 className="text-2xl font-bold mb-4">{t('form.successTitle')}</h3>
         <p className="text-muted-foreground text-lg mb-8 max-w-md mx-auto">
-          {t('form.successMessage')}
+          {!isOnline 
+            ? (i18n.language === 'ar' ? 'تم حفظ سؤالك وسيُرسل عند الاتصال بالإنترنت' : 'Your question was saved and will be sent when online')
+            : t('form.successMessage')
+          }
         </p>
         <Button onClick={handleReset} variant="outline" size="lg">
           {t('form.submitAnother')}
@@ -135,6 +175,35 @@ export function QuestionForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* حالة الاتصال */}
+      {(!isOnline || pendingCount > 0) && (
+        <div className={`flex items-center gap-2 p-3 rounded-lg text-sm ${
+          isOnline ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400' : 'bg-destructive/10 text-destructive'
+        }`}>
+          {isOnline ? (
+            <>
+              <CloudUpload className="w-4 h-4 animate-pulse" />
+              <span>
+                {i18n.language === 'ar' 
+                  ? `جارٍ إرسال ${pendingCount} سؤال محفوظ...`
+                  : `Syncing ${pendingCount} saved questions...`
+                }
+              </span>
+            </>
+          ) : (
+            <>
+              <WifiOff className="w-4 h-4" />
+              <span>
+                {i18n.language === 'ar' 
+                  ? 'غير متصل - سيُحفظ سؤالك ويُرسل عند الاتصال'
+                  : 'Offline - Your question will be saved and sent when online'
+                }
+              </span>
+            </>
+          )}
+        </div>
+      )}
+
       <div>
         <label className="flex items-center gap-2 text-sm font-medium mb-2">
           <Tag className="w-4 h-4 text-accent" />
@@ -161,7 +230,7 @@ export function QuestionForm() {
           <Input
             value={customCategory}
             onChange={(e) => setCustomCategory(e.target.value)}
-            placeholder="اكتب نوع الفتوى (مثال: الحج، الزكاة، المعاملات...)"
+            placeholder={i18n.language === 'ar' ? "اكتب نوع الفتوى (مثال: الحج، الزكاة...)" : "Specify category..."}
             className="mt-3 bg-background"
             dir={isRTL ? 'rtl' : 'ltr'}
             required
@@ -194,7 +263,7 @@ export function QuestionForm() {
               size="icon"
               onClick={handleCorrectQuestion}
               disabled={isCorrecting || !questionText.trim() || questionText.trim().length < 10}
-              title="تصحيح السؤال تلقائياً"
+              title={i18n.language === 'ar' ? "تصحيح السؤال تلقائياً" : "Auto-correct question"}
               className="h-10 w-10"
             >
               {isCorrecting ? (
@@ -211,10 +280,19 @@ export function QuestionForm() {
         type="submit"
         className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
         size="lg"
-        disabled={submitQuestion.isPending || isCorrecting}
+        disabled={submitQuestion.isPending || isCorrecting || isSyncing}
       >
-        <Send className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-        {submitQuestion.isPending ? t('form.submitting') : t('form.submit')}
+        {!isOnline ? (
+          <>
+            <CloudUpload className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+            {i18n.language === 'ar' ? 'حفظ السؤال' : 'Save Question'}
+          </>
+        ) : (
+          <>
+            <Send className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+            {submitQuestion.isPending ? t('form.submitting') : t('form.submit')}
+          </>
+        )}
       </Button>
     </form>
   );

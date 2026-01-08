@@ -49,6 +49,7 @@ const ar = {
     // Footer
     footer: {
       mosqueName: 'مسجد الإيمان – 150 مسكن',
+      installApp: 'تثبيت التطبيق',
     },
     // Common
     common: {
@@ -75,6 +76,26 @@ const ar = {
       food: 'الأطعمة والأشربة',
       clothing: 'اللباس والزينة',
       other: 'آخر',
+    },
+    // Voice Input
+    voice: {
+      recording: 'جارٍ التسجيل...',
+      speakNow: 'تحدث الآن...',
+      stop: 'إيقاف التسجيل',
+      start: 'تسجيل صوتي',
+      permissionDenied: 'يرجى السماح باستخدام الميكروفون',
+      noSpeech: 'لم يتم اكتشاف صوت، تحدث بوضوح',
+      networkError: 'خطأ في الشبكة، تحقق من الاتصال',
+    },
+    // Offline
+    offline: {
+      status: 'غير متصل',
+      message: 'سيتم حفظ أسئلتك وإرسالها عند الاتصال',
+      saved: 'تم الحفظ',
+      savedMessage: 'سيُرسل السؤال تلقائياً عند الاتصال بالإنترنت',
+      syncing: 'جارٍ المزامنة...',
+      synced: 'تمت المزامنة',
+      online: 'متصل بالإنترنت',
     },
     // Admin
     admin: {
@@ -181,6 +202,7 @@ const fr = {
     },
     footer: {
       mosqueName: 'Mosquée Al-Iman – 150 Logements',
+      installApp: "Installer l'application",
     },
     common: {
       loading: 'Chargement...',
@@ -205,6 +227,24 @@ const fr = {
       food: 'Alimentation',
       clothing: 'Vêtements et parure',
       other: 'Autre',
+    },
+    voice: {
+      recording: 'Enregistrement...',
+      speakNow: 'Parlez maintenant...',
+      stop: "Arrêter l'enregistrement",
+      start: 'Enregistrer',
+      permissionDenied: 'Veuillez autoriser le microphone',
+      noSpeech: 'Aucun son détecté, parlez clairement',
+      networkError: 'Erreur réseau, vérifiez la connexion',
+    },
+    offline: {
+      status: 'Hors ligne',
+      message: 'Vos questions seront sauvegardées et envoyées une fois connecté',
+      saved: 'Sauvegardé',
+      savedMessage: 'La question sera envoyée automatiquement une fois connecté',
+      syncing: 'Synchronisation...',
+      synced: 'Synchronisé',
+      online: 'En ligne',
     },
     admin: {
       title: 'Panneau d\'administration',
@@ -309,6 +349,7 @@ const en = {
     },
     footer: {
       mosqueName: 'Al-Iman Mosque – 150 Housing',
+      installApp: 'Install App',
     },
     common: {
       loading: 'Loading...',
@@ -333,6 +374,24 @@ const en = {
       food: 'Food & Drinks',
       clothing: 'Clothing & Adornment',
       other: 'Other',
+    },
+    voice: {
+      recording: 'Recording...',
+      speakNow: 'Speak now...',
+      stop: 'Stop recording',
+      start: 'Voice input',
+      permissionDenied: 'Please allow microphone access',
+      noSpeech: 'No speech detected, speak clearly',
+      networkError: 'Network error, check connection',
+    },
+    offline: {
+      status: 'Offline',
+      message: 'Your questions will be saved and sent when online',
+      saved: 'Saved',
+      savedMessage: 'Question will be sent automatically when online',
+      syncing: 'Syncing...',
+      synced: 'Synced',
+      online: 'Online',
     },
     admin: {
       title: 'Admin Panel',
