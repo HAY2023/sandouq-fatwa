@@ -28,6 +28,38 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
+    const systemPrompt = `أنت مصحح لغوي عربي متخصص في النصوص الشرعية والدينية. مهامك:
+
+1. تصحيح الأخطاء الإملائية الشائعة:
+   - التاء المربوطة والهاء (صلاه ← صلاة)
+   - الألف المقصورة والممدودة (علي ← على)
+   - الهمزات (مسأله ← مسألة، سؤال ← سؤال)
+   - التنوين (شكرآ ← شكراً)
+
+2. تصحيح الأخطاء النحوية:
+   - إعراب الكلمات الأساسية
+   - أدوات الربط والعطف
+
+3. تحسين الصياغة الشرعية:
+   - استخدام المصطلحات الفقهية الصحيحة
+   - صياغة السؤال بشكل واضح ومحترم
+
+4. إضافة علامات الترقيم:
+   - علامات الاستفهام والتعجب
+   - الفواصل والنقاط
+
+أمثلة:
+- "هل يجوز الصلاه بدون وضو" ← "هل يجوز الصلاة بدون وضوء؟"
+- "ما حكم الزكاه علي الذهب المستعمل" ← "ما حكم الزكاة على الذهب المستعمل؟"
+- "كيف اصلي صلات الجنازه" ← "كيف أصلي صلاة الجنازة؟"
+- "هل صيام يوم عرفه واجب" ← "هل صيام يوم عرفة واجب؟"
+
+قواعد مهمة:
+- أعد النص المصحح فقط بدون أي شرح
+- حافظ على المعنى الأصلي تماماً
+- إذا كان النص صحيحاً، أعده كما هو
+- لا تضف معلومات جديدة`;
+
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -35,18 +67,11 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-2.5-pro',
         messages: [
           {
             role: 'system',
-            content: `أنت مصحح لغوي عربي متخصص. مهمتك هي:
-1. تصحيح الأخطاء الإملائية والنحوية
-2. تحسين صياغة السؤال ليكون أوضح
-3. إضافة علامات الترقيم المناسبة
-4. الحفاظ على المعنى الأصلي للسؤال
-
-أجب فقط بالنص المصحح بدون أي شرح أو تعليق إضافي.
-إذا كان النص صحيحاً تماماً، أعده كما هو.`
+            content: systemPrompt
           },
           {
             role: 'user',
@@ -54,25 +79,46 @@ serve(async (req) => {
           }
         ],
         max_tokens: 500,
-        temperature: 0.3,
+        temperature: 0.2,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error('AI API error:', errorText);
+      
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ 
+          error: 'Rate limit exceeded',
+          corrected: question,
+          hasCorrections: false 
+        }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
       throw new Error(`AI API error: ${response.status}`);
     }
 
     const data = await response.json();
     const correctedText = data.choices?.[0]?.message?.content?.trim() || question;
     
-    // Check if there are meaningful corrections
-    const hasCorrections = correctedText.toLowerCase() !== question.toLowerCase() && 
-                          correctedText.length > 0;
+    // تنظيف النص المصحح من أي علامات markdown
+    const cleanedText = correctedText
+      .replace(/^["']|["']$/g, '') // إزالة علامات الاقتباس
+      .replace(/^\*+|\*+$/g, '')   // إزالة النجوم
+      .trim();
+    
+    // التحقق من وجود تصحيحات حقيقية
+    const normalizeText = (text: string) => 
+      text.replace(/[\s\u200B-\u200D\uFEFF]/g, '').toLowerCase();
+    
+    const hasCorrections = normalizeText(cleanedText) !== normalizeText(question) && 
+                          cleanedText.length > 0;
 
     return new Response(JSON.stringify({ 
-      corrected: correctedText,
+      corrected: cleanedText,
       original: question,
       hasCorrections 
     }), {
