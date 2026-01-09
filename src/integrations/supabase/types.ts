@@ -251,6 +251,33 @@ export type Database = {
         }
         Relationships: []
       }
+      push_tokens: {
+        Row: {
+          created_at: string | null
+          device_type: string | null
+          id: string
+          is_admin: boolean | null
+          token: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          device_type?: string | null
+          id?: string
+          is_admin?: boolean | null
+          token: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          device_type?: string | null
+          id?: string
+          is_admin?: boolean | null
+          token?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       questions: {
         Row: {
           category: string
@@ -500,7 +527,7 @@ export type Database = {
         }[]
       }
       is_user_blocked: {
-        Args: { p_fingerprint: string; p_ip: string }
+        Args: { p_fingerprint_id?: string; p_ip_address?: string }
         Returns: boolean
       }
       log_admin_access: {

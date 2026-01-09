@@ -4,8 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { SplashScreen } from "@/components/SplashScreen";
 import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import SecurityLogs from "./pages/SecurityLogs";
@@ -27,26 +28,51 @@ function DirectionHandler({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-      <DirectionHandler>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/security-logs" element={<SecurityLogs />} />
-              <Route path="/install" element={<Install />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </DirectionHandler>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  const [showSplash, setShowSplash] = useState(true);
+  const [isFirstVisit, setIsFirstVisit] = useState(false);
+
+  useEffect(() => {
+    // Check if it's the first visit in this session
+    const hasVisited = sessionStorage.getItem('hasVisited');
+    if (!hasVisited) {
+      setIsFirstVisit(true);
+      sessionStorage.setItem('hasVisited', 'true');
+    } else {
+      setShowSplash(false);
+    }
+  }, []);
+
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+  };
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+        <DirectionHandler>
+          <TooltipProvider>
+            {/* Show splash screen only on first visit */}
+            {showSplash && isFirstVisit && (
+              <SplashScreen onComplete={handleSplashComplete} duration={2500} />
+            )}
+            
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="/security-logs" element={<SecurityLogs />} />
+                <Route path="/install" element={<Install />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </DirectionHandler>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

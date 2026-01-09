@@ -125,3 +125,114 @@ export function useUpdateAdminPassword() {
     },
   });
 }
+
+// Hook for notification settings
+export function useNotificationSettings() {
+  return useQuery({
+    queryKey: ['notification_settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('notification_settings')
+        .select('*')
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useUpdateNotificationSettings() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (params: {
+      password: string;
+      notify_on_question?: boolean;
+      notify_every_n_questions?: number;
+    }) => {
+      // First verify password
+      const { data: isValid, error: verifyError } = await supabase.rpc('verify_admin_password', {
+        input_password: params.password
+      });
+      
+      if (verifyError || !isValid) {
+        throw new Error('Invalid password');
+      }
+      
+      // Update notification settings
+      const { error } = await supabase
+        .from('notification_settings')
+        .update({
+          notify_on_question: params.notify_on_question,
+          notify_every_n_questions: params.notify_every_n_questions,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', (await supabase.from('notification_settings').select('id').single()).data?.id);
+      
+      if (error) throw error;
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notification_settings'] });
+    },
+  });
+}
+
+// Block user by IP or fingerprint
+export function useBlockUser() {
+  return useMutation({
+    mutationFn: async (params: { 
+      password: string; 
+      ip_address?: string; 
+      fingerprint_id?: string;
+      reason?: string;
+    }) => {
+      const { data, error } = await supabase.rpc('block_user_authenticated', {
+        p_password: params.password,
+        p_ip_address: params.ip_address || null,
+        p_fingerprint_id: params.fingerprint_id || null,
+        p_reason: params.reason || null
+      });
+      
+      if (error) throw error;
+      return !!data;
+    },
+  });
+}
+
+// Unblock user
+export function useUnblockUser() {
+  return useMutation({
+    mutationFn: async (params: { password: string; id: string }) => {
+      const { data, error } = await supabase.rpc('unblock_user_authenticated', {
+        p_password: params.password,
+        p_blocked_id: params.id
+      });
+      
+      if (error) throw error;
+      return !!data;
+    },
+  });
+}
+
+// Get blocked users list
+export function useGetBlockedUsers() {
+  return useMutation({
+    mutationFn: async (password: string) => {
+      const { data, error } = await supabase.rpc('get_blocked_users_authenticated', {
+        p_password: password
+      });
+      
+      if (error) throw error;
+      return (data || []) as Array<{
+        id: string;
+        ip_address: string | null;
+        fingerprint_id: string | null;
+        reason: string | null;
+        blocked_at: string;
+        blocked_by: string;
+      }>;
+    },
+  });
+}
