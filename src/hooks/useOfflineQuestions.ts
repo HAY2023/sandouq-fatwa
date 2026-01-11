@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-interface OfflineQuestion {
+export interface OfflineQuestion {
   id: string;
   category: string;
   question_text: string;
@@ -31,7 +31,7 @@ const openDB = (): Promise<IDBDatabase> => {
 };
 
 // حفظ سؤال
-const saveQuestion = async (question: OfflineQuestion): Promise<void> => {
+const saveQuestionToDB = async (question: OfflineQuestion): Promise<void> => {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE_NAME, 'readwrite');
@@ -56,8 +56,31 @@ const getAllQuestions = async (): Promise<OfflineQuestion[]> => {
   });
 };
 
+// تحديث سؤال
+const updateQuestionInDB = async (id: string, data: Partial<OfflineQuestion>): Promise<void> => {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE_NAME, 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+    const getRequest = store.get(id);
+    
+    getRequest.onsuccess = () => {
+      const existing = getRequest.result;
+      if (existing) {
+        const updated = { ...existing, ...data };
+        const putRequest = store.put(updated);
+        putRequest.onerror = () => reject(putRequest.error);
+        putRequest.onsuccess = () => resolve();
+      } else {
+        reject(new Error('Question not found'));
+      }
+    };
+    getRequest.onerror = () => reject(getRequest.error);
+  });
+};
+
 // حذف سؤال
-const deleteQuestion = async (id: string): Promise<void> => {
+const deleteQuestionFromDB = async (id: string): Promise<void> => {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE_NAME, 'readwrite');
@@ -73,17 +96,59 @@ export function useOfflineQuestions() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pendingCount, setPendingCount] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [offlineQuestions, setOfflineQuestions] = useState<OfflineQuestion[]>([]);
   const { toast } = useToast();
 
-  // تحديث عدد الأسئلة المعلقة
+  // تحديث عدد الأسئلة المعلقة وقائمتها
   const updatePendingCount = useCallback(async () => {
     try {
       const questions = await getAllQuestions();
       setPendingCount(questions.length);
+      setOfflineQuestions(questions);
     } catch (error) {
       console.error('Error getting pending questions:', error);
     }
   }, []);
+
+  // جلب الأسئلة المحفوظة
+  const getOfflineQuestions = useCallback(async (): Promise<OfflineQuestion[]> => {
+    try {
+      const questions = await getAllQuestions();
+      setOfflineQuestions(questions);
+      return questions;
+    } catch (error) {
+      console.error('Error getting offline questions:', error);
+      return [];
+    }
+  }, []);
+
+  // تحديث سؤال محفوظ
+  const updateQuestion = useCallback(async (id: string, data: Partial<OfflineQuestion>) => {
+    try {
+      await updateQuestionInDB(id, data);
+      await updatePendingCount();
+      toast({
+        title: '✓',
+        description: 'تم تحديث السؤال',
+      });
+    } catch (error) {
+      console.error('Error updating question:', error);
+    }
+  }, [toast, updatePendingCount]);
+
+  // حذف سؤال محفوظ
+  const deleteQuestion = useCallback(async (id: string) => {
+    try {
+      await deleteQuestionFromDB(id);
+      await updatePendingCount();
+      toast({
+        title: '🗑️',
+        description: 'تم حذف السؤال',
+      });
+    } catch (error) {
+      console.error('Error deleting question:', error);
+    }
+  }, [toast, updatePendingCount]);
 
   // مزامنة الأسئلة المعلقة
   const syncPendingQuestions = useCallback(async () => {
@@ -110,7 +175,7 @@ export function useOfflineQuestions() {
             });
           
           if (!error) {
-            await deleteQuestion(q.id);
+            await deleteQuestionFromDB(q.id);
             successCount++;
           }
         } catch (err) {
@@ -141,7 +206,7 @@ export function useOfflineQuestions() {
       timestamp: Date.now(),
     };
     
-    await saveQuestion(question);
+    await saveQuestionToDB(question);
     await updatePendingCount();
     
     toast({
@@ -191,7 +256,11 @@ export function useOfflineQuestions() {
     isOnline,
     pendingCount,
     isSyncing,
+    offlineQuestions,
     saveForLater,
     syncPendingQuestions,
+    getOfflineQuestions,
+    updateQuestion,
+    deleteQuestion,
   };
 }

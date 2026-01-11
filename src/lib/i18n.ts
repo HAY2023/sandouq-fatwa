@@ -464,12 +464,13 @@ i18n
       fr,
       en,
     },
+    lng: 'ar', // اللغة الافتراضية العربية
     fallbackLng: 'ar',
     interpolation: {
       escapeValue: false,
     },
     detection: {
-      order: ['localStorage', 'navigator'],
+      order: ['localStorage'], // بدون navigator - الافتراضي دائماً عربي
       caches: ['localStorage'],
     },
   });
