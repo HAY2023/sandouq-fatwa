@@ -24,119 +24,115 @@ export function SplashScreen({ onComplete, duration = 2500 }: SplashScreenProps)
         <motion.div
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.5 }}
-          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-gradient-to-br from-background via-card to-background"
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background"
         >
-          {/* Islamic Pattern Background */}
-          <div className="absolute inset-0 islamic-pattern opacity-30" />
+          {/* خلفية النمط الإسلامي */}
+          <div className="absolute inset-0 islamic-pattern opacity-20" />
           
-          {/* Animated Logo Container */}
+          {/* تأثير التوهج في الخلفية */}
           <motion.div
-            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ 
+              scale: [1, 1.3, 1],
+              opacity: [0.1, 0.2, 0.1]
+            }}
+            transition={{ 
+              duration: 3,
+              repeat: Infinity,
+              ease: 'easeInOut'
+            }}
+            className="absolute w-64 h-64 rounded-full bg-primary/20 blur-3xl"
+          />
+          
+          {/* حاوية المحتوى */}
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ 
-              type: "spring",
-              stiffness: 260,
+              type: 'spring',
+              stiffness: 200,
               damping: 20,
-              delay: 0.2 
+              delay: 0.1 
             }}
-            className="relative z-10 flex flex-col items-center gap-6"
+            className="relative z-10 flex flex-col items-center gap-8"
           >
-            {/* Logo */}
+            {/* الشعار مع تأثير النبض */}
             <motion.div
               animate={{ 
-                rotateY: [0, 360],
+                scale: [1, 1.05, 1],
               }}
               transition={{ 
                 duration: 2,
-                ease: "easeInOut",
                 repeat: Infinity,
-                repeatDelay: 1
+                ease: 'easeInOut'
               }}
               className="relative"
             >
-              <div className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-primary/10 backdrop-blur-sm border-2 border-primary/30 flex items-center justify-center shadow-2xl">
+              <div className="w-28 h-28 md:w-36 md:h-36 rounded-3xl bg-card border border-border shadow-xl flex items-center justify-center overflow-hidden">
                 <img 
                   src="/favicon.jpg" 
                   alt="صندوق فتوى" 
-                  className="w-16 h-16 md:w-24 md:h-24 rounded-xl object-cover"
+                  className="w-full h-full object-cover"
                 />
               </div>
               
-              {/* Glow Effect */}
+              {/* تأثير التوهج حول الشعار */}
               <motion.div
                 animate={{ 
                   scale: [1, 1.2, 1],
-                  opacity: [0.5, 0.8, 0.5]
+                  opacity: [0.3, 0.5, 0.3]
                 }}
                 transition={{ 
                   duration: 2,
                   repeat: Infinity,
-                  ease: "easeInOut"
+                  ease: 'easeInOut'
                 }}
-                className="absolute inset-0 rounded-2xl bg-primary/20 blur-xl -z-10"
+                className="absolute inset-0 rounded-3xl bg-primary/30 blur-xl -z-10"
               />
             </motion.div>
 
-            {/* App Name */}
-            <motion.h1
+            {/* اسم التطبيق */}
+            <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.5 }}
-              className="text-3xl md:text-4xl font-bold text-foreground font-serif"
+              transition={{ delay: 0.4, duration: 0.5 }}
+              className="text-center"
             >
-              صندوق فتوى
-            </motion.h1>
-
-            {/* Subtitle */}
-            <motion.p
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.7, duration: 0.5 }}
-              className="text-muted-foreground text-sm md:text-base"
-            >
-              اسأل وسيُجاب بإذن الله
-            </motion.p>
+              <h1 className="text-4xl md:text-5xl font-bold text-foreground font-serif mb-3">
+                صندوق فتوى
+              </h1>
+              <p className="text-muted-foreground text-base md:text-lg">
+                مسجد الإيمان – 150 مسكن
+              </p>
+            </motion.div>
           </motion.div>
 
-          {/* Loading Indicator */}
+          {/* مؤشر التحميل */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 1 }}
-            className="absolute bottom-20 flex flex-col items-center gap-4"
+            transition={{ delay: 0.8 }}
+            className="absolute bottom-16 flex flex-col items-center gap-4"
           >
             <div className="flex gap-2">
               {[0, 1, 2].map((i) => (
                 <motion.div
                   key={i}
                   animate={{
-                    scale: [1, 1.5, 1],
-                    opacity: [0.5, 1, 0.5]
+                    y: [0, -8, 0],
+                    opacity: [0.4, 1, 0.4]
                   }}
                   transition={{
                     duration: 0.8,
                     repeat: Infinity,
-                    delay: i * 0.2
+                    delay: i * 0.15,
+                    ease: 'easeInOut'
                   }}
-                  className="w-3 h-3 rounded-full bg-primary"
+                  className="w-2.5 h-2.5 rounded-full bg-primary"
                 />
               ))}
             </div>
-            <span className="text-xs text-muted-foreground">جارٍ التحميل...</span>
           </motion.div>
-
-          {/* Decorative Elements */}
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
-            className="absolute top-10 right-10 w-20 h-20 border border-primary/20 rounded-full opacity-30"
-          />
-          <motion.div
-            animate={{ rotate: -360 }}
-            transition={{ duration: 45, repeat: Infinity, ease: "linear" }}
-            className="absolute bottom-10 left-10 w-16 h-16 border border-accent/20 rounded-full opacity-30"
-          />
         </motion.div>
       )}
     </AnimatePresence>

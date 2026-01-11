@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSubmitQuestion } from '@/hooks/useQuestions';
-import { useOfflineQuestions } from '@/hooks/useOfflineQuestions';
+import { useOfflineQuestions, OfflineQuestion } from '@/hooks/useOfflineQuestions';
 import { QUESTION_CATEGORIES } from '@/lib/categories';
 import { validateWithToast, questionSchema } from '@/lib/validations';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,8 +10,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, Send, Tag, MessageSquare, Sparkles, Loader2, WifiOff, CloudUpload } from 'lucide-react';
+import { CheckCircle, Send, Tag, MessageSquare, Sparkles, Loader2, WifiOff, CloudUpload, Eye, Pencil, Trash2, X } from 'lucide-react';
 import { VoiceInput } from '@/components/VoiceInput';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export function QuestionForm() {
   const { t, i18n } = useTranslation();
@@ -20,9 +26,21 @@ export function QuestionForm() {
   const [questionText, setQuestionText] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isCorrecting, setIsCorrecting] = useState(false);
+  const [showOfflineQuestions, setShowOfflineQuestions] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState<OfflineQuestion | null>(null);
+  const [editText, setEditText] = useState('');
   const { toast } = useToast();
   const submitQuestion = useSubmitQuestion();
-  const { isOnline, pendingCount, saveForLater, isSyncing } = useOfflineQuestions();
+  const { 
+    isOnline, 
+    pendingCount, 
+    saveForLater, 
+    isSyncing,
+    offlineQuestions,
+    updateQuestion,
+    deleteQuestion,
+    getOfflineQuestions
+  } = useOfflineQuestions();
 
   const isRTL = i18n.language === 'ar';
 
@@ -131,16 +149,8 @@ export function QuestionForm() {
       setIsSubmitted(true);
     } catch {
       // إذا فشل الإرسال، احفظ للإرسال لاحقاً
-      if (!isOnline) {
-        await saveForLater(finalCategory, questionText.trim());
-        setIsSubmitted(true);
-      } else {
-        toast({
-          title: t('common.error'),
-          description: t('toast.submitError'),
-          variant: 'destructive',
-        });
-      }
+      await saveForLater(finalCategory, questionText.trim());
+      setIsSubmitted(true);
     }
   };
 
@@ -153,6 +163,30 @@ export function QuestionForm() {
 
   const handleVoiceTranscript = (transcript: string) => {
     setQuestionText((prev) => prev ? `${prev} ${transcript}` : transcript);
+  };
+
+  const handleViewOfflineQuestions = async () => {
+    await getOfflineQuestions();
+    setShowOfflineQuestions(true);
+  };
+
+  const handleEditQuestion = (q: OfflineQuestion) => {
+    setEditingQuestion(q);
+    setEditText(q.question_text);
+  };
+
+  const handleSaveEdit = async () => {
+    if (editingQuestion && editText.trim()) {
+      await updateQuestion(editingQuestion.id, { question_text: editText.trim() });
+      setEditingQuestion(null);
+      setEditText('');
+      await getOfflineQuestions();
+    }
+  };
+
+  const handleDeleteQuestion = async (id: string) => {
+    await deleteQuestion(id);
+    await getOfflineQuestions();
   };
 
   if (isSubmitted) {
@@ -174,126 +208,201 @@ export function QuestionForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* حالة الاتصال */}
-      {(!isOnline || pendingCount > 0) && (
-        <div className={`flex items-center gap-2 p-3 rounded-lg text-sm ${
-          isOnline ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400' : 'bg-destructive/10 text-destructive'
-        }`}>
-          {isOnline ? (
+    <>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* حالة الاتصال وعرض الأسئلة المحفوظة */}
+        {(!isOnline || pendingCount > 0) && (
+          <div className={`flex items-center justify-between gap-2 p-3 rounded-lg text-sm ${
+            isOnline ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400' : 'bg-destructive/10 text-destructive'
+          }`}>
+            <div className="flex items-center gap-2">
+              {isOnline ? (
+                <>
+                  <CloudUpload className="w-4 h-4 animate-pulse" />
+                  <span>
+                    {i18n.language === 'ar' 
+                      ? `جارٍ إرسال ${pendingCount} سؤال محفوظ...`
+                      : `Syncing ${pendingCount} saved questions...`
+                    }
+                  </span>
+                </>
+              ) : (
+                <>
+                  <WifiOff className="w-4 h-4" />
+                  <span>
+                    {i18n.language === 'ar' 
+                      ? `غير متصل - ${pendingCount > 0 ? `${pendingCount} سؤال محفوظ` : 'سيُحفظ سؤالك'}`
+                      : `Offline - ${pendingCount > 0 ? `${pendingCount} saved` : 'Your question will be saved'}`
+                    }
+                  </span>
+                </>
+              )}
+            </div>
+            {pendingCount > 0 && (
+              <Button 
+                type="button" 
+                variant="ghost" 
+                size="sm"
+                onClick={handleViewOfflineQuestions}
+                className="gap-1"
+              >
+                <Eye className="w-4 h-4" />
+                {i18n.language === 'ar' ? 'عرض' : 'View'}
+              </Button>
+            )}
+          </div>
+        )}
+
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium mb-2">
+            <Tag className="w-4 h-4 text-accent" />
+            <span>{t('form.categoryLabel')}</span>
+            <span className="text-destructive">{t('form.required')}</span>
+          </label>
+          <Select value={category} onValueChange={(val) => {
+            setCategory(val);
+            if (val !== 'other') setCustomCategory('');
+          }}>
+            <SelectTrigger className={`w-full bg-background ${isRTL ? 'text-right' : 'text-left'}`}>
+              <SelectValue placeholder={t('form.categoryPlaceholder')} />
+            </SelectTrigger>
+            <SelectContent>
+              {QUESTION_CATEGORIES.map((cat) => (
+                <SelectItem key={cat.value} value={cat.value}>
+                  {cat.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {category === 'other' && (
+            <Input
+              value={customCategory}
+              onChange={(e) => setCustomCategory(e.target.value)}
+              placeholder={i18n.language === 'ar' ? "اكتب نوع الفتوى (مثال: الحج، الزكاة...)" : "Specify category..."}
+              className="mt-3 bg-background"
+              dir={isRTL ? 'rtl' : 'ltr'}
+              required
+            />
+          )}
+        </div>
+
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium mb-2">
+            <MessageSquare className="w-4 h-4 text-accent" />
+            <span>{t('form.questionLabel')}</span>
+            <span className="text-destructive">{t('form.required')}</span>
+          </label>
+          <div className="flex gap-2">
+            <Textarea
+              value={questionText}
+              onChange={(e) => setQuestionText(e.target.value)}
+              placeholder={t('form.questionPlaceholder')}
+              className="min-h-[120px] resize-none bg-background flex-1"
+              dir={isRTL ? 'rtl' : 'ltr'}
+            />
+            <div className="flex flex-col gap-2 justify-end">
+              <VoiceInput 
+                onTranscript={handleVoiceTranscript}
+                disabled={submitQuestion.isPending || isCorrecting}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={handleCorrectQuestion}
+                disabled={isCorrecting || !questionText.trim() || questionText.trim().length < 10}
+                title={i18n.language === 'ar' ? "تصحيح السؤال تلقائياً" : "Auto-correct question"}
+                className="h-10 w-10"
+              >
+                {isCorrecting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Sparkles className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <Button
+          type="submit"
+          className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
+          size="lg"
+          disabled={submitQuestion.isPending || isCorrecting || isSyncing || !category || !questionText.trim()}
+        >
+          {submitQuestion.isPending ? (
             <>
-              <CloudUpload className="w-4 h-4 animate-pulse" />
-              <span>
-                {i18n.language === 'ar' 
-                  ? `جارٍ إرسال ${pendingCount} سؤال محفوظ...`
-                  : `Syncing ${pendingCount} saved questions...`
-                }
-              </span>
+              <Loader2 className={`w-4 h-4 animate-spin ${isRTL ? 'ml-2' : 'mr-2'}`} />
+              {t('form.submitting')}
+            </>
+          ) : !isOnline ? (
+            <>
+              <CloudUpload className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+              {i18n.language === 'ar' ? 'حفظ السؤال' : 'Save Question'}
             </>
           ) : (
             <>
-              <WifiOff className="w-4 h-4" />
-              <span>
-                {i18n.language === 'ar' 
-                  ? 'غير متصل - سيُحفظ سؤالك ويُرسل عند الاتصال'
-                  : 'Offline - Your question will be saved and sent when online'
-                }
-              </span>
+              <Send className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+              {t('form.submit')}
             </>
           )}
-        </div>
-      )}
+        </Button>
+      </form>
 
-      <div>
-        <label className="flex items-center gap-2 text-sm font-medium mb-2">
-          <Tag className="w-4 h-4 text-accent" />
-          <span>{t('form.categoryLabel')}</span>
-          <span className="text-destructive">{t('form.required')}</span>
-        </label>
-        <Select value={category} onValueChange={(val) => {
-          setCategory(val);
-          if (val !== 'other') setCustomCategory('');
-        }}>
-          <SelectTrigger className={`w-full bg-background ${isRTL ? 'text-right' : 'text-left'}`}>
-            <SelectValue placeholder={t('form.categoryPlaceholder')} />
-          </SelectTrigger>
-          <SelectContent>
-            {QUESTION_CATEGORIES.map((cat) => (
-              <SelectItem key={cat.value} value={cat.value}>
-                {cat.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {category === 'other' && (
-          <Input
-            value={customCategory}
-            onChange={(e) => setCustomCategory(e.target.value)}
-            placeholder={i18n.language === 'ar' ? "اكتب نوع الفتوى (مثال: الحج، الزكاة...)" : "Specify category..."}
-            className="mt-3 bg-background"
-            dir={isRTL ? 'rtl' : 'ltr'}
-            required
-          />
-        )}
-      </div>
-
-      <div>
-        <label className="flex items-center gap-2 text-sm font-medium mb-2">
-          <MessageSquare className="w-4 h-4 text-accent" />
-          <span>{t('form.questionLabel')}</span>
-          <span className="text-destructive">{t('form.required')}</span>
-        </label>
-        <div className="flex gap-2">
-          <Textarea
-            value={questionText}
-            onChange={(e) => setQuestionText(e.target.value)}
-            placeholder={t('form.questionPlaceholder')}
-            className="min-h-[120px] resize-none bg-background flex-1"
-            dir={isRTL ? 'rtl' : 'ltr'}
-          />
-          <div className="flex flex-col gap-2 justify-end">
-            <VoiceInput 
-              onTranscript={handleVoiceTranscript}
-              disabled={submitQuestion.isPending || isCorrecting}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={handleCorrectQuestion}
-              disabled={isCorrecting || !questionText.trim() || questionText.trim().length < 10}
-              title={i18n.language === 'ar' ? "تصحيح السؤال تلقائياً" : "Auto-correct question"}
-              className="h-10 w-10"
-            >
-              {isCorrecting ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Sparkles className="w-4 h-4" />
-              )}
-            </Button>
+      {/* نافذة عرض الأسئلة المحفوظة */}
+      <Dialog open={showOfflineQuestions} onOpenChange={setShowOfflineQuestions}>
+        <DialogContent className="max-w-lg" dir={isRTL ? 'rtl' : 'ltr'}>
+          <DialogHeader>
+            <DialogTitle>
+              {i18n.language === 'ar' ? 'الأسئلة المحفوظة' : 'Saved Questions'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {offlineQuestions.length === 0 ? (
+              <p className="text-center text-muted-foreground py-4">
+                {i18n.language === 'ar' ? 'لا توجد أسئلة محفوظة' : 'No saved questions'}
+              </p>
+            ) : (
+              offlineQuestions.map((q) => (
+                <div key={q.id} className="p-4 bg-muted rounded-lg space-y-2">
+                  {editingQuestion?.id === q.id ? (
+                    <div className="space-y-2">
+                      <Textarea
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        className="min-h-[80px] bg-background"
+                        dir={isRTL ? 'rtl' : 'ltr'}
+                      />
+                      <div className="flex gap-2 justify-end">
+                        <Button size="sm" variant="ghost" onClick={() => setEditingQuestion(null)}>
+                          <X className="w-4 h-4" />
+                        </Button>
+                        <Button size="sm" onClick={handleSaveEdit}>
+                          {i18n.language === 'ar' ? 'حفظ' : 'Save'}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-xs text-muted-foreground mb-1">{q.category}</div>
+                      <p className="text-sm">{q.question_text}</p>
+                      <div className="flex gap-2 justify-end pt-2">
+                        <Button size="sm" variant="ghost" onClick={() => handleEditQuestion(q)}>
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleDeleteQuestion(q.id)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))
+            )}
           </div>
-        </div>
-      </div>
-
-      <Button
-        type="submit"
-        className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
-        size="lg"
-        disabled={submitQuestion.isPending || isCorrecting || isSyncing}
-      >
-        {!isOnline ? (
-          <>
-            <CloudUpload className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            {i18n.language === 'ar' ? 'حفظ السؤال' : 'Save Question'}
-          </>
-        ) : (
-          <>
-            <Send className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            {submitQuestion.isPending ? t('form.submitting') : t('form.submit')}
-          </>
-        )}
-      </Button>
-    </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
