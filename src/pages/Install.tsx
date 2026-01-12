@@ -1,11 +1,12 @@
 import { useTranslation } from 'react-i18next';
 import { useSettings } from '@/hooks/useSettings';
 import { Button } from '@/components/ui/button';
-import { Download, ArrowLeft, Check } from 'lucide-react';
+import { Download, ArrowLeft, Check, Smartphone, Share, Plus, ExternalLink } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { motion } from 'framer-motion';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -19,8 +20,13 @@ export default function Install() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
+  const [showIOSHelp, setShowIOSHelp] = useState(false);
 
   const isRTL = i18n.language === 'ar';
+  
+  // اكتشاف iOS
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
   useEffect(() => {
     // فحص إذا كان التطبيق مثبت
@@ -47,20 +53,31 @@ export default function Install() {
   }, []);
 
   const handleInstall = async () => {
-    if (!deferredPrompt) return;
-    
-    setIsInstalling(true);
-    try {
-      await deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setIsInstalled(true);
-      }
-      setDeferredPrompt(null);
-    } catch (error) {
-      console.error('Installation failed:', error);
+    // إذا كان iOS، أظهر التعليمات
+    if (isIOS) {
+      setShowIOSHelp(true);
+      return;
     }
-    setIsInstalling(false);
+
+    // إذا كان لدينا prompt، استخدمه
+    if (deferredPrompt) {
+      setIsInstalling(true);
+      try {
+        await deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          setIsInstalled(true);
+        }
+        setDeferredPrompt(null);
+      } catch (error) {
+        console.error('Installation failed:', error);
+      }
+      setIsInstalling(false);
+      return;
+    }
+
+    // إذا لم يتوفر prompt، أظهر تعليمات عامة
+    setShowIOSHelp(true);
   };
 
   if (isLoading) {
@@ -110,8 +127,31 @@ export default function Install() {
 
   const c = content[i18n.language as keyof typeof content] || content.ar;
 
+  const iosInstructions = {
+    ar: {
+      title: 'تثبيت على iOS',
+      step1: 'اضغط على زر المشاركة',
+      step2: 'اختر "إضافة إلى الشاشة الرئيسية"',
+      step3: 'اضغط "إضافة"',
+    },
+    fr: {
+      title: 'Installer sur iOS',
+      step1: 'Appuyez sur le bouton Partager',
+      step2: 'Choisissez "Ajouter à l\'écran d\'accueil"',
+      step3: 'Appuyez sur "Ajouter"',
+    },
+    en: {
+      title: 'Install on iOS',
+      step1: 'Tap the Share button',
+      step2: 'Choose "Add to Home Screen"',
+      step3: 'Tap "Add"',
+    },
+  };
+
+  const iosC = iosInstructions[i18n.language as keyof typeof iosInstructions] || iosInstructions.ar;
+
   return (
-    <div className="min-h-screen bg-background flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/5 flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border py-4 px-4">
         <div className="container mx-auto flex items-center justify-between">
@@ -134,63 +174,135 @@ export default function Install() {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-12">
-        <div className="text-center max-w-sm mx-auto">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-center max-w-sm mx-auto"
+        >
           {/* App Icon */}
-          <div className="w-32 h-32 mx-auto mb-8 rounded-3xl overflow-hidden shadow-2xl border-2 border-border">
+          <motion.div 
+            initial={{ scale: 0.8 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="w-36 h-36 mx-auto mb-8 rounded-3xl overflow-hidden shadow-2xl border-4 border-primary/20 relative"
+          >
             <img 
               src="/favicon.jpg" 
               alt={c.appName} 
               className="w-full h-full object-cover"
             />
-          </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-primary/20 to-transparent" />
+          </motion.div>
 
           {/* App Name */}
-          <h2 className="text-4xl font-bold font-serif mb-3">{c.appName}</h2>
-          <p className="text-muted-foreground mb-10">{c.subtitle}</p>
+          <motion.h2 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="text-4xl font-bold font-serif mb-3 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent"
+          >
+            {c.appName}
+          </motion.h2>
+          <motion.p 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="text-muted-foreground mb-10"
+          >
+            {c.subtitle}
+          </motion.p>
 
           {/* Install Button */}
           {isInstalled ? (
-            <div className="space-y-6">
-              <div className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-primary/10 text-primary font-bold text-lg">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="space-y-6"
+            >
+              <div className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-green-500/10 text-green-600 dark:text-green-400 font-bold text-lg border-2 border-green-500/20">
                 <Check className="w-6 h-6" />
                 {c.installed}
               </div>
               <div>
-                <Button onClick={() => navigate('/')} size="lg" className="w-full text-lg h-14">
+                <Button onClick={() => navigate('/')} size="lg" className="w-full text-lg h-14 rounded-xl">
                   {c.goHome}
                 </Button>
               </div>
-            </div>
-          ) : deferredPrompt ? (
-            <div className="space-y-6">
+            </motion.div>
+          ) : showIOSHelp ? (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-6"
+            >
+              <div className="bg-card border-2 border-border rounded-2xl p-6 text-right space-y-4">
+                <h3 className="font-bold text-lg flex items-center gap-2 justify-center">
+                  <Smartphone className="w-5 h-5 text-primary" />
+                  {iosC.title}
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
+                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">1</div>
+                    <div className="flex items-center gap-2 flex-1">
+                      <Share className="w-5 h-5 text-primary" />
+                      <span>{iosC.step1}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
+                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">2</div>
+                    <div className="flex items-center gap-2 flex-1">
+                      <Plus className="w-5 h-5 text-primary" />
+                      <span>{iosC.step2}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
+                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">3</div>
+                    <div className="flex items-center gap-2 flex-1">
+                      <ExternalLink className="w-5 h-5 text-primary" />
+                      <span>{iosC.step3}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <Button 
+                onClick={() => setShowIOSHelp(false)} 
+                variant="outline" 
+                size="lg" 
+                className="w-full h-14 rounded-xl"
+              >
+                {i18n.language === 'ar' ? 'رجوع' : 'Back'}
+              </Button>
+            </motion.div>
+          ) : (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="space-y-6"
+            >
               <Button 
                 onClick={handleInstall} 
                 size="lg" 
-                className="w-full gap-3 text-xl h-16 rounded-2xl shadow-lg"
+                className="w-full gap-3 text-xl h-20 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
                 disabled={isInstalling}
               >
-                <Download className="w-6 h-6" />
+                <Download className="w-8 h-8" />
                 {isInstalling ? c.downloading : c.downloadBtn}
               </Button>
               <p className="text-sm text-muted-foreground">{c.features}</p>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              <div className="bg-muted/50 rounded-2xl p-6 text-center">
-                <p className="text-muted-foreground">
+              
+              {/* إذا كان iOS أو لم يتوفر prompt */}
+              {(isIOS || !deferredPrompt) && (
+                <p className="text-xs text-muted-foreground mt-4">
                   {i18n.language === 'ar' 
-                    ? 'التطبيق متاح للتثبيت من المتصفح' 
-                    : i18n.language === 'fr'
-                    ? "L'application est disponible depuis le navigateur"
-                    : 'The app is available from the browser'}
+                    ? 'اضغط على الزر لعرض تعليمات التثبيت'
+                    : 'Tap the button to see installation instructions'}
                 </p>
-              </div>
-              <Button onClick={() => navigate('/')} variant="outline" size="lg" className="w-full h-14">
-                {c.goHome}
-              </Button>
-            </div>
+              )}
+            </motion.div>
           )}
-        </div>
+        </motion.div>
       </main>
     </div>
   );

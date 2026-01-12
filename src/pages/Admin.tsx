@@ -24,8 +24,9 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { 
   Lock, MessageSquare, Calendar, Video, 
   FileSpreadsheet, FileText, Bell, BellOff, Trash2, Settings, List, Home, AlertTriangle, CheckSquare, Plus, Megaphone, Zap, Hash,
-  Shield, MapPin, Monitor, Globe, CheckCircle, XCircle, Clock, Wifi, Smartphone, Fingerprint, ChevronDown, ChevronUp, Search, Filter, BarChart3, BellRing
+  Shield, MapPin, Monitor, Globe, CheckCircle, XCircle, Clock, Wifi, Smartphone, Fingerprint, ChevronDown, ChevronUp, Search, Filter, BarChart3, BellRing, Send
 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -104,6 +105,21 @@ const AdminPage = () => {
   const [notifyOnQuestion, setNotifyOnQuestion] = useState(true);
   const [notifyEveryN, setNotifyEveryN] = useState(10);
   const [savingNotification, setSavingNotification] = useState(false);
+  
+  // Push notification states
+  const [notifTitle, setNotifTitle] = useState('');
+  const [notifBody, setNotifBody] = useState('');
+  const [sendingNotification, setSendingNotification] = useState(false);
+  const [notificationHistory, setNotificationHistory] = useState<Array<{
+    id: string;
+    title: string;
+    body: string;
+    sent_at: string;
+    recipients_count: number;
+  }>>([]);
+  
+  // Content filter state
+  const [contentFilterEnabled, setContentFilterEnabled] = useState(true);
 
   // DnD sensors
   const sensors = useSensors(
@@ -219,6 +235,7 @@ const AdminPage = () => {
       setShowCountdown(settings.show_countdown);
       setShowQuestionCount(settings.show_question_count ?? false);
       setShowInstallPage(settings.show_install_page ?? true);
+      setContentFilterEnabled((settings as any).content_filter_enabled ?? true);
     }
   }, [settings]);
 
@@ -232,8 +249,23 @@ const AdminPage = () => {
     if (isAuthenticated && storedPassword) {
       loadQuestions();
       loadAccessLogs();
+      loadNotificationHistory();
     }
   }, [isAuthenticated, storedPassword]);
+
+  const loadNotificationHistory = async () => {
+    if (!storedPassword) return;
+    try {
+      const { data, error } = await supabase.rpc('get_notification_history_authenticated', {
+        p_password: storedPassword
+      });
+      if (!error && data) {
+        setNotificationHistory(data as any[]);
+      }
+    } catch (error) {
+      console.error('Failed to load notification history:', error);
+    }
+  };
 
   const loadAccessLogs = async () => {
     if (!storedPassword) return;
@@ -549,6 +581,64 @@ const AdminPage = () => {
     setIsLoading(false);
   };
 
+  const handleToggleContentFilter = async () => {
+    if (!storedPassword) return;
+    setIsLoading(true);
+    try {
+      const success = await updateSettings.mutateAsync({
+        password: storedPassword,
+        content_filter_enabled: !contentFilterEnabled,
+      } as any);
+      if (success) {
+        setContentFilterEnabled(!contentFilterEnabled);
+        toast({ title: 'تم التحديث', description: `فلتر المحتوى ${!contentFilterEnabled ? 'مفعّل' : 'معطّل'} الآن` });
+      }
+    } catch {
+      toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
+    }
+    setIsLoading(false);
+  };
+
+  const handleSendPushNotification = async () => {
+    if (!storedPassword || !notifTitle.trim() || !notifBody.trim()) return;
+    setSendingNotification(true);
+    try {
+      // إرسال الإشعار عبر Edge Function
+      const { data, error } = await supabase.functions.invoke('send-notification', {
+        body: {
+          action: 'send',
+          notification: {
+            title: notifTitle.trim(),
+            body: notifBody.trim(),
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      // حفظ في سجل الإشعارات
+      await supabase.rpc('add_notification_authenticated', {
+        p_password: storedPassword,
+        p_title: notifTitle.trim(),
+        p_body: notifBody.trim(),
+        p_recipients_count: data?.tokens_count || 0
+      });
+
+      setNotifTitle('');
+      setNotifBody('');
+      await loadNotificationHistory();
+      
+      toast({ 
+        title: '✓ تم الإرسال', 
+        description: `تم إرسال الإشعار إلى ${data?.tokens_count || 0} جهاز` 
+      });
+    } catch (error) {
+      console.error('Error sending notification:', error);
+      toast({ title: 'خطأ', description: 'فشل إرسال الإشعار', variant: 'destructive' });
+    }
+    setSendingNotification(false);
+  };
+
   const handleDeleteAllQuestions = async () => {
     if (!storedPassword) return;
     setIsLoading(true);
@@ -676,7 +766,7 @@ const AdminPage = () => {
         </div>
 
         <Tabs defaultValue="stats" className="w-full">
-          <TabsList className="grid w-full grid-cols-7 mb-6">
+          <TabsList className="grid w-full grid-cols-8 mb-6">
             <TabsTrigger value="stats" className="flex items-center gap-1">
               <BarChart3 className="w-4 h-4" />
               <span className="hidden md:inline">إحصائيات</span>
@@ -696,6 +786,10 @@ const AdminPage = () => {
             <TabsTrigger value="flash" className="flex items-center gap-1">
               <Zap className="w-4 h-4" />
               <span className="hidden md:inline">فلاش</span>
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="flex items-center gap-1">
+              <Bell className="w-4 h-4" />
+              <span className="hidden md:inline">إشعارات</span>
             </TabsTrigger>
             <TabsTrigger value="logs" className="flex items-center gap-1">
               <Shield className="w-4 h-4" />
@@ -1463,7 +1557,55 @@ const AdminPage = () => {
             </div>
           </TabsContent>
 
-          {/* Settings Tab */}
+          {/* Notifications Tab - إرسال إشعارات */}
+          <TabsContent value="notifications" className="space-y-4">
+            <div className="bg-card border border-border rounded-lg p-4 space-y-4">
+              <h4 className="font-medium flex items-center gap-2">
+                <Send className="w-5 h-5 text-primary" />
+                إرسال إشعار للمستخدمين
+              </h4>
+              <Input
+                value={notifTitle}
+                onChange={(e) => setNotifTitle(e.target.value)}
+                placeholder="عنوان الإشعار"
+              />
+              <Textarea
+                value={notifBody}
+                onChange={(e) => setNotifBody(e.target.value)}
+                placeholder="نص الإشعار..."
+                className="min-h-[100px]"
+              />
+              <Button
+                onClick={handleSendPushNotification}
+                disabled={sendingNotification || !notifTitle.trim() || !notifBody.trim()}
+                className="w-full"
+              >
+                <Send className="w-4 h-4 ml-2" />
+                {sendingNotification ? 'جارٍ الإرسال...' : 'إرسال للجميع'}
+              </Button>
+            </div>
+
+            {/* سجل الإشعارات */}
+            {notificationHistory.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="font-medium text-sm text-muted-foreground">الإشعارات السابقة ({notificationHistory.length})</h4>
+                {notificationHistory.map((notif) => (
+                  <div key={notif.id} className="bg-card border border-border rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <h5 className="font-medium">{notif.title}</h5>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(notif.sent_at).toLocaleString('ar-SA')}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{notif.body}</p>
+                    <div className="mt-2 text-xs text-primary">
+                      أُرسل إلى {notif.recipients_count} جهاز
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
           <TabsContent value="settings" className="space-y-4">
             <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
               <div>
@@ -1523,6 +1665,23 @@ const AdminPage = () => {
               <Switch
                 checked={showInstallPage}
                 onCheckedChange={handleToggleInstallPage}
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
+              <div>
+                <h3 className="font-medium flex items-center gap-2">
+                  <Shield className="w-4 h-4" />
+                  فلتر المحتوى
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {contentFilterEnabled ? 'يمنع الأسئلة غير اللائقة' : 'فلتر المحتوى معطّل'}
+                </p>
+              </div>
+              <Switch
+                checked={contentFilterEnabled}
+                onCheckedChange={handleToggleContentFilter}
                 disabled={isLoading}
               />
             </div>

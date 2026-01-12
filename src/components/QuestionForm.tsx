@@ -4,13 +4,14 @@ import { useSubmitQuestion } from '@/hooks/useQuestions';
 import { useOfflineQuestions, OfflineQuestion } from '@/hooks/useOfflineQuestions';
 import { QUESTION_CATEGORIES } from '@/lib/categories';
 import { validateWithToast, questionSchema } from '@/lib/validations';
+import { checkQuestionContent, getContentFilterMessage } from '@/lib/contentFilter';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, Send, Tag, MessageSquare, Sparkles, Loader2, WifiOff, CloudUpload, Eye, Pencil, Trash2, X } from 'lucide-react';
+import { CheckCircle, Send, Tag, MessageSquare, Sparkles, Loader2, WifiOff, CloudUpload, Eye, Pencil, Trash2, X, AlertTriangle } from 'lucide-react';
 import { VoiceInput } from '@/components/VoiceInput';
 import {
   Dialog,
@@ -18,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useSettings } from '@/hooks/useSettings';
 
 export function QuestionForm() {
   const { t, i18n } = useTranslation();
@@ -29,7 +31,9 @@ export function QuestionForm() {
   const [showOfflineQuestions, setShowOfflineQuestions] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<OfflineQuestion | null>(null);
   const [editText, setEditText] = useState('');
+  const [contentWarning, setContentWarning] = useState<string | null>(null);
   const { toast } = useToast();
+  const { data: settings } = useSettings();
   const submitQuestion = useSubmitQuestion();
   const { 
     isOnline, 
@@ -43,6 +47,8 @@ export function QuestionForm() {
   } = useOfflineQuestions();
 
   const isRTL = i18n.language === 'ar';
+  // استخدام any للوصول للخاصية الجديدة حتى يتم تحديث الأنواع
+  const isContentFilterEnabled = (settings as any)?.content_filter_enabled !== false;
 
   const correctionMessages = {
     ar: {
@@ -111,6 +117,27 @@ export function QuestionForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // فحص المحتوى إذا كان الفلتر مفعّل
+    if (isContentFilterEnabled) {
+      const contentCheck = checkQuestionContent(questionText);
+      if (!contentCheck.isClean && !contentCheck.isWarning) {
+        const message = getContentFilterMessage(contentCheck, i18n.language);
+        toast({
+          title: i18n.language === 'ar' ? '⚠️ تنبيه' : '⚠️ Warning',
+          description: message,
+          variant: 'destructive',
+        });
+        setContentWarning(message);
+        return;
+      }
+      
+      if (contentCheck.isWarning) {
+        const message = getContentFilterMessage(contentCheck, i18n.language);
+        setContentWarning(message);
+        // نسمح بالإرسال مع تحذير
+      }
+    }
+    
     const validation = validateWithToast(
       questionSchema,
       {
@@ -133,6 +160,7 @@ export function QuestionForm() {
     }
 
     const finalCategory = category === 'other' ? customCategory.trim() : category;
+    setContentWarning(null);
 
     // إذا كان غير متصل، احفظ للإرسال لاحقاً
     if (!isOnline) {
@@ -293,10 +321,13 @@ export function QuestionForm() {
             <span>{t('form.questionLabel')}</span>
             <span className="text-destructive">{t('form.required')}</span>
           </label>
-          <div className="flex gap-2">
+        <div className="flex gap-2">
             <Textarea
               value={questionText}
-              onChange={(e) => setQuestionText(e.target.value)}
+              onChange={(e) => {
+                setQuestionText(e.target.value);
+                setContentWarning(null);
+              }}
               placeholder={t('form.questionPlaceholder')}
               className="min-h-[120px] resize-none bg-background flex-1"
               dir={isRTL ? 'rtl' : 'ltr'}
@@ -322,6 +353,24 @@ export function QuestionForm() {
                 )}
               </Button>
             </div>
+          </div>
+          
+          {/* تحذير المحتوى */}
+          {contentWarning && (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-400 text-sm mt-2">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+              <span>{contentWarning}</span>
+            </div>
+          )}
+          
+          {/* عداد الأحرف */}
+          <div className="flex justify-between items-center text-xs text-muted-foreground mt-1">
+            <span>{questionText.length} / 2000</span>
+            {questionText.length >= 1800 && (
+              <span className="text-amber-500">
+                {i18n.language === 'ar' ? 'اقتربت من الحد الأقصى' : 'Approaching limit'}
+              </span>
+            )}
           </div>
         </div>
 

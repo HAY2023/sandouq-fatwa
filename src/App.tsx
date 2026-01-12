@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SplashScreen } from "@/components/SplashScreen";
+import { ConnectionStatus } from "@/components/ui/ConnectionStatus";
 import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import SecurityLogs from "./pages/SecurityLogs";
@@ -56,6 +57,8 @@ const App = () => {
             {showSplash && isFirstVisit && (
               <SplashScreen onComplete={handleSplashComplete} duration={2500} />
             )}
+            
+            <ConnectionStatus />
             
             <Toaster />
             <Sonner />
