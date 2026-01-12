@@ -14,6 +14,9 @@ import { Button } from '@/components/ui/button';
 import { BookOpen, Menu, X, Download } from 'lucide-react';
 import { useBrowserNotifications } from '@/hooks/useBrowserNotifications';
 import mosqueImage from '@/assets/mosque-hero.jpg';
+import ShareButton from '@/components/ShareButton';
+import ReadingMode from '@/components/ReadingMode';
+import ReportProblem from '@/components/ReportProblem';
 
 const Index = () => {
   const { t, i18n } = useTranslation();
@@ -98,6 +101,7 @@ const Index = () => {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-2">
+              <ReadingMode />
               <LanguageSwitcher variant={isScrolled ? 'default' : 'hero'} />
               <ThemeToggle />
               {settings?.is_box_open && (
@@ -133,6 +137,7 @@ const Index = () => {
             <div className="md:hidden mt-4 pb-4 border-t border-border/50 pt-4 animate-in slide-in-from-top-2">
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-2">
+                  <ReadingMode />
                   <LanguageSwitcher />
                   <ThemeToggle />
                 </div>
@@ -232,17 +237,25 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="py-8 px-4 bg-card border-t border-border">
-        <div className="container mx-auto text-center">
-          {settings?.show_install_page && (
-            <div className="mb-4">
+        <div className="container mx-auto text-center space-y-4">
+          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {settings?.show_install_page && (
               <Link to="/install">
                 <Button variant="outline" size="sm" className="gap-2">
                   <Download className="w-4 h-4" />
                   {t('footer.installApp', 'تثبيت التطبيق')}
                 </Button>
               </Link>
-            </div>
-          )}
+            )}
+            <ShareButton />
+          </div>
+          
+          {/* Report Problem */}
+          <div className="pt-2">
+            <ReportProblem />
+          </div>
+          
           <p className="text-sm text-muted-foreground">{t('footer.mosqueName')}</p>
         </div>
       </footer>

@@ -383,6 +383,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_reports: {
+        Row: {
+          created_at: string | null
+          device_info: Json | null
+          email: string | null
+          id: string
+          message: string
+          report_type: string
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          device_info?: Json | null
+          email?: string | null
+          id?: string
+          message: string
+          report_type: string
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          device_info?: Json | null
+          email?: string | null
+          id?: string
+          message?: string
+          report_type?: string
+          status?: string | null
+        }
+        Relationships: []
+      }
       videos: {
         Row: {
           created_at: string
@@ -581,6 +611,18 @@ export type Database = {
           timezone: string
         }[]
       }
+      get_user_reports_authenticated: {
+        Args: { p_password: string }
+        Returns: {
+          created_at: string
+          device_info: Json
+          email: string
+          id: string
+          message: string
+          report_type: string
+          status: string
+        }[]
+      }
       is_user_blocked: {
         Args: { p_fingerprint_id?: string; p_ip_address?: string }
         Returns: boolean
@@ -647,6 +689,10 @@ export type Database = {
           p_reviewed_text?: string
           p_reviewer_notes?: string
         }
+        Returns: boolean
+      }
+      update_report_status_authenticated: {
+        Args: { p_password: string; p_report_id: string; p_status: string }
         Returns: boolean
       }
       update_settings_authenticated: {

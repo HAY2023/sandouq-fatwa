@@ -24,7 +24,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { 
   Lock, MessageSquare, Calendar, Video, 
   FileSpreadsheet, FileText, Bell, BellOff, Trash2, Settings, List, Home, AlertTriangle, CheckSquare, Plus, Megaphone, Zap, Hash,
-  Shield, MapPin, Monitor, Globe, CheckCircle, XCircle, Clock, Wifi, Smartphone, Fingerprint, ChevronDown, ChevronUp, Search, Filter, BarChart3, BellRing, Send
+  Shield, MapPin, Monitor, Globe, CheckCircle, XCircle, Clock, Wifi, Smartphone, Fingerprint, ChevronDown, ChevronUp, Search, Filter, BarChart3, BellRing, Send, Bug, AlertCircle
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -120,6 +120,17 @@ const AdminPage = () => {
   
   // Content filter state
   const [contentFilterEnabled, setContentFilterEnabled] = useState(true);
+  
+  // User reports state
+  const [userReports, setUserReports] = useState<Array<{
+    id: string;
+    report_type: string;
+    message: string;
+    email: string | null;
+    device_info: any;
+    created_at: string;
+    status: string;
+  }>>([]);
 
   // DnD sensors
   const sensors = useSensors(
@@ -250,6 +261,7 @@ const AdminPage = () => {
       loadQuestions();
       loadAccessLogs();
       loadNotificationHistory();
+      loadUserReports();
     }
   }, [isAuthenticated, storedPassword]);
 
@@ -264,6 +276,40 @@ const AdminPage = () => {
       }
     } catch (error) {
       console.error('Failed to load notification history:', error);
+    }
+  };
+
+  const loadUserReports = async () => {
+    if (!storedPassword) return;
+    try {
+      const { data, error } = await supabase.rpc('get_user_reports_authenticated', {
+        p_password: storedPassword
+      });
+      if (!error && data) {
+        setUserReports(data as any[]);
+      }
+    } catch (error) {
+      console.error('Failed to load user reports:', error);
+    }
+  };
+
+  const handleUpdateReportStatus = async (reportId: string, newStatus: string) => {
+    if (!storedPassword) return;
+    try {
+      const { data, error } = await supabase.rpc('update_report_status_authenticated', {
+        p_password: storedPassword,
+        p_report_id: reportId,
+        p_status: newStatus
+      });
+      if (!error && data) {
+        setUserReports(prev => prev.map(r => 
+          r.id === reportId ? { ...r, status: newStatus } : r
+        ));
+        toast({ title: 'تم التحديث', description: `تم تحديث حالة البلاغ إلى "${newStatus === 'reviewed' ? 'تمت المراجعة' : newStatus === 'resolved' ? 'تم الحل' : 'معلق'}"` });
+      }
+    } catch (error) {
+      console.error('Failed to update report status:', error);
+      toast({ title: 'خطأ', description: 'فشل تحديث حالة البلاغ', variant: 'destructive' });
     }
   };
 
@@ -766,7 +812,7 @@ const AdminPage = () => {
         </div>
 
         <Tabs defaultValue="stats" className="w-full">
-          <TabsList className="grid w-full grid-cols-8 mb-6">
+          <TabsList className="grid w-full grid-cols-9 mb-6">
             <TabsTrigger value="stats" className="flex items-center gap-1">
               <BarChart3 className="w-4 h-4" />
               <span className="hidden md:inline">إحصائيات</span>
@@ -790,6 +836,15 @@ const AdminPage = () => {
             <TabsTrigger value="notifications" className="flex items-center gap-1">
               <Bell className="w-4 h-4" />
               <span className="hidden md:inline">إشعارات</span>
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="flex items-center gap-1 relative">
+              <Bug className="w-4 h-4" />
+              <span className="hidden md:inline">البلاغات</span>
+              {userReports.filter(r => r.status === 'pending').length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                  {userReports.filter(r => r.status === 'pending').length}
+                </span>
+              )}
             </TabsTrigger>
             <TabsTrigger value="logs" className="flex items-center gap-1">
               <Shield className="w-4 h-4" />
@@ -1020,6 +1075,73 @@ const AdminPage = () => {
                 ))
               )}
             </div>
+          </TabsContent>
+
+          {/* User Reports Tab - بلاغات المستخدمين */}
+          <TabsContent value="reports" className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="font-medium flex items-center gap-2">
+                <Bug className="w-5 h-5 text-primary" />
+                بلاغات المستخدمين ({userReports.length})
+              </h3>
+              <Button variant="outline" size="sm" onClick={loadUserReports}>
+                تحديث
+              </Button>
+            </div>
+
+            {userReports.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>لا توجد بلاغات حالياً</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {userReports.map((report) => (
+                  <div key={report.id} className="bg-card border border-border rounded-lg p-4">
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className={`px-2 py-0.5 text-xs rounded-full ${
+                            report.report_type === 'bug' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                            report.report_type === 'suggestion' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                            'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                          }`}>
+                            {report.report_type === 'bug' ? 'مشكلة تقنية' : report.report_type === 'suggestion' ? 'اقتراح' : 'أخرى'}
+                          </span>
+                          <span className={`px-2 py-0.5 text-xs rounded-full ${
+                            report.status === 'pending' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
+                            report.status === 'reviewed' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                            'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                          }`}>
+                            {report.status === 'pending' ? 'معلق' : report.status === 'reviewed' ? 'تمت المراجعة' : 'تم الحل'}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(report.created_at).toLocaleDateString('ar-SA')}
+                          </span>
+                        </div>
+                        <p className="text-sm mb-2">{report.message}</p>
+                        {report.email && (
+                          <p className="text-xs text-muted-foreground">📧 {report.email}</p>
+                        )}
+                      </div>
+                      <Select
+                        value={report.status}
+                        onValueChange={(value) => handleUpdateReportStatus(report.id, value)}
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">معلق</SelectItem>
+                          <SelectItem value="reviewed">تمت المراجعة</SelectItem>
+                          <SelectItem value="resolved">تم الحل</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           {/* Logs Tab - سجل الدخول */}
