@@ -227,6 +227,33 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_history: {
+        Row: {
+          body: string
+          id: string
+          recipients_count: number | null
+          sent_at: string | null
+          sent_by: string | null
+          title: string
+        }
+        Insert: {
+          body: string
+          id?: string
+          recipients_count?: number | null
+          sent_at?: string | null
+          sent_by?: string | null
+          title: string
+        }
+        Update: {
+          body?: string
+          id?: string
+          recipients_count?: number | null
+          sent_at?: string | null
+          sent_by?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       notification_settings: {
         Row: {
           admin_fcm_token: string | null
@@ -316,6 +343,7 @@ export type Database = {
       }
       settings: {
         Row: {
+          content_filter_enabled: boolean | null
           created_at: string
           id: string
           is_box_open: boolean
@@ -328,6 +356,7 @@ export type Database = {
           video_url: string | null
         }
         Insert: {
+          content_filter_enabled?: boolean | null
           created_at?: string
           id?: string
           is_box_open?: boolean
@@ -340,6 +369,7 @@ export type Database = {
           video_url?: string | null
         }
         Update: {
+          content_filter_enabled?: boolean | null
           created_at?: string
           id?: string
           is_box_open?: boolean
@@ -413,6 +443,15 @@ export type Database = {
             }
             Returns: string
           }
+      add_notification_authenticated: {
+        Args: {
+          p_body: string
+          p_password: string
+          p_recipients_count?: number
+          p_title: string
+        }
+        Returns: string
+      }
       add_video_authenticated: {
         Args: { p_password: string; p_title: string; p_url: string }
         Returns: string
@@ -493,6 +532,16 @@ export type Database = {
           id: string
           ip_address: string
           reason: string
+        }[]
+      }
+      get_notification_history_authenticated: {
+        Args: { p_password: string }
+        Returns: {
+          body: string
+          id: string
+          recipients_count: number
+          sent_at: string
+          title: string
         }[]
       }
       get_public_questions_count: { Args: never; Returns: number }
