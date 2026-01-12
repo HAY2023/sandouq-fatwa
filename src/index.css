@@ -137,3 +137,47 @@
 .islamic-pattern {
   background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.03'%3E%3Cpath d='M30 0l30 30-30 30L0 30 30 0zm0 10L10 30l20 20 20-20-20-20z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
+
+/* Reading Mode - Dynamic Font Size */
+:root {
+  --reading-font-size: 16px;
+}
+
+.reading-mode-content {
+  font-size: var(--reading-font-size) !important;
+}
+
+.reading-mode-content p,
+.reading-mode-content span,
+.reading-mode-content div,
+.reading-mode-content li {
+  font-size: var(--reading-font-size) !important;
+}
+
+/* High Contrast Mode */
+.high-contrast {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 0%;
+  --card: 0 0% 98%;
+  --card-foreground: 0 0% 0%;
+  --muted: 0 0% 90%;
+  --muted-foreground: 0 0% 20%;
+  --border: 0 0% 70%;
+}
+
+.dark.high-contrast {
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 8%;
+  --card-foreground: 0 0% 100%;
+  --muted: 0 0% 15%;
+  --muted-foreground: 0 0% 80%;
+  --border: 0 0% 40%;
+}
+
+/* Enhanced text readability for high contrast */
+.high-contrast p,
+.high-contrast span,
+.high-contrast div {
+  font-weight: 500;
+}
