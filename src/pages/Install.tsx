@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useSettings } from '@/hooks/useSettings';
 import { Button } from '@/components/ui/button';
-import { Download, Smartphone, Share, Plus, MoreVertical, ArrowLeft } from 'lucide-react';
+import { Download, ArrowLeft, Check } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -18,17 +18,15 @@ export default function Install() {
   const { data: settings, isLoading } = useSettings();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
+  const [isInstalling, setIsInstalling] = useState(false);
 
   const isRTL = i18n.language === 'ar';
 
   useEffect(() => {
+    // فحص إذا كان التطبيق مثبت
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
     }
-
-    const userAgent = navigator.userAgent.toLowerCase();
-    setIsIOS(/iphone|ipad|ipod/.test(userAgent));
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
@@ -36,15 +34,33 @@ export default function Install() {
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    
+    // فحص التثبيت الناجح
+    window.addEventListener('appinstalled', () => {
+      setIsInstalled(true);
+      setDeferredPrompt(null);
+    });
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
   }, []);
 
   const handleInstall = async () => {
     if (!deferredPrompt) return;
-    await deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') setIsInstalled(true);
-    setDeferredPrompt(null);
+    
+    setIsInstalling(true);
+    try {
+      await deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setIsInstalled(true);
+      }
+      setDeferredPrompt(null);
+    } catch (error) {
+      console.error('Installation failed:', error);
+    }
+    setIsInstalling(false);
   };
 
   if (isLoading) {
@@ -65,36 +81,30 @@ export default function Install() {
       appName: 'صندوق فتوى',
       subtitle: 'مسجد الإيمان – 150 مسكن',
       downloadBtn: 'تحميل التطبيق',
-      installed: 'التطبيق مثبت ✓',
-      goHome: 'العودة للرئيسية',
-      iosTitle: 'للتثبيت على iPhone:',
-      iosStep1: 'اضغط على',
-      iosStep2: 'ثم اختر',
-      iosStep3: 'إضافة إلى الشاشة الرئيسية',
+      downloading: 'جارٍ التحميل...',
+      installed: 'تم التثبيت ✓',
+      goHome: 'فتح التطبيق',
+      features: 'يعمل بدون إنترنت • سريع • إشعارات فورية',
     },
     fr: {
       title: "Télécharger l'app",
       appName: 'Boîte à Fatwas',
       subtitle: 'Mosquée Al-Iman – 150 Logements',
-      downloadBtn: "Télécharger l'application",
-      installed: 'Application installée ✓',
-      goHome: "Retour à l'accueil",
-      iosTitle: 'Pour installer sur iPhone:',
-      iosStep1: 'Appuyez sur',
-      iosStep2: 'puis choisissez',
-      iosStep3: "Ajouter à l'écran d'accueil",
+      downloadBtn: "Télécharger",
+      downloading: 'Téléchargement...',
+      installed: 'Installée ✓',
+      goHome: "Ouvrir l'app",
+      features: 'Fonctionne hors ligne • Rapide • Notifications',
     },
     en: {
       title: 'Download App',
       appName: 'Fatwa Box',
       subtitle: 'Al-Iman Mosque – 150 Housing',
       downloadBtn: 'Download App',
-      installed: 'App Installed ✓',
-      goHome: 'Go to Home',
-      iosTitle: 'To install on iPhone:',
-      iosStep1: 'Tap',
-      iosStep2: 'then choose',
-      iosStep3: 'Add to Home Screen',
+      downloading: 'Downloading...',
+      installed: 'Installed ✓',
+      goHome: 'Open App',
+      features: 'Works offline • Fast • Instant notifications',
     },
   };
 
@@ -126,7 +136,7 @@ export default function Install() {
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-12">
         <div className="text-center max-w-sm mx-auto">
           {/* App Icon */}
-          <div className="w-28 h-28 mx-auto mb-6 rounded-3xl overflow-hidden shadow-xl border border-border">
+          <div className="w-32 h-32 mx-auto mb-8 rounded-3xl overflow-hidden shadow-2xl border-2 border-border">
             <img 
               src="/favicon.jpg" 
               alt={c.appName} 
@@ -135,71 +145,47 @@ export default function Install() {
           </div>
 
           {/* App Name */}
-          <h2 className="text-3xl font-bold font-serif mb-2">{c.appName}</h2>
-          <p className="text-muted-foreground mb-8">{c.subtitle}</p>
+          <h2 className="text-4xl font-bold font-serif mb-3">{c.appName}</h2>
+          <p className="text-muted-foreground mb-10">{c.subtitle}</p>
 
-          {/* Install Button or Status */}
+          {/* Install Button */}
           {isInstalled ? (
-            <div className="space-y-4">
-              <div className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary/10 text-primary font-medium">
+            <div className="space-y-6">
+              <div className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-primary/10 text-primary font-bold text-lg">
+                <Check className="w-6 h-6" />
                 {c.installed}
               </div>
               <div>
-                <Button onClick={() => navigate('/')} variant="outline" size="lg" className="w-full">
+                <Button onClick={() => navigate('/')} size="lg" className="w-full text-lg h-14">
                   {c.goHome}
                 </Button>
               </div>
             </div>
           ) : deferredPrompt ? (
-            <Button onClick={handleInstall} size="lg" className="w-full gap-2">
-              <Download className="w-5 h-5" />
-              {c.downloadBtn}
-            </Button>
-          ) : isIOS ? (
-            <div className="space-y-4">
-              <div className="bg-muted rounded-xl p-6 text-start">
-                <p className="font-medium mb-4">{c.iosTitle}</p>
-                <div className="space-y-3 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">1</span>
-                    <span>{c.iosStep1}</span>
-                    <Share className="w-4 h-4 text-primary" />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">2</span>
-                    <span>{c.iosStep2}</span>
-                    <Plus className="w-4 h-4 text-primary" />
-                    <span>{c.iosStep3}</span>
-                  </div>
-                </div>
-              </div>
-              <Button onClick={() => navigate('/')} variant="outline" size="lg" className="w-full">
-                {c.goHome}
+            <div className="space-y-6">
+              <Button 
+                onClick={handleInstall} 
+                size="lg" 
+                className="w-full gap-3 text-xl h-16 rounded-2xl shadow-lg"
+                disabled={isInstalling}
+              >
+                <Download className="w-6 h-6" />
+                {isInstalling ? c.downloading : c.downloadBtn}
               </Button>
+              <p className="text-sm text-muted-foreground">{c.features}</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              <div className="bg-muted rounded-xl p-6 text-start">
-                <p className="font-medium mb-4">
-                  {i18n.language === 'ar' ? 'للتثبيت:' : i18n.language === 'fr' ? 'Pour installer:' : 'To install:'}
+            <div className="space-y-6">
+              <div className="bg-muted/50 rounded-2xl p-6 text-center">
+                <p className="text-muted-foreground">
+                  {i18n.language === 'ar' 
+                    ? 'التطبيق متاح للتثبيت من المتصفح' 
+                    : i18n.language === 'fr'
+                    ? "L'application est disponible depuis le navigateur"
+                    : 'The app is available from the browser'}
                 </p>
-                <div className="space-y-3 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">1</span>
-                    <span>
-                      {i18n.language === 'ar' ? 'اضغط على' : i18n.language === 'fr' ? 'Appuyez sur' : 'Tap'}
-                    </span>
-                    <MoreVertical className="w-4 h-4 text-primary" />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">2</span>
-                    <span>
-                      {i18n.language === 'ar' ? 'اختر "تثبيت التطبيق"' : i18n.language === 'fr' ? 'Choisissez "Installer"' : 'Choose "Install app"'}
-                    </span>
-                  </div>
-                </div>
               </div>
-              <Button onClick={() => navigate('/')} variant="outline" size="lg" className="w-full">
+              <Button onClick={() => navigate('/')} variant="outline" size="lg" className="w-full h-14">
                 {c.goHome}
               </Button>
             </div>

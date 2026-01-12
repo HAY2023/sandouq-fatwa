@@ -116,19 +116,25 @@ export type Database = {
       admin_credentials: {
         Row: {
           created_at: string
+          failed_attempts: number | null
           id: string
+          locked_until: string | null
           password_hash: string
           updated_at: string
         }
         Insert: {
           created_at?: string
+          failed_attempts?: number | null
           id?: string
+          locked_until?: string | null
           password_hash: string
           updated_at?: string
         }
         Update: {
           created_at?: string
+          failed_attempts?: number | null
           id?: string
+          locked_until?: string | null
           password_hash?: string
           updated_at?: string
         }
