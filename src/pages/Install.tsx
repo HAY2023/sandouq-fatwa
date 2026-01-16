@@ -1,12 +1,18 @@
 import { useTranslation } from 'react-i18next';
 import { useSettings } from '@/hooks/useSettings';
 import { Button } from '@/components/ui/button';
-import { Download, ArrowLeft, Check, Smartphone, Share, Plus, ExternalLink } from 'lucide-react';
+import { Download, ArrowLeft, Check, Smartphone, Share, Plus, ExternalLink, Monitor, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+
+// استيراد صور دليل التثبيت
+import step1Main from '@/assets/install-guide/step1-main.png';
+import step2Menu from '@/assets/install-guide/step2-menu.png';
+import step3Install from '@/assets/install-guide/step3-install.png';
+import step4App from '@/assets/install-guide/step4-app.png';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -21,12 +27,23 @@ export default function Install() {
   const [isInstalled, setIsInstalled] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
   const [showIOSHelp, setShowIOSHelp] = useState(false);
+  const [showDesktopGuide, setShowDesktopGuide] = useState(false);
+  const [currentGuideStep, setCurrentGuideStep] = useState(0);
 
   const isRTL = i18n.language === 'ar';
   
   // اكتشاف iOS
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  // صور دليل التثبيت للحاسوب
+  const desktopGuideSteps = [
+    { image: step1Main, title: isRTL ? 'افتح الموقع في المتصفح' : 'Open the website' },
+    { image: step2Menu, title: isRTL ? 'اضغط على قائمة المتصفح' : 'Click browser menu' },
+    { image: step3Install, title: isRTL ? 'اختر "تثبيت التطبيق"' : 'Choose "Install app"' },
+    { image: step4App, title: isRTL ? 'التطبيق جاهز للاستخدام!' : 'App is ready!' },
+  ];
 
   useEffect(() => {
     // فحص إذا كان التطبيق مثبت
@@ -150,6 +167,18 @@ export default function Install() {
 
   const iosC = iosInstructions[i18n.language as keyof typeof iosInstructions] || iosInstructions.ar;
 
+  const nextStep = () => {
+    if (currentGuideStep < desktopGuideSteps.length - 1) {
+      setCurrentGuideStep(currentGuideStep + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentGuideStep > 0) {
+      setCurrentGuideStep(currentGuideStep - 1);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/5 flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
@@ -230,6 +259,94 @@ export default function Install() {
                 </Button>
               </div>
             </motion.div>
+          ) : showDesktopGuide ? (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-6 w-full max-w-2xl"
+            >
+              <div className="bg-card border-2 border-border rounded-2xl p-6 space-y-4">
+                <h3 className="font-bold text-lg flex items-center gap-2 justify-center">
+                  <Monitor className="w-5 h-5 text-primary" />
+                  {isRTL ? 'تثبيت على الحاسوب' : 'Install on Desktop'}
+                </h3>
+                
+                {/* صورة الخطوة الحالية */}
+                <div className="relative overflow-hidden rounded-xl border border-border">
+                  <AnimatePresence mode="wait">
+                    <motion.img
+                      key={currentGuideStep}
+                      src={desktopGuideSteps[currentGuideStep].image}
+                      alt={desktopGuideSteps[currentGuideStep].title}
+                      className="w-full h-auto"
+                      initial={{ opacity: 0, x: isRTL ? -20 : 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: isRTL ? 20 : -20 }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  </AnimatePresence>
+                </div>
+                
+                {/* عنوان الخطوة */}
+                <div className="text-center">
+                  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-medium">
+                    <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm">
+                      {currentGuideStep + 1}
+                    </span>
+                    {desktopGuideSteps[currentGuideStep].title}
+                  </span>
+                </div>
+                
+                {/* أزرار التنقل */}
+                <div className="flex items-center justify-between">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={prevStep}
+                    disabled={currentGuideStep === 0}
+                    className="gap-1"
+                  >
+                    {isRTL ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                    {isRTL ? 'السابق' : 'Previous'}
+                  </Button>
+                  
+                  <div className="flex gap-1">
+                    {desktopGuideSteps.map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setCurrentGuideStep(idx)}
+                        className={`w-2 h-2 rounded-full transition-all ${
+                          idx === currentGuideStep ? 'bg-primary w-6' : 'bg-muted-foreground/30'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={nextStep}
+                    disabled={currentGuideStep === desktopGuideSteps.length - 1}
+                    className="gap-1"
+                  >
+                    {isRTL ? 'التالي' : 'Next'}
+                    {isRTL ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+              
+              <Button 
+                onClick={() => {
+                  setShowDesktopGuide(false);
+                  setCurrentGuideStep(0);
+                }} 
+                variant="outline" 
+                size="lg" 
+                className="w-full h-14 rounded-xl"
+              >
+                {i18n.language === 'ar' ? 'رجوع' : 'Back'}
+              </Button>
+            </motion.div>
           ) : showIOSHelp ? (
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
@@ -291,6 +408,18 @@ export default function Install() {
                 {isInstalling ? c.downloading : c.downloadBtn}
               </Button>
               <p className="text-sm text-muted-foreground">{c.features}</p>
+              
+              {/* زر عرض دليل التثبيت للحاسوب */}
+              {!isMobile && (
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDesktopGuide(true)}
+                  className="w-full gap-2"
+                >
+                  <Monitor className="w-4 h-4" />
+                  {isRTL ? 'عرض دليل التثبيت للحاسوب' : 'View Desktop Install Guide'}
+                </Button>
+              )}
               
               {/* إذا كان iOS أو لم يتوفر prompt */}
               {(isIOS || !deferredPrompt) && (
