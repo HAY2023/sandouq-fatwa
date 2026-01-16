@@ -1079,8 +1079,8 @@ const AdminPage = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">جميع الأسئلة</SelectItem>
-                      <SelectItem value="new">أسئلة جديدة (آخر 24 ساعة)</SelectItem>
                       <SelectItem value="old">أسئلة قديمة</SelectItem>
+                      <SelectItem value="new">أسئلة جديدة (آخر 24 ساعة)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
