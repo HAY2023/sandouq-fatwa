@@ -23,9 +23,9 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { action, token, device_type, notification } = await req.json();
+    const { action, token, device_type, notification, admin_password } = await req.json();
 
-    // Action: register token
+    // Action: register token (public - anyone can register their device)
     if (action === 'register') {
       if (!token) {
         return new Response(
@@ -56,8 +56,27 @@ serve(async (req) => {
       );
     }
 
-    // Action: send notification (admin only)
+    // Action: send notification (admin only - requires password verification)
     if (action === 'send') {
+      // Verify admin password
+      if (!admin_password) {
+        return new Response(
+          JSON.stringify({ error: 'Admin password required' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const { data: isValid, error: verifyError } = await supabase.rpc('verify_admin_password', {
+        input_password: admin_password
+      });
+
+      if (verifyError || !isValid) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid admin password' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       const notificationPayload = notification as NotificationPayload;
       
       if (!notificationPayload?.title || !notificationPayload?.body) {
@@ -81,8 +100,6 @@ serve(async (req) => {
         );
       }
 
-      // Here you would integrate with FCM, APNS, or another push service
-      // For now, we'll just log and return success
       console.log(`Would send notification to ${tokens?.length || 0} admin devices:`, notificationPayload);
 
       return new Response(
@@ -95,12 +112,31 @@ serve(async (req) => {
       );
     }
 
-    // Action: set admin status
+    // Action: set admin status (requires admin password verification)
     if (action === 'set-admin') {
       if (!token) {
         return new Response(
           JSON.stringify({ error: 'Token is required' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Verify admin password
+      if (!admin_password) {
+        return new Response(
+          JSON.stringify({ error: 'Admin password required' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const { data: isValid, error: verifyError } = await supabase.rpc('verify_admin_password', {
+        input_password: admin_password
+      });
+
+      if (verifyError || !isValid) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid admin password' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 

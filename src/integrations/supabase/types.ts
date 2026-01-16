@@ -120,6 +120,8 @@ export type Database = {
           id: string
           locked_until: string | null
           password_hash: string
+          security_failed_attempts: number | null
+          security_locked_until: string | null
           updated_at: string
         }
         Insert: {
@@ -128,6 +130,8 @@ export type Database = {
           id?: string
           locked_until?: string | null
           password_hash: string
+          security_failed_attempts?: number | null
+          security_locked_until?: string | null
           updated_at?: string
         }
         Update: {
@@ -136,6 +140,8 @@ export type Database = {
           id?: string
           locked_until?: string | null
           password_hash?: string
+          security_failed_attempts?: number | null
+          security_locked_until?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -341,6 +347,33 @@ export type Database = {
         }
         Relationships: []
       }
+      security_credentials: {
+        Row: {
+          created_at: string | null
+          failed_attempts: number | null
+          id: string
+          locked_until: string | null
+          password_hash: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          failed_attempts?: number | null
+          id?: string
+          locked_until?: string | null
+          password_hash: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          failed_attempts?: number | null
+          id?: string
+          locked_until?: string | null
+          password_hash?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       settings: {
         Row: {
           content_filter_enabled: boolean | null
@@ -513,6 +546,10 @@ export type Database = {
       }
       delete_selected_questions_authenticated: {
         Args: { p_password: string; p_question_ids: string[] }
+        Returns: boolean
+      }
+      delete_user_report_authenticated: {
+        Args: { p_password: string; p_report_id: string }
         Returns: boolean
       }
       delete_video_authenticated: {
