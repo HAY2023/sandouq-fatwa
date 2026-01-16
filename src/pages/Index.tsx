@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useSettings } from '@/hooks/useSettings';
@@ -11,19 +11,60 @@ import { AnnouncementBanner } from '@/components/AnnouncementBanner';
 import { FlashMessageBanner } from '@/components/FlashMessageBanner';
 import { QuestionCounter } from '@/components/QuestionCounter';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Menu, X, Download } from 'lucide-react';
+import { BookOpen, Menu, X, Download, WifiOff } from 'lucide-react';
 import { useBrowserNotifications } from '@/hooks/useBrowserNotifications';
 import mosqueImage from '@/assets/mosque-hero.jpg';
 import ShareButton from '@/components/ShareButton';
 import ReadingMode from '@/components/ReadingMode';
 import ReportProblem from '@/components/ReportProblem';
 
+// التخزين المؤقت للإعدادات
+const SETTINGS_CACHE_KEY = 'fatwa-settings-cache';
+
+const getCachedSettings = () => {
+  try {
+    const cached = localStorage.getItem(SETTINGS_CACHE_KEY);
+    if (cached) {
+      const { data, timestamp } = JSON.parse(cached);
+      // صالحة لمدة ساعة
+      if (Date.now() - timestamp < 3600000) {
+        return data;
+      }
+    }
+  } catch {}
+  return null;
+};
+
+const cacheSettings = (data: any) => {
+  try {
+    localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify({
+      data,
+      timestamp: Date.now()
+    }));
+  } catch {}
+};
+
 const Index = () => {
   const { t, i18n } = useTranslation();
   const [logoTaps, setLogoTaps] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  
+  // استخدام الإعدادات المخزنة كقيمة أولية
+  const cachedSettings = useMemo(() => getCachedSettings(), []);
   const { data: settings, isLoading } = useSettings();
+  
+  // تخزين الإعدادات الجديدة
+  useEffect(() => {
+    if (settings) {
+      cacheSettings(settings);
+    }
+  }, [settings]);
+
+  // استخدام الإعدادات المخزنة أو الجديدة
+  const currentSettings = settings || cachedSettings;
+  
   const formSectionRef = useRef<HTMLDivElement>(null);
 
   // تفعيل إشعارات المتصفح
@@ -31,12 +72,26 @@ const Index = () => {
 
   const isRTL = i18n.language === 'ar';
 
+  // مراقبة حالة الاتصال
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   // Handle scroll for sticky nav
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 100);
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -70,18 +125,30 @@ const Index = () => {
     setMobileMenuOpen(false);
   };
 
-  if (isLoading) {
+  // عرض محتوى الصفحة مباشرة مع الإعدادات المخزنة
+  if (isLoading && !cachedSettings) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-xl text-muted-foreground">{t('common.loading')}</div>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
+        <div className="w-16 h-16 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+        <p className="text-muted-foreground">{t('common.loading')}</p>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* مؤشر عدم الاتصال */}
+      {!isOnline && (
+        <div className="fixed top-0 left-0 right-0 z-[60] bg-destructive text-destructive-foreground py-2 px-4 text-center text-sm flex items-center justify-center gap-2">
+          <WifiOff className="w-4 h-4" />
+          <span>أنت غير متصل بالإنترنت - يعمل الموقع في الوضع المحفوظ</span>
+        </div>
+      )}
+
       {/* Sticky Navigation */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      <nav className={`fixed left-0 right-0 z-50 transition-all duration-300 ${
+        !isOnline ? 'top-10' : 'top-0'
+      } ${
         isScrolled 
           ? 'bg-background/95 backdrop-blur-md shadow-lg border-b border-border' 
           : 'bg-transparent'
@@ -104,7 +171,7 @@ const Index = () => {
               <ReadingMode />
               <LanguageSwitcher variant={isScrolled ? 'default' : 'hero'} />
               <ThemeToggle />
-              {settings?.is_box_open && (
+              {currentSettings?.is_box_open && (
                 <Button 
                   onClick={scrollToForm}
                   variant="secondary"
@@ -141,7 +208,7 @@ const Index = () => {
                   <LanguageSwitcher />
                   <ThemeToggle />
                 </div>
-                {settings?.is_box_open && (
+                {currentSettings?.is_box_open && (
                   <Button onClick={scrollToForm} className="w-full">
                     {t('nav.askQuestion')}
                   </Button>
@@ -191,10 +258,10 @@ const Index = () => {
 
 
       {/* Countdown Timer */}
-      {settings?.show_countdown && settings?.next_session_date && (
+      {currentSettings?.show_countdown && currentSettings?.next_session_date && (
         <section className="py-8 px-4 bg-secondary/30">
           <div className="container mx-auto max-w-xl">
-            <CountdownTimer targetDate={settings.next_session_date} />
+            <CountdownTimer targetDate={currentSettings.next_session_date} />
           </div>
         </section>
       )}
@@ -207,7 +274,7 @@ const Index = () => {
             <AnnouncementBanner />
           </div>
           
-          {settings?.is_box_open ? (
+          {currentSettings?.is_box_open ? (
             <>
               <div className="text-center mb-8">
                 <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
@@ -221,7 +288,7 @@ const Index = () => {
                 <QuestionForm />
               </div>
               {/* Question Counter */}
-              {settings?.show_question_count && <QuestionCounter />}
+              {currentSettings?.show_question_count && <QuestionCounter />}
             </>
           ) : (
             <div className="bg-card border border-border rounded-2xl p-8 md:p-12 shadow-lg text-center">
@@ -240,7 +307,7 @@ const Index = () => {
         <div className="container mx-auto text-center space-y-4">
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center justify-center gap-3">
-            {settings?.show_install_page && (
+            {currentSettings?.show_install_page && (
               <Link to="/install">
                 <Button variant="outline" size="sm" className="gap-2">
                   <Download className="w-4 h-4" />
