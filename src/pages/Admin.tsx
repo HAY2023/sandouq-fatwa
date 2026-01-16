@@ -24,8 +24,9 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { 
   Lock, MessageSquare, Calendar, Video, 
   FileSpreadsheet, FileText, Bell, BellOff, Trash2, Settings, List, Home, AlertTriangle, CheckSquare, Plus, Megaphone, Zap, Hash,
-  Shield, MapPin, Monitor, Globe, CheckCircle, XCircle, Clock, Wifi, Smartphone, Fingerprint, ChevronDown, ChevronUp, Search, Filter, BarChart3, BellRing, Send, Bug, AlertCircle
+  Shield, MapPin, Monitor, Globe, CheckCircle, XCircle, Clock, Wifi, Smartphone, Fingerprint, ChevronDown, ChevronUp, Search, Filter, BarChart3, BellRing, Send, Bug, AlertCircle, RefreshCw
 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import {
   AlertDialog,
@@ -120,6 +121,17 @@ const AdminPage = () => {
     body: string;
     sent_at: string;
     recipients_count: number;
+  }>>([]);
+  
+  // Admin device management states
+  const [adminDeviceToken, setAdminDeviceToken] = useState('');
+  const [settingAdminDevice, setSettingAdminDevice] = useState(false);
+  const [pushTokensList, setPushTokensList] = useState<Array<{
+    id: string;
+    token: string;
+    device_type: string | null;
+    is_admin: boolean | null;
+    created_at: string | null;
   }>>([]);
   
   // Content filter state
@@ -289,6 +301,7 @@ const AdminPage = () => {
       loadAccessLogs();
       loadNotificationHistory();
       loadUserReports();
+      loadPushTokens();
     }
   }, [isAuthenticated, storedPassword]);
 
@@ -729,6 +742,51 @@ const AdminPage = () => {
     }
     setSendingNotification(false);
   };
+
+  // Load push tokens list
+  const loadPushTokens = async () => {
+    if (!storedPassword) return;
+    try {
+      const { data, error } = await supabase
+        .from('push_tokens')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setPushTokensList(data || []);
+    } catch (error) {
+      console.error('Error loading push tokens:', error);
+    }
+  };
+
+  // Set device as admin
+  const handleSetAdminDevice = async () => {
+    if (!storedPassword || !adminDeviceToken.trim()) return;
+    setSettingAdminDevice(true);
+    try {
+      const { error } = await supabase.functions.invoke('send-notification', {
+        body: {
+          action: 'set-admin',
+          token: adminDeviceToken.trim(),
+          admin_password: storedPassword
+        }
+      });
+
+      if (error) throw error;
+
+      setAdminDeviceToken('');
+      await loadPushTokens();
+      toast({ 
+        title: '✓ تم التعيين', 
+        description: 'تم تعيين الجهاز كمسؤول بنجاح' 
+      });
+    } catch (error) {
+      console.error('Error setting admin device:', error);
+      toast({ title: 'خطأ', description: 'فشل تعيين الجهاز كمسؤول', variant: 'destructive' });
+    }
+    setSettingAdminDevice(false);
+  };
+
 
   const handleDeleteAllQuestions = async () => {
     if (!storedPassword) return;
@@ -1805,6 +1863,71 @@ const AdminPage = () => {
 
           {/* Notifications Tab - إرسال إشعارات */}
           <TabsContent value="notifications" className="space-y-4">
+            {/* تعيين هذا الجهاز كمسؤول */}
+            <div className="bg-card border border-border rounded-lg p-4 space-y-4">
+              <h4 className="font-medium flex items-center gap-2">
+                <Smartphone className="w-5 h-5 text-primary" />
+                تعيين جهاز كمسؤول
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                أدخل رمز الجهاز (Push Token) لتعيينه كجهاز مسؤول لاستقبال الإشعارات
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  value={adminDeviceToken}
+                  onChange={(e) => setAdminDeviceToken(e.target.value)}
+                  placeholder="رمز الجهاز (Push Token)"
+                  className="flex-1"
+                  dir="ltr"
+                />
+                <Button
+                  onClick={handleSetAdminDevice}
+                  disabled={settingAdminDevice || !adminDeviceToken.trim()}
+                  variant="outline"
+                >
+                  <Shield className="w-4 h-4 ml-2" />
+                  {settingAdminDevice ? 'جارٍ التعيين...' : 'تعيين كمسؤول'}
+                </Button>
+              </div>
+            </div>
+
+            {/* قائمة الأجهزة المسجلة */}
+            <div className="bg-card border border-border rounded-lg p-4 space-y-4">
+              <div className="flex justify-between items-center">
+                <h4 className="font-medium flex items-center gap-2">
+                  <Bell className="w-5 h-5 text-primary" />
+                  الأجهزة المسجلة للإشعارات
+                </h4>
+                <Button variant="ghost" size="sm" onClick={loadPushTokens}>
+                  <RefreshCw className="w-4 h-4" />
+                </Button>
+              </div>
+              {pushTokensList.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">لا توجد أجهزة مسجلة</p>
+              ) : (
+                <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                  {pushTokensList.map((device) => (
+                    <div key={device.id} className="flex justify-between items-center p-2 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Smartphone className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-xs font-mono truncate max-w-[200px]" dir="ltr">
+                          {device.token.slice(0, 20)}...
+                        </span>
+                        <span className="text-xs text-muted-foreground">({device.device_type})</span>
+                      </div>
+                      {device.is_admin && (
+                        <Badge variant="default" className="text-xs">
+                          <Shield className="w-3 h-3 ml-1" />
+                          مسؤول
+                        </Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* إرسال إشعار */}
             <div className="bg-card border border-border rounded-lg p-4 space-y-4">
               <h4 className="font-medium flex items-center gap-2">
                 <Send className="w-5 h-5 text-primary" />
