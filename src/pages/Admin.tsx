@@ -787,6 +787,24 @@ const AdminPage = () => {
     setSettingAdminDevice(false);
   };
 
+  // Delete notification from history
+  const handleDeleteNotification = async (notificationId: string) => {
+    if (!storedPassword) return;
+    try {
+      const { error } = await supabase.rpc('delete_notification_authenticated', {
+        p_password: storedPassword,
+        p_notification_id: notificationId
+      });
+      
+      if (error) throw error;
+      
+      setNotificationHistory(prev => prev.filter(n => n.id !== notificationId));
+      toast({ title: '✓ تم الحذف', description: 'تم حذف الإشعار بنجاح' });
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      toast({ title: 'خطأ', description: 'فشل حذف الإشعار', variant: 'destructive' });
+    }
+  };
 
   const handleDeleteAllQuestions = async () => {
     if (!storedPassword) return;
@@ -847,30 +865,64 @@ const AdminPage = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4" dir="rtl">
-        <div className="bg-card border border-border rounded-2xl p-8 w-full max-w-sm shadow-2xl">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold">لوحة التحكم</h2>
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-              <Home className="w-5 h-5" />
-            </Button>
-          </div>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-sm mb-2">كلمة المرور</label>
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="أدخل كلمة المرور"
-                className="text-center"
-              />
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-primary/10 flex items-center justify-center p-4" dir="rtl">
+        <div className="bg-card/95 backdrop-blur-xl border border-border/50 rounded-3xl p-10 w-full max-w-md shadow-2xl shadow-primary/10">
+          {/* Logo/Icon */}
+          <div className="flex justify-center mb-6">
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shadow-primary/30">
+              <Shield className="w-10 h-10 text-primary-foreground" />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              <Lock className="w-4 h-4 ml-2" />
-              {isLoading ? 'جارٍ التحقق...' : 'دخول'}
+          </div>
+          
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold mb-2">لوحة التحكم</h2>
+            <p className="text-sm text-muted-foreground">أدخل كلمة المرور للوصول إلى لوحة الإدارة</p>
+          </div>
+          
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium">كلمة المرور</label>
+              <div className="relative">
+                <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="pr-11 text-center h-12 text-lg rounded-xl bg-muted/50 border-muted-foreground/20 focus:border-primary transition-colors"
+                />
+              </div>
+            </div>
+            <Button 
+              type="submit" 
+              className="w-full h-12 text-lg font-medium rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all" 
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <RefreshCw className="w-5 h-5 ml-2 animate-spin" />
+                  جارٍ التحقق...
+                </>
+              ) : (
+                <>
+                  <Lock className="w-5 h-5 ml-2" />
+                  دخول
+                </>
+              )}
             </Button>
           </form>
+          
+          <div className="mt-8 pt-6 border-t border-border/50 flex justify-center">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate('/')}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Home className="w-4 h-4 ml-2" />
+              العودة للرئيسية
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -1962,9 +2014,38 @@ const AdminPage = () => {
                   <div key={notif.id} className="bg-card border border-border rounded-lg p-4">
                     <div className="flex justify-between items-start mb-2">
                       <h5 className="font-medium">{notif.title}</h5>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(notif.sent_at).toLocaleString('ar-SA')}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(notif.sent_at).toLocaleString('ar-SA')}
+                        </span>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive">
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent dir="rtl">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle className="flex items-center gap-2">
+                                <AlertTriangle className="w-5 h-5 text-destructive" />
+                                تأكيد الحذف
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                هل أنت متأكد من حذف هذا الإشعار من السجل؟
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter className="flex-row-reverse gap-2">
+                              <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => handleDeleteNotification(notif.id)} 
+                                className="bg-destructive hover:bg-destructive/90"
+                              >
+                                حذف
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
                     <p className="text-sm text-muted-foreground">{notif.body}</p>
                     <div className="mt-2 text-xs text-primary">
