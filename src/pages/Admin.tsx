@@ -700,7 +700,8 @@ const AdminPage = () => {
           notification: {
             title: notifTitle.trim(),
             body: notifBody.trim(),
-          }
+          },
+          admin_password: storedPassword
         }
       });
 
