@@ -544,6 +544,10 @@ export type Database = {
         Args: { p_flash_message_id: string; p_password: string }
         Returns: boolean
       }
+      delete_notification_authenticated: {
+        Args: { p_notification_id: string; p_password: string }
+        Returns: boolean
+      }
       delete_selected_questions_authenticated: {
         Args: { p_password: string; p_question_ids: string[] }
         Returns: boolean
