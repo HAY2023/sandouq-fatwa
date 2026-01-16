@@ -340,6 +340,23 @@ const AdminPage = () => {
     }
   };
 
+  const handleDeleteReport = async (reportId: string) => {
+    if (!storedPassword) return;
+    try {
+      const { data, error } = await supabase.rpc('delete_user_report_authenticated', {
+        p_password: storedPassword,
+        p_report_id: reportId
+      });
+      if (!error && data) {
+        setUserReports(prev => prev.filter(r => r.id !== reportId));
+        toast({ title: 'تم الحذف', description: 'تم حذف البلاغ بنجاح' });
+      }
+    } catch (error) {
+      console.error('Failed to delete report:', error);
+      toast({ title: 'خطأ', description: 'فشل حذف البلاغ', variant: 'destructive' });
+    }
+  };
+
   const loadAccessLogs = async () => {
     if (!storedPassword) return;
     try {
@@ -1207,19 +1224,42 @@ const AdminPage = () => {
                           <p className="text-xs text-muted-foreground">📧 {report.email}</p>
                         )}
                       </div>
-                      <Select
-                        value={report.status}
-                        onValueChange={(value) => handleUpdateReportStatus(report.id, value)}
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">معلق</SelectItem>
-                          <SelectItem value="reviewed">تمت المراجعة</SelectItem>
-                          <SelectItem value="resolved">تم الحل</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div className="flex items-center gap-2">
+                        <Select
+                          value={report.status}
+                          onValueChange={(value) => handleUpdateReportStatus(report.id, value)}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">معلق</SelectItem>
+                            <SelectItem value="reviewed">تمت المراجعة</SelectItem>
+                            <SelectItem value="resolved">تم الحل</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>حذف البلاغ</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                هل أنت متأكد من حذف هذا البلاغ؟ لا يمكن التراجع عن هذا الإجراء.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteReport(report.id)}>
+                                حذف
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
                   </div>
                 ))}
