@@ -55,10 +55,15 @@ export function usePushNotifications() {
     }
   }, []);
 
-  // Set admin status for token
-  const setAdminStatus = useCallback(async () => {
+  // Set admin status for token (requires admin password)
+  const setAdminStatus = useCallback(async (adminPassword: string) => {
     if (!token) {
       console.log('No token available to set admin status');
+      return false;
+    }
+
+    if (!adminPassword) {
+      console.error('Admin password required to set admin status');
       return false;
     }
 
@@ -66,7 +71,8 @@ export function usePushNotifications() {
       const { error } = await supabase.functions.invoke('send-notification', {
         body: {
           action: 'set-admin',
-          token: token
+          token: token,
+          admin_password: adminPassword
         }
       });
       
@@ -83,13 +89,19 @@ export function usePushNotifications() {
     }
   }, [token]);
 
-  // Send notification to admins
-  const sendNotificationToAdmins = useCallback(async (notification: NotificationPayload) => {
+  // Send notification to admins (requires admin password)
+  const sendNotificationToAdmins = useCallback(async (notification: NotificationPayload, adminPassword: string) => {
+    if (!adminPassword) {
+      console.error('Admin password required to send notifications');
+      return false;
+    }
+
     try {
       const { data, error } = await supabase.functions.invoke('send-notification', {
         body: {
           action: 'send',
-          notification
+          notification,
+          admin_password: adminPassword
         }
       });
       
