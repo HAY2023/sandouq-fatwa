@@ -57,6 +57,10 @@ const AdminPage = () => {
   const [logFilterStatus, setLogFilterStatus] = useState<'all' | 'authorized' | 'failed'>('all');
   const [logFilterDate, setLogFilterDate] = useState('');
   
+  // فلتر الأسئلة
+  const [questionFilter, setQuestionFilter] = useState<'all' | 'new' | 'old'>('all');
+  const [questionCategoryFilter, setQuestionCategoryFilter] = useState<string>('all');
+  
   const { toast } = useToast();
   
   const { data: settings, isLoading: settingsLoading } = useSettings();
@@ -175,6 +179,29 @@ const AdminPage = () => {
     
     return { categoryData, dailyData };
   }, [questions]);
+
+  // فلترة الأسئلة حسب التصنيف والتاريخ
+  const filteredQuestions = useMemo(() => {
+    let filtered = [...questions];
+    
+    // فلتر حسب الوقت (قديم/جديد)
+    if (questionFilter === 'new') {
+      // الأسئلة في آخر 24 ساعة
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      filtered = filtered.filter(q => new Date(q.created_at) > oneDayAgo);
+    } else if (questionFilter === 'old') {
+      // الأسئلة أقدم من 24 ساعة
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      filtered = filtered.filter(q => new Date(q.created_at) <= oneDayAgo);
+    }
+    
+    // فلتر حسب نوع الفتوى
+    if (questionCategoryFilter !== 'all') {
+      filtered = filtered.filter(q => q.category === questionCategoryFilter);
+    }
+    
+    return filtered;
+  }, [questions, questionFilter, questionCategoryFilter]);
 
   // فلترة السجلات
   const filteredLogs = useMemo(() => {
@@ -1037,14 +1064,70 @@ const AdminPage = () => {
               </div>
             </div>
 
+            {/* فلاتر الأسئلة */}
+            <div className="bg-card border border-border rounded-lg p-4 space-y-4">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Filter className="w-4 h-4" />
+                تصفية الأسئلة
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm mb-1">حسب الوقت</label>
+                  <Select value={questionFilter} onValueChange={(v) => setQuestionFilter(v as typeof questionFilter)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">جميع الأسئلة</SelectItem>
+                      <SelectItem value="new">أسئلة جديدة (آخر 24 ساعة)</SelectItem>
+                      <SelectItem value="old">أسئلة قديمة</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-sm mb-1">حسب نوع الفتوى</label>
+                  <Select value={questionCategoryFilter} onValueChange={setQuestionCategoryFilter}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">جميع الأنواع</SelectItem>
+                      {Array.from(new Set(questions.map(q => q.category))).map(cat => (
+                        <SelectItem key={cat} value={cat}>
+                          {getCategoryLabel(cat)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              {(questionFilter !== 'all' || questionCategoryFilter !== 'all') && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    عرض {filteredQuestions.length} من {questions.length} سؤال
+                  </span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => {
+                      setQuestionFilter('all');
+                      setQuestionCategoryFilter('all');
+                    }}
+                  >
+                    مسح الفلاتر
+                  </Button>
+                </div>
+              )}
+            </div>
+
             <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-              {questions.length === 0 ? (
+              {filteredQuestions.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <MessageSquare className="w-16 h-16 mx-auto mb-4 opacity-50" />
                   <p className="text-lg">لا توجد أسئلة حتى الآن</p>
                 </div>
               ) : (
-                questions.map((q, index) => (
+                filteredQuestions.map((q, index) => (
                   <div 
                     key={q.id} 
                     className={`bg-card border rounded-lg p-4 cursor-pointer transition-colors ${
