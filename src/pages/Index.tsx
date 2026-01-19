@@ -1,29 +1,22 @@
-import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useSettings } from '@/hooks/useSettings';
 import { CountdownTimer } from '@/components/CountdownTimer';
+import { VideoList } from '@/components/VideoList';
+import { QuestionForm } from '@/components/QuestionForm';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { AnnouncementBanner } from '@/components/AnnouncementBanner';
+import { FlashMessageBanner } from '@/components/FlashMessageBanner';
+import { QuestionCounter } from '@/components/QuestionCounter';
 import { Button } from '@/components/ui/button';
 import { BookOpen, Menu, X, Download, WifiOff } from 'lucide-react';
 import { useBrowserNotifications } from '@/hooks/useBrowserNotifications';
 import mosqueImage from '@/assets/mosque-hero.jpg';
-
-// Lazy load non-critical components for faster initial load
-const VideoList = lazy(() => import('@/components/VideoList').then(m => ({ default: m.VideoList })));
-const QuestionForm = lazy(() => import('@/components/QuestionForm').then(m => ({ default: m.QuestionForm })));
-const AnnouncementBanner = lazy(() => import('@/components/AnnouncementBanner').then(m => ({ default: m.AnnouncementBanner })));
-const FlashMessageBanner = lazy(() => import('@/components/FlashMessageBanner').then(m => ({ default: m.FlashMessageBanner })));
-const QuestionCounter = lazy(() => import('@/components/QuestionCounter').then(m => ({ default: m.QuestionCounter })));
-const ShareButton = lazy(() => import('@/components/ShareButton'));
-const ReadingMode = lazy(() => import('@/components/ReadingMode'));
-const ReportProblem = lazy(() => import('@/components/ReportProblem'));
-
-// Skeleton loader component
-const ComponentSkeleton = ({ height = 'h-20' }: { height?: string }) => (
-  <div className={`${height} bg-muted/50 rounded-lg animate-pulse`} />
-);
+import ShareButton from '@/components/ShareButton';
+import ReadingMode from '@/components/ReadingMode';
+import ReportProblem from '@/components/ReportProblem';
 
 // التخزين المؤقت للإعدادات
 const SETTINGS_CACHE_KEY = 'fatwa-settings-cache';
@@ -93,17 +86,10 @@ const Index = () => {
     };
   }, []);
 
-  // Handle scroll for sticky nav with throttling
+  // Handle scroll for sticky nav
   useEffect(() => {
-    let ticking = false;
     const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          setIsScrolled(window.scrollY > 100);
-          ticking = false;
-        });
-        ticking = true;
-      }
+      setIsScrolled(window.scrollY > 100);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
@@ -134,10 +120,10 @@ const Index = () => {
     });
   }, []);
 
-  const scrollToForm = useCallback(() => {
+  const scrollToForm = () => {
     formSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
     setMobileMenuOpen(false);
-  }, []);
+  };
 
   // عرض محتوى الصفحة مباشرة مع الإعدادات المخزنة
   if (isLoading && !cachedSettings) {
@@ -182,9 +168,7 @@ const Index = () => {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-2">
-              <Suspense fallback={null}>
-                <ReadingMode />
-              </Suspense>
+              <ReadingMode />
               <LanguageSwitcher variant={isScrolled ? 'default' : 'hero'} />
               <ThemeToggle />
               {currentSettings?.is_box_open && (
@@ -220,9 +204,7 @@ const Index = () => {
             <div className="md:hidden mt-4 pb-4 border-t border-border/50 pt-4 animate-in slide-in-from-top-2">
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-2">
-                  <Suspense fallback={null}>
-                    <ReadingMode />
-                  </Suspense>
+                  <ReadingMode />
                   <LanguageSwitcher />
                   <ThemeToggle />
                 </div>
@@ -263,18 +245,14 @@ const Index = () => {
       {/* Flash Messages - Right below hero */}
       <section className="bg-background py-4">
         <div className="container mx-auto max-w-3xl px-4">
-          <Suspense fallback={<ComponentSkeleton height="h-12" />}>
-            <FlashMessageBanner />
-          </Suspense>
+          <FlashMessageBanner />
         </div>
       </section>
 
       {/* Video Section */}
       <section className="py-12 px-4 bg-card">
         <div className="container mx-auto max-w-3xl">
-          <Suspense fallback={<ComponentSkeleton height="h-64" />}>
-            <VideoList />
-          </Suspense>
+          <VideoList />
         </div>
       </section>
 
@@ -293,9 +271,7 @@ const Index = () => {
         <div className="container mx-auto max-w-xl">
           {/* Announcements - Above question form */}
           <div className="mb-8">
-            <Suspense fallback={<ComponentSkeleton height="h-16" />}>
-              <AnnouncementBanner />
-            </Suspense>
+            <AnnouncementBanner />
           </div>
           
           {currentSettings?.is_box_open ? (
@@ -309,16 +285,10 @@ const Index = () => {
                 </p>
               </div>
               <div className="bg-card border border-border rounded-2xl p-6 md:p-8 shadow-lg">
-                <Suspense fallback={<ComponentSkeleton height="h-48" />}>
-                  <QuestionForm />
-                </Suspense>
+                <QuestionForm />
               </div>
               {/* Question Counter */}
-              {currentSettings?.show_question_count && (
-                <Suspense fallback={null}>
-                  <QuestionCounter />
-                </Suspense>
-              )}
+              {currentSettings?.show_question_count && <QuestionCounter />}
             </>
           ) : (
             <div className="bg-card border border-border rounded-2xl p-8 md:p-12 shadow-lg text-center">
@@ -345,16 +315,12 @@ const Index = () => {
                 </Button>
               </Link>
             )}
-            <Suspense fallback={null}>
-              <ShareButton />
-            </Suspense>
+            <ShareButton />
           </div>
           
           {/* Report Problem */}
           <div className="pt-2">
-            <Suspense fallback={null}>
-              <ReportProblem />
-            </Suspense>
+            <ReportProblem />
           </div>
           
           <p className="text-sm text-muted-foreground">{t('footer.mosqueName')}</p>

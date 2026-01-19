@@ -380,8 +380,6 @@ export type Database = {
           created_at: string
           id: string
           is_box_open: boolean
-          maintenance_message: string | null
-          maintenance_mode: boolean | null
           next_session_date: string | null
           show_countdown: boolean
           show_install_page: boolean | null
@@ -395,8 +393,6 @@ export type Database = {
           created_at?: string
           id?: string
           is_box_open?: boolean
-          maintenance_message?: string | null
-          maintenance_mode?: boolean | null
           next_session_date?: string | null
           show_countdown?: boolean
           show_install_page?: boolean | null
@@ -410,8 +406,6 @@ export type Database = {
           created_at?: string
           id?: string
           is_box_open?: boolean
-          maintenance_message?: string | null
-          maintenance_mode?: boolean | null
           next_session_date?: string | null
           show_countdown?: boolean
           show_install_page?: boolean | null
@@ -744,10 +738,7 @@ export type Database = {
       }
       update_settings_authenticated: {
         Args: {
-          p_content_filter_enabled?: boolean
           p_is_box_open?: boolean
-          p_maintenance_message?: string
-          p_maintenance_mode?: boolean
           p_next_session_date?: string
           p_password: string
           p_show_countdown?: boolean

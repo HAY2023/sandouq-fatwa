@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useSettings } from '@/hooks/useSettings';
 import { Button } from '@/components/ui/button';
-import { Download, ArrowLeft, Check, Monitor, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, X } from 'lucide-react';
+import { Download, ArrowLeft, Check, Smartphone, Share, Plus, ExternalLink, Monitor, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -26,11 +26,16 @@ export default function Install() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
+  const [showIOSHelp, setShowIOSHelp] = useState(false);
   const [showDesktopGuide, setShowDesktopGuide] = useState(false);
   const [currentGuideStep, setCurrentGuideStep] = useState(0);
-  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
   const isRTL = i18n.language === 'ar';
+  
+  // اكتشاف iOS
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   
   // صور دليل التثبيت للحاسوب
   const desktopGuideSteps = [
@@ -65,6 +70,12 @@ export default function Install() {
   }, []);
 
   const handleInstall = async () => {
+    // إذا كان iOS، أظهر التعليمات
+    if (isIOS) {
+      setShowIOSHelp(true);
+      return;
+    }
+
     // إذا كان لدينا prompt، استخدمه
     if (deferredPrompt) {
       setIsInstalling(true);
@@ -82,8 +93,8 @@ export default function Install() {
       return;
     }
 
-    // إذا لم يتوفر prompt، أظهر دليل التثبيت
-    setShowDesktopGuide(true);
+    // إذا لم يتوفر prompt، أظهر تعليمات عامة
+    setShowIOSHelp(true);
   };
 
   if (isLoading) {
@@ -108,7 +119,6 @@ export default function Install() {
       installed: 'تم التثبيت ✓',
       goHome: 'فتح التطبيق',
       features: 'يعمل بدون إنترنت • سريع • إشعارات فورية',
-      showGuide: 'عرض دليل التثبيت',
     },
     fr: {
       title: "Télécharger l'app",
@@ -119,7 +129,6 @@ export default function Install() {
       installed: 'Installée ✓',
       goHome: "Ouvrir l'app",
       features: 'Fonctionne hors ligne • Rapide • Notifications',
-      showGuide: 'Voir le guide',
     },
     en: {
       title: 'Download App',
@@ -130,11 +139,33 @@ export default function Install() {
       installed: 'Installed ✓',
       goHome: 'Open App',
       features: 'Works offline • Fast • Instant notifications',
-      showGuide: 'View Install Guide',
     },
   };
 
   const c = content[i18n.language as keyof typeof content] || content.ar;
+
+  const iosInstructions = {
+    ar: {
+      title: 'تثبيت على iOS',
+      step1: 'اضغط على زر المشاركة',
+      step2: 'اختر "إضافة إلى الشاشة الرئيسية"',
+      step3: 'اضغط "إضافة"',
+    },
+    fr: {
+      title: 'Installer sur iOS',
+      step1: 'Appuyez sur le bouton Partager',
+      step2: 'Choisissez "Ajouter à l\'écran d\'accueil"',
+      step3: 'Appuyez sur "Ajouter"',
+    },
+    en: {
+      title: 'Install on iOS',
+      step1: 'Tap the Share button',
+      step2: 'Choose "Add to Home Screen"',
+      step3: 'Tap "Add"',
+    },
+  };
+
+  const iosC = iosInstructions[i18n.language as keyof typeof iosInstructions] || iosInstructions.ar;
 
   const nextStep = () => {
     if (currentGuideStep < desktopGuideSteps.length - 1) {
@@ -170,44 +201,13 @@ export default function Install() {
         </div>
       </header>
 
-      {/* Image Zoom Modal */}
-      <AnimatePresence>
-        {zoomedImage && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4"
-            onClick={() => setZoomedImage(null)}
-          >
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-4 right-4 text-white hover:bg-white/20"
-              onClick={() => setZoomedImage(null)}
-            >
-              <X className="w-6 h-6" />
-            </Button>
-            <motion.img
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.8 }}
-              src={zoomedImage}
-              alt="Zoomed"
-              className="max-w-full max-h-full object-contain rounded-lg"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Main Content */}
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-12">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-center max-w-2xl mx-auto w-full"
+          className="text-center max-w-sm mx-auto"
         >
           {/* App Icon */}
           <motion.div 
@@ -263,19 +263,16 @@ export default function Install() {
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="space-y-6 w-full"
+              className="space-y-6 w-full max-w-2xl"
             >
               <div className="bg-card border-2 border-border rounded-2xl p-6 space-y-4">
                 <h3 className="font-bold text-lg flex items-center gap-2 justify-center">
                   <Monitor className="w-5 h-5 text-primary" />
-                  {isRTL ? 'دليل التثبيت للحاسوب' : 'Desktop Install Guide'}
+                  {isRTL ? 'تثبيت على الحاسوب' : 'Install on Desktop'}
                 </h3>
                 
                 {/* صورة الخطوة الحالية */}
-                <div 
-                  className="relative overflow-hidden rounded-xl border border-border cursor-pointer group"
-                  onClick={() => setZoomedImage(desktopGuideSteps[currentGuideStep].image)}
-                >
+                <div className="relative overflow-hidden rounded-xl border border-border">
                   <AnimatePresence mode="wait">
                     <motion.img
                       key={currentGuideStep}
@@ -288,9 +285,6 @@ export default function Install() {
                       transition={{ duration: 0.3 }}
                     />
                   </AnimatePresence>
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center">
-                    <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
                 </div>
                 
                 {/* عنوان الخطوة */}
@@ -353,6 +347,50 @@ export default function Install() {
                 {i18n.language === 'ar' ? 'رجوع' : 'Back'}
               </Button>
             </motion.div>
+          ) : showIOSHelp ? (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-6"
+            >
+              <div className="bg-card border-2 border-border rounded-2xl p-6 text-right space-y-4">
+                <h3 className="font-bold text-lg flex items-center gap-2 justify-center">
+                  <Smartphone className="w-5 h-5 text-primary" />
+                  {iosC.title}
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
+                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">1</div>
+                    <div className="flex items-center gap-2 flex-1">
+                      <Share className="w-5 h-5 text-primary" />
+                      <span>{iosC.step1}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
+                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">2</div>
+                    <div className="flex items-center gap-2 flex-1">
+                      <Plus className="w-5 h-5 text-primary" />
+                      <span>{iosC.step2}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
+                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">3</div>
+                    <div className="flex items-center gap-2 flex-1">
+                      <ExternalLink className="w-5 h-5 text-primary" />
+                      <span>{iosC.step3}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <Button 
+                onClick={() => setShowIOSHelp(false)} 
+                variant="outline" 
+                size="lg" 
+                className="w-full h-14 rounded-xl"
+              >
+                {i18n.language === 'ar' ? 'رجوع' : 'Back'}
+              </Button>
+            </motion.div>
           ) : (
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
@@ -372,14 +410,25 @@ export default function Install() {
               <p className="text-sm text-muted-foreground">{c.features}</p>
               
               {/* زر عرض دليل التثبيت للحاسوب */}
-              <Button
-                variant="outline"
-                onClick={() => setShowDesktopGuide(true)}
-                className="w-full gap-2"
-              >
-                <Monitor className="w-4 h-4" />
-                {c.showGuide}
-              </Button>
+              {!isMobile && (
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDesktopGuide(true)}
+                  className="w-full gap-2"
+                >
+                  <Monitor className="w-4 h-4" />
+                  {isRTL ? 'عرض دليل التثبيت للحاسوب' : 'View Desktop Install Guide'}
+                </Button>
+              )}
+              
+              {/* إذا كان iOS أو لم يتوفر prompt */}
+              {(isIOS || !deferredPrompt) && (
+                <p className="text-xs text-muted-foreground mt-4">
+                  {i18n.language === 'ar' 
+                    ? 'اضغط على الزر لعرض تعليمات التثبيت'
+                    : 'Tap the button to see installation instructions'}
+                </p>
+              )}
             </motion.div>
           )}
         </motion.div>

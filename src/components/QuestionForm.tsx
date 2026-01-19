@@ -47,7 +47,8 @@ export function QuestionForm() {
   } = useOfflineQuestions();
 
   const isRTL = i18n.language === 'ar';
-  const isContentFilterEnabled = settings?.content_filter_enabled !== false;
+  // استخدام any للوصول للخاصية الجديدة حتى يتم تحديث الأنواع
+  const isContentFilterEnabled = (settings as any)?.content_filter_enabled !== false;
 
   const correctionMessages = {
     ar: {

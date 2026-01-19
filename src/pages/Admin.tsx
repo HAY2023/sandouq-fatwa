@@ -139,8 +139,6 @@ const AdminPage = () => {
   const [showCountdown, setShowCountdown] = useState(true);
   const [showQuestionCount, setShowQuestionCount] = useState(false);
   const [showInstallPage, setShowInstallPage] = useState(true);
-  const [maintenanceMode, setMaintenanceMode] = useState(false);
-  const [maintenanceMessage, setMaintenanceMessage] = useState('الموقع تحت الصيانة، يرجى العودة لاحقاً');
   const [savingVideo, setSavingVideo] = useState(false);
   const [localVideos, setLocalVideos] = useState<VideoType[]>([]);
   const [showVideoPreview, setShowVideoPreview] = useState(false);
@@ -338,9 +336,7 @@ const AdminPage = () => {
       setShowCountdown(settings.show_countdown);
       setShowQuestionCount(settings.show_question_count ?? false);
       setShowInstallPage(settings.show_install_page ?? true);
-      setContentFilterEnabled(settings.content_filter_enabled ?? true);
-      setMaintenanceMode(settings.maintenance_mode ?? false);
-      setMaintenanceMessage(settings.maintenance_message ?? 'الموقع تحت الصيانة، يرجى العودة لاحقاً');
+      setContentFilterEnabled((settings as any).content_filter_enabled ?? true);
     }
   }, [settings]);
 
@@ -746,7 +742,7 @@ const AdminPage = () => {
       const success = await updateSettings.mutateAsync({
         password: storedPassword,
         content_filter_enabled: !contentFilterEnabled,
-      });
+      } as any);
       if (success) {
         setContentFilterEnabled(!contentFilterEnabled);
         toast({ title: 'تم التحديث', description: `فلتر المحتوى ${!contentFilterEnabled ? 'مفعّل' : 'معطّل'} الآن` });
@@ -1070,49 +1066,8 @@ const AdminPage = () => {
           <TabsContent value="stats" className="space-y-6">
             <h3 className="text-lg font-medium flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-primary" />
-              إحصائيات الأسئلة والزوار
+              إحصائيات الأسئلة
             </h3>
-
-            {/* ملخص الإحصائيات الرئيسية */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              <div className="bg-card border border-border rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-primary">{questions.length}</div>
-                <div className="text-sm text-muted-foreground">إجمالي الأسئلة</div>
-              </div>
-              <div className="bg-card border border-border rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-green-500">
-                  {questions.filter(q => {
-                    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-                    return new Date(q.created_at) > oneDayAgo;
-                  }).length}
-                </div>
-                <div className="text-sm text-muted-foreground">أسئلة اليوم</div>
-              </div>
-              <div className="bg-card border border-border rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-blue-500">{questionStats.categoryData.length}</div>
-                <div className="text-sm text-muted-foreground">فئات مختلفة</div>
-              </div>
-              <div className="bg-card border border-border rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-purple-500">{accessLogs.length}</div>
-                <div className="text-sm text-muted-foreground">إجمالي الزوار</div>
-              </div>
-              <div className="bg-card border border-border rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-amber-500">
-                  {accessLogs.filter(l => {
-                    const today = new Date();
-                    const logDate = new Date(l.accessed_at);
-                    return logDate.toDateString() === today.toDateString();
-                  }).length}
-                </div>
-                <div className="text-sm text-muted-foreground">زوار اليوم</div>
-              </div>
-              <div className="bg-card border border-border rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-cyan-500">
-                  {accessLogs.filter(l => l.is_authorized).length}
-                </div>
-                <div className="text-sm text-muted-foreground">دخول ناجح</div>
-              </div>
-            </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* الأسئلة حسب الفئة */}
@@ -1163,6 +1118,30 @@ const AdminPage = () => {
                     لا توجد بيانات
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* ملخص الإحصائيات */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-card border border-border rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-primary">{questions.length}</div>
+                <div className="text-sm text-muted-foreground">إجمالي الأسئلة</div>
+              </div>
+              <div className="bg-card border border-border rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-green-500">{questionStats.categoryData.length}</div>
+                <div className="text-sm text-muted-foreground">فئات مختلفة</div>
+              </div>
+              <div className="bg-card border border-border rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-amber-500">
+                  {accessLogs.filter(l => l.is_authorized).length}
+                </div>
+                <div className="text-sm text-muted-foreground">دخول ناجح</div>
+              </div>
+              <div className="bg-card border border-border rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-destructive">
+                  {accessLogs.filter(l => !l.is_authorized).length}
+                </div>
+                <div className="text-sm text-muted-foreground">محاولات فاشلة</div>
               </div>
             </div>
           </TabsContent>
@@ -2176,112 +2155,19 @@ const AdminPage = () => {
             )}
           </TabsContent>
           <TabsContent value="settings" className="space-y-4">
-            {/* حالة صندوق الأسئلة */}
-            <div className={`border rounded-lg p-4 space-y-4 ${isBoxOpen ? 'bg-green-500/10 border-green-500/30' : 'bg-destructive/10 border-destructive/30'}`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className={`font-medium flex items-center gap-2 ${isBoxOpen ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
-                    <MessageSquare className="w-4 h-4" />
-                    صندوق الأسئلة
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {isBoxOpen ? 'الصندوق مفتوح - يمكن للزوار إرسال أسئلة' : 'الصندوق مغلق - لا يمكن للزوار إرسال أسئلة'}
-                  </p>
-                </div>
-                <Switch
-                  checked={isBoxOpen}
-                  onCheckedChange={async (checked) => {
-                    if (!storedPassword) return;
-                    setIsLoading(true);
-                    try {
-                      const success = await updateSettings.mutateAsync({
-                        password: storedPassword,
-                        is_box_open: checked,
-                      });
-                      if (success) {
-                        setIsBoxOpen(checked);
-                        toast({ 
-                          title: checked ? '📬 الصندوق مفتوح' : '📪 الصندوق مغلق', 
-                          description: checked ? 'يمكن للزوار إرسال أسئلة الآن' : 'تم إغلاق صندوق الأسئلة'
-                        });
-                      }
-                    } catch {
-                      toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
-                    }
-                    setIsLoading(false);
-                  }}
-                  disabled={isLoading}
-                />
+            <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
+              <div>
+                <h3 className="font-medium">حالة الصندوق</h3>
+                <p className="text-sm text-muted-foreground">
+                  {isBoxOpen ? 'الصندوق مفتوح للأسئلة' : 'الصندوق مغلق حاليًا'}
+                </p>
               </div>
+              <Switch
+                checked={isBoxOpen}
+                onCheckedChange={handleToggleBox}
+                disabled={isLoading}
+              />
             </div>
-
-            {/* وضع الصيانة */}
-            <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-medium flex items-center gap-2 text-destructive">
-                    <AlertTriangle className="w-4 h-4" />
-                    وضع الصيانة
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {maintenanceMode ? 'الموقع مغلق للزوار الآن' : 'الموقع متاح للجميع'}
-                  </p>
-                </div>
-                <Switch
-                  checked={maintenanceMode}
-                  onCheckedChange={async (checked) => {
-                    if (!storedPassword) return;
-                    setIsLoading(true);
-                    try {
-                      const success = await updateSettings.mutateAsync({
-                        password: storedPassword,
-                        maintenance_mode: checked,
-                      });
-                      if (success) {
-                        setMaintenanceMode(checked);
-                        toast({ 
-                          title: checked ? '🔒 الموقع مغلق' : '🔓 الموقع مفتوح', 
-                          description: checked ? 'الموقع مغلق للزوار الآن' : 'الموقع متاح للجميع الآن'
-                        });
-                      }
-                    } catch {
-                      toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
-                    }
-                    setIsLoading(false);
-                  }}
-                  disabled={isLoading}
-                />
-              </div>
-              {maintenanceMode && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">رسالة الصيانة</label>
-                  <Input
-                    value={maintenanceMessage}
-                    onChange={(e) => setMaintenanceMessage(e.target.value)}
-                    placeholder="الموقع تحت الصيانة..."
-                    dir="rtl"
-                  />
-                  <Button 
-                    size="sm" 
-                    onClick={async () => {
-                      if (!storedPassword) return;
-                      try {
-                        await updateSettings.mutateAsync({
-                          password: storedPassword,
-                          maintenance_message: maintenanceMessage,
-                        });
-                        toast({ title: 'تم الحفظ', description: 'تم تحديث رسالة الصيانة' });
-                      } catch {
-                        toast({ title: 'خطأ', description: 'فشل الحفظ', variant: 'destructive' });
-                      }
-                    }}
-                  >
-                    حفظ الرسالة
-                  </Button>
-                </div>
-              )}
-            </div>
-
 
             <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
               <div>
@@ -2363,6 +2249,51 @@ const AdminPage = () => {
               </Button>
             </div>
 
+            {/* قسم الإشعارات */}
+            <div className="bg-card border border-border rounded-lg p-4 space-y-4">
+              <div className="flex items-center gap-2">
+                <BellRing className="w-5 h-5 text-primary" />
+                <h3 className="font-medium">إشعارات الأسئلة الجديدة</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                تلقي إشعارات في المتصفح عند وصول أسئلة جديدة أثناء تواجدك في لوحة التحكم
+              </p>
+              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <div>
+                  <p className="font-medium text-sm">إشعارات الصوت</p>
+                  <p className="text-xs text-muted-foreground">تشغيل صوت عند وصول سؤال جديد</p>
+                </div>
+                <Switch
+                  checked={soundEnabled}
+                  onCheckedChange={setSoundEnabled}
+                />
+              </div>
+              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <div>
+                  <p className="font-medium text-sm">إشعارات المتصفح</p>
+                  <p className="text-xs text-muted-foreground">عرض إشعار في المتصفح</p>
+                </div>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => {
+                    if ('Notification' in window) {
+                      Notification.requestPermission().then(permission => {
+                        if (permission === 'granted') {
+                          new Notification('تم تفعيل الإشعارات!', { 
+                            body: 'ستصلك إشعارات عند وصول أسئلة جديدة',
+                            icon: '/favicon.jpg' 
+                          });
+                        }
+                      });
+                    }
+                  }}
+                >
+                  <Bell className="w-4 h-4 ml-2" />
+                  تفعيل
+                </Button>
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </main>
