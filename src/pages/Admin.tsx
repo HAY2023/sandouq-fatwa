@@ -24,7 +24,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { 
   Lock, MessageSquare, Calendar, Video, 
   FileSpreadsheet, FileText, Bell, BellOff, Trash2, Settings, List, Home, AlertTriangle, CheckSquare, Plus, Megaphone, Zap, Hash,
-  Shield, MapPin, Monitor, Globe, CheckCircle, XCircle, Clock, Wifi, Smartphone, Fingerprint, ChevronDown, ChevronUp, Search, Filter, BarChart3, BellRing, Send, Bug, AlertCircle, RefreshCw, Eye, Copy, Check
+  Shield, MapPin, Monitor, Globe, CheckCircle, XCircle, Clock, Wifi, Smartphone, Fingerprint, ChevronDown, ChevronUp, Search, Filter, BarChart3, BellRing, Send, Bug, AlertCircle, RefreshCw
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
@@ -39,56 +39,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-
-// Video Preview Component
-const VideoPreview = ({ url }: { url: string }) => {
-  // YouTube
-  const youtubePatterns = [
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
-    /youtube\.com\/shorts\/([^&\n?#]+)/,
-  ];
-  
-  for (const pattern of youtubePatterns) {
-    const match = url.match(pattern);
-    if (match) {
-      return (
-        <iframe
-          src={`https://www.youtube.com/embed/${match[1]}`}
-          className="w-full aspect-video"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        />
-      );
-    }
-  }
-  
-  // Google Drive
-  const drivePatterns = [
-    /drive\.google\.com\/file\/d\/([^/\n?#]+)/,
-    /drive\.google\.com\/open\?id=([^&\n?#]+)/,
-  ];
-  
-  for (const pattern of drivePatterns) {
-    const match = url.match(pattern);
-    if (match) {
-      return (
-        <iframe
-          src={`https://drive.google.com/file/d/${match[1]}/preview`}
-          className="w-full aspect-video"
-          allow="autoplay; encrypted-media"
-          allowFullScreen
-        />
-      );
-    }
-  }
-  
-  // Direct video
-  return (
-    <video src={url} controls className="w-full aspect-video" preload="metadata">
-      متصفحك لا يدعم تشغيل الفيديو
-    </video>
-  );
-};
 
 const AdminPage = () => {
   const navigate = useNavigate();
@@ -141,7 +91,6 @@ const AdminPage = () => {
   const [showInstallPage, setShowInstallPage] = useState(true);
   const [savingVideo, setSavingVideo] = useState(false);
   const [localVideos, setLocalVideos] = useState<VideoType[]>([]);
-  const [showVideoPreview, setShowVideoPreview] = useState(false);
   
   // Announcement states
   const [announcementMessage, setAnnouncementMessage] = useState('');
@@ -1707,43 +1656,13 @@ const AdminPage = () => {
                 onChange={(e) => setVideoTitle(e.target.value)}
                 placeholder="عنوان الفيديو"
               />
-              <div className="space-y-2">
-                <Input
-                  type="url"
-                  value={videoUrl}
-                  onChange={(e) => {
-                    setVideoUrl(e.target.value);
-                    setShowVideoPreview(false);
-                  }}
-                  placeholder="رابط YouTube أو Google Drive"
-                  dir="ltr"
-                />
-                <p className="text-xs text-muted-foreground">
-                  يدعم: YouTube، Google Drive
-                </p>
-              </div>
-              
-              {/* معاينة الفيديو */}
-              {videoUrl && (
-                <div className="space-y-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setShowVideoPreview(!showVideoPreview)}
-                    className="w-full"
-                  >
-                    <Eye className="w-4 h-4 ml-2" />
-                    {showVideoPreview ? 'إخفاء المعاينة' : 'معاينة الفيديو'}
-                  </Button>
-                  
-                  {showVideoPreview && (
-                    <div className="rounded-lg overflow-hidden border border-border">
-                      <VideoPreview url={videoUrl} />
-                    </div>
-                  )}
-                </div>
-              )}
-              
+              <Input
+                type="url"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                placeholder="رابط YouTube (مثال: https://www.youtube.com/watch?v=...)"
+                dir="ltr"
+              />
               <Button 
                 onClick={handleSaveVideo} 
                 disabled={savingVideo || !videoUrl || !videoTitle}
@@ -1996,7 +1915,35 @@ const AdminPage = () => {
 
           {/* Notifications Tab - إرسال إشعارات */}
           <TabsContent value="notifications" className="space-y-4">
-            {/* قائمة الأجهزة المسجلة مع إمكانية التعيين */}
+            {/* تعيين هذا الجهاز كمسؤول */}
+            <div className="bg-card border border-border rounded-lg p-4 space-y-4">
+              <h4 className="font-medium flex items-center gap-2">
+                <Smartphone className="w-5 h-5 text-primary" />
+                تعيين جهاز كمسؤول
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                أدخل رمز الجهاز (Push Token) لتعيينه كجهاز مسؤول لاستقبال الإشعارات
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  value={adminDeviceToken}
+                  onChange={(e) => setAdminDeviceToken(e.target.value)}
+                  placeholder="رمز الجهاز (Push Token)"
+                  className="flex-1"
+                  dir="ltr"
+                />
+                <Button
+                  onClick={handleSetAdminDevice}
+                  disabled={settingAdminDevice || !adminDeviceToken.trim()}
+                  variant="outline"
+                >
+                  <Shield className="w-4 h-4 ml-2" />
+                  {settingAdminDevice ? 'جارٍ التعيين...' : 'تعيين كمسؤول'}
+                </Button>
+              </div>
+            </div>
+
+            {/* قائمة الأجهزة المسجلة */}
             <div className="bg-card border border-border rounded-lg p-4 space-y-4">
               <div className="flex justify-between items-center">
                 <h4 className="font-medium flex items-center gap-2">
@@ -2007,70 +1954,25 @@ const AdminPage = () => {
                   <RefreshCw className="w-4 h-4" />
                 </Button>
               </div>
-              <p className="text-sm text-muted-foreground">
-                انقر على "تعيين كمسؤول" بجانب أي جهاز لتفعيل استلام الإشعارات له
-              </p>
               {pushTokensList.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">لا توجد أجهزة مسجلة</p>
               ) : (
-                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                <div className="space-y-2 max-h-[200px] overflow-y-auto">
                   {pushTokensList.map((device) => (
-                    <div key={device.id} className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <Smartphone className="w-4 h-4 text-muted-foreground shrink-0" />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-mono truncate" dir="ltr">
-                              {device.token.slice(0, 30)}...
-                            </span>
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              className="h-5 w-5"
-                              onClick={() => {
-                                navigator.clipboard.writeText(device.token);
-                                toast({ title: 'تم النسخ', description: 'تم نسخ رمز الجهاز' });
-                              }}
-                            >
-                              <Copy className="w-3 h-3" />
-                            </Button>
-                          </div>
-                          <span className="text-xs text-muted-foreground">{device.device_type || 'غير معروف'}</span>
-                        </div>
+                    <div key={device.id} className="flex justify-between items-center p-2 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Smartphone className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-xs font-mono truncate max-w-[200px]" dir="ltr">
+                          {device.token.slice(0, 20)}...
+                        </span>
+                        <span className="text-xs text-muted-foreground">({device.device_type})</span>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {device.is_admin ? (
-                          <Badge variant="default" className="text-xs">
-                            <Check className="w-3 h-3 ml-1" />
-                            مسؤول
-                          </Badge>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={async () => {
-                              try {
-                                const { error } = await supabase.functions.invoke('send-notification', {
-                                  body: {
-                                    action: 'set-admin',
-                                    token: device.token,
-                                    admin_password: storedPassword
-                                  }
-                                });
-                                if (error) throw error;
-                                await loadPushTokens();
-                                toast({ title: '✓ تم التعيين', description: 'تم تعيين الجهاز كمسؤول' });
-                              } catch (error) {
-                                console.error('Error:', error);
-                                toast({ title: 'خطأ', description: 'فشل تعيين الجهاز', variant: 'destructive' });
-                              }
-                            }}
-                          >
-                            <Shield className="w-3 h-3 ml-1" />
-                            تعيين كمسؤول
-                          </Button>
-                        )}
-                      </div>
+                      {device.is_admin && (
+                        <Badge variant="default" className="text-xs">
+                          <Shield className="w-3 h-3 ml-1" />
+                          مسؤول
+                        </Badge>
+                      )}
                     </div>
                   ))}
                 </div>
