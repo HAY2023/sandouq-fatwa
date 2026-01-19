@@ -1070,8 +1070,49 @@ const AdminPage = () => {
           <TabsContent value="stats" className="space-y-6">
             <h3 className="text-lg font-medium flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-primary" />
-              إحصائيات الأسئلة
+              إحصائيات الأسئلة والزوار
             </h3>
+
+            {/* ملخص الإحصائيات الرئيسية */}
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              <div className="bg-card border border-border rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-primary">{questions.length}</div>
+                <div className="text-sm text-muted-foreground">إجمالي الأسئلة</div>
+              </div>
+              <div className="bg-card border border-border rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-green-500">
+                  {questions.filter(q => {
+                    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+                    return new Date(q.created_at) > oneDayAgo;
+                  }).length}
+                </div>
+                <div className="text-sm text-muted-foreground">أسئلة اليوم</div>
+              </div>
+              <div className="bg-card border border-border rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-blue-500">{questionStats.categoryData.length}</div>
+                <div className="text-sm text-muted-foreground">فئات مختلفة</div>
+              </div>
+              <div className="bg-card border border-border rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-purple-500">{accessLogs.length}</div>
+                <div className="text-sm text-muted-foreground">إجمالي الزوار</div>
+              </div>
+              <div className="bg-card border border-border rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-amber-500">
+                  {accessLogs.filter(l => {
+                    const today = new Date();
+                    const logDate = new Date(l.accessed_at);
+                    return logDate.toDateString() === today.toDateString();
+                  }).length}
+                </div>
+                <div className="text-sm text-muted-foreground">زوار اليوم</div>
+              </div>
+              <div className="bg-card border border-border rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-cyan-500">
+                  {accessLogs.filter(l => l.is_authorized).length}
+                </div>
+                <div className="text-sm text-muted-foreground">دخول ناجح</div>
+              </div>
+            </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* الأسئلة حسب الفئة */}
@@ -1122,30 +1163,6 @@ const AdminPage = () => {
                     لا توجد بيانات
                   </div>
                 )}
-              </div>
-            </div>
-
-            {/* ملخص الإحصائيات */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-card border border-border rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-primary">{questions.length}</div>
-                <div className="text-sm text-muted-foreground">إجمالي الأسئلة</div>
-              </div>
-              <div className="bg-card border border-border rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-green-500">{questionStats.categoryData.length}</div>
-                <div className="text-sm text-muted-foreground">فئات مختلفة</div>
-              </div>
-              <div className="bg-card border border-border rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-amber-500">
-                  {accessLogs.filter(l => l.is_authorized).length}
-                </div>
-                <div className="text-sm text-muted-foreground">دخول ناجح</div>
-              </div>
-              <div className="bg-card border border-border rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-destructive">
-                  {accessLogs.filter(l => !l.is_authorized).length}
-                </div>
-                <div className="text-sm text-muted-foreground">محاولات فاشلة</div>
               </div>
             </div>
           </TabsContent>
@@ -2226,19 +2243,6 @@ const AdminPage = () => {
               )}
             </div>
 
-            <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
-              <div>
-                <h3 className="font-medium">حالة الصندوق</h3>
-                <p className="text-sm text-muted-foreground">
-                  {isBoxOpen ? 'الصندوق مفتوح للأسئلة' : 'الصندوق مغلق حاليًا'}
-                </p>
-              </div>
-              <Switch
-                checked={isBoxOpen}
-                onCheckedChange={handleToggleBox}
-                disabled={isLoading}
-              />
-            </div>
 
             <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
               <div>
@@ -2320,51 +2324,6 @@ const AdminPage = () => {
               </Button>
             </div>
 
-            {/* قسم الإشعارات */}
-            <div className="bg-card border border-border rounded-lg p-4 space-y-4">
-              <div className="flex items-center gap-2">
-                <BellRing className="w-5 h-5 text-primary" />
-                <h3 className="font-medium">إشعارات الأسئلة الجديدة</h3>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                تلقي إشعارات في المتصفح عند وصول أسئلة جديدة أثناء تواجدك في لوحة التحكم
-              </p>
-              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                <div>
-                  <p className="font-medium text-sm">إشعارات الصوت</p>
-                  <p className="text-xs text-muted-foreground">تشغيل صوت عند وصول سؤال جديد</p>
-                </div>
-                <Switch
-                  checked={soundEnabled}
-                  onCheckedChange={setSoundEnabled}
-                />
-              </div>
-              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                <div>
-                  <p className="font-medium text-sm">إشعارات المتصفح</p>
-                  <p className="text-xs text-muted-foreground">عرض إشعار في المتصفح</p>
-                </div>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => {
-                    if ('Notification' in window) {
-                      Notification.requestPermission().then(permission => {
-                        if (permission === 'granted') {
-                          new Notification('تم تفعيل الإشعارات!', { 
-                            body: 'ستصلك إشعارات عند وصول أسئلة جديدة',
-                            icon: '/favicon.jpg' 
-                          });
-                        }
-                      });
-                    }
-                  }}
-                >
-                  <Bell className="w-4 h-4 ml-2" />
-                  تفعيل
-                </Button>
-              </div>
-            </div>
           </TabsContent>
         </Tabs>
       </main>
