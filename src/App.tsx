@@ -14,18 +14,7 @@ import SecurityLogs from "./pages/SecurityLogs";
 import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5 دقائق
-      gcTime: 1000 * 60 * 60, // ساعة واحدة
-      retry: 2,
-      retryDelay: 1000,
-      refetchOnWindowFocus: false,
-      networkMode: 'offlineFirst', // محاولة استخدام الذاكرة المؤقتة أولاً
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 // Component to handle document direction based on language
 function DirectionHandler({ children }: { children: React.ReactNode }) {
@@ -64,9 +53,9 @@ const App = () => {
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
         <DirectionHandler>
           <TooltipProvider>
-            {/* Show splash screen only on first visit - سريع */}
+            {/* Show splash screen only on first visit */}
             {showSplash && isFirstVisit && (
-              <SplashScreen onComplete={handleSplashComplete} duration={1800} />
+              <SplashScreen onComplete={handleSplashComplete} duration={2500} />
             )}
             
             <ConnectionStatus />

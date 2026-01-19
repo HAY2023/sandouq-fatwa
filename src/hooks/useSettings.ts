@@ -12,32 +12,6 @@ export interface Settings {
   show_install_page: boolean;
 }
 
-// التخزين المؤقت للإعدادات
-const SETTINGS_CACHE_KEY = 'fatwa-settings-v2';
-
-const getCachedSettings = (): Settings | null => {
-  try {
-    const cached = localStorage.getItem(SETTINGS_CACHE_KEY);
-    if (cached) {
-      const { data, timestamp } = JSON.parse(cached);
-      // صالحة لمدة ساعة واحدة
-      if (Date.now() - timestamp < 3600000) {
-        return data;
-      }
-    }
-  } catch {}
-  return null;
-};
-
-const setCachedSettings = (data: Settings) => {
-  try {
-    localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify({
-      data,
-      timestamp: Date.now()
-    }));
-  } catch {}
-};
-
 export function useSettings() {
   return useQuery({
     queryKey: ['settings'],
@@ -48,21 +22,8 @@ export function useSettings() {
         .maybeSingle();
       
       if (error) throw error;
-      
-      const settings = data as Settings | null;
-      if (settings) {
-        setCachedSettings(settings);
-      }
-      return settings;
+      return data as Settings | null;
     },
-    // استخدام البيانات المخزنة مؤقتاً كقيمة أولية
-    initialData: getCachedSettings,
-    // تحديث في الخلفية
-    staleTime: 1000 * 60 * 5, // 5 دقائق
-    gcTime: 1000 * 60 * 60, // ساعة واحدة
-    // إعادة المحاولة عند الخطأ
-    retry: 2,
-    retryDelay: 1000,
   });
 }
 
