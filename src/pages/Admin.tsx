@@ -139,6 +139,8 @@ const AdminPage = () => {
   const [showCountdown, setShowCountdown] = useState(true);
   const [showQuestionCount, setShowQuestionCount] = useState(false);
   const [showInstallPage, setShowInstallPage] = useState(true);
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [maintenanceMessage, setMaintenanceMessage] = useState('الموقع تحت الصيانة، يرجى العودة لاحقاً');
   const [savingVideo, setSavingVideo] = useState(false);
   const [localVideos, setLocalVideos] = useState<VideoType[]>([]);
   const [showVideoPreview, setShowVideoPreview] = useState(false);
@@ -337,6 +339,8 @@ const AdminPage = () => {
       setShowQuestionCount(settings.show_question_count ?? false);
       setShowInstallPage(settings.show_install_page ?? true);
       setContentFilterEnabled((settings as any).content_filter_enabled ?? true);
+      setMaintenanceMode((settings as any).maintenance_mode ?? false);
+      setMaintenanceMessage((settings as any).maintenance_message ?? 'الموقع تحت الصيانة، يرجى العودة لاحقاً');
     }
   }, [settings]);
 
@@ -2155,6 +2159,73 @@ const AdminPage = () => {
             )}
           </TabsContent>
           <TabsContent value="settings" className="space-y-4">
+            {/* وضع الصيانة */}
+            <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-medium flex items-center gap-2 text-destructive">
+                    <AlertTriangle className="w-4 h-4" />
+                    وضع الصيانة
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {maintenanceMode ? 'الموقع مغلق للزوار الآن' : 'الموقع متاح للجميع'}
+                  </p>
+                </div>
+                <Switch
+                  checked={maintenanceMode}
+                  onCheckedChange={async (checked) => {
+                    if (!storedPassword) return;
+                    setIsLoading(true);
+                    try {
+                      const success = await updateSettings.mutateAsync({
+                        password: storedPassword,
+                        maintenance_mode: checked,
+                      });
+                      if (success) {
+                        setMaintenanceMode(checked);
+                        toast({ 
+                          title: checked ? '🔒 الموقع مغلق' : '🔓 الموقع مفتوح', 
+                          description: checked ? 'الموقع مغلق للزوار الآن' : 'الموقع متاح للجميع الآن'
+                        });
+                      }
+                    } catch {
+                      toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
+                    }
+                    setIsLoading(false);
+                  }}
+                  disabled={isLoading}
+                />
+              </div>
+              {maintenanceMode && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">رسالة الصيانة</label>
+                  <Input
+                    value={maintenanceMessage}
+                    onChange={(e) => setMaintenanceMessage(e.target.value)}
+                    placeholder="الموقع تحت الصيانة..."
+                    dir="rtl"
+                  />
+                  <Button 
+                    size="sm" 
+                    onClick={async () => {
+                      if (!storedPassword) return;
+                      try {
+                        await updateSettings.mutateAsync({
+                          password: storedPassword,
+                          maintenance_message: maintenanceMessage,
+                        });
+                        toast({ title: 'تم الحفظ', description: 'تم تحديث رسالة الصيانة' });
+                      } catch {
+                        toast({ title: 'خطأ', description: 'فشل الحفظ', variant: 'destructive' });
+                      }
+                    }}
+                  >
+                    حفظ الرسالة
+                  </Button>
+                </div>
+              )}
+            </div>
+
             <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
               <div>
                 <h3 className="font-medium">حالة الصندوق</h3>
