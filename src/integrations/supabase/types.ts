@@ -771,6 +771,22 @@ export type Database = {
             }
             Returns: boolean
           }
+        | {
+            Args: {
+              p_content_filter_enabled?: boolean
+              p_is_box_open?: boolean
+              p_maintenance_message?: string
+              p_maintenance_mode?: boolean
+              p_next_session_date?: string
+              p_password: string
+              p_show_countdown?: boolean
+              p_show_install_page?: boolean
+              p_show_question_count?: boolean
+              p_video_title?: string
+              p_video_url?: string
+            }
+            Returns: boolean
+          }
       verify_admin_password: {
         Args: { input_password: string }
         Returns: boolean

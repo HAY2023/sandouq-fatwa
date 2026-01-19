@@ -100,14 +100,6 @@ export function ConnectionStatus() {
                   </>
                 )}
               </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setShowStatus(false)}
-                className="h-7 px-2 text-white hover:bg-white/20"
-              >
-                ✕
-              </Button>
             </>
           ) : (
             <>

@@ -338,9 +338,9 @@ const AdminPage = () => {
       setShowCountdown(settings.show_countdown);
       setShowQuestionCount(settings.show_question_count ?? false);
       setShowInstallPage(settings.show_install_page ?? true);
-      setContentFilterEnabled((settings as any).content_filter_enabled ?? true);
-      setMaintenanceMode((settings as any).maintenance_mode ?? false);
-      setMaintenanceMessage((settings as any).maintenance_message ?? 'الموقع تحت الصيانة، يرجى العودة لاحقاً');
+      setContentFilterEnabled(settings.content_filter_enabled ?? true);
+      setMaintenanceMode(settings.maintenance_mode ?? false);
+      setMaintenanceMessage(settings.maintenance_message ?? 'الموقع تحت الصيانة، يرجى العودة لاحقاً');
     }
   }, [settings]);
 
@@ -746,7 +746,7 @@ const AdminPage = () => {
       const success = await updateSettings.mutateAsync({
         password: storedPassword,
         content_filter_enabled: !contentFilterEnabled,
-      } as any);
+      });
       if (success) {
         setContentFilterEnabled(!contentFilterEnabled);
         toast({ title: 'تم التحديث', description: `فلتر المحتوى ${!contentFilterEnabled ? 'مفعّل' : 'معطّل'} الآن` });

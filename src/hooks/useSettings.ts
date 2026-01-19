@@ -12,6 +12,7 @@ export interface Settings {
   show_install_page: boolean;
   maintenance_mode?: boolean;
   maintenance_message?: string;
+  content_filter_enabled?: boolean;
 }
 
 // التخزين المؤقت للإعدادات
@@ -46,7 +47,7 @@ export function useSettings() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('settings')
-        .select('id, is_box_open, next_session_date, video_url, video_title, show_countdown, show_question_count, show_install_page, maintenance_mode, maintenance_message')
+        .select('id, is_box_open, next_session_date, video_url, video_title, show_countdown, show_question_count, show_install_page, maintenance_mode, maintenance_message, content_filter_enabled')
         .maybeSingle();
       
       if (error) throw error;
@@ -96,6 +97,7 @@ export function useUpdateSettingsAuthenticated() {
       show_install_page?: boolean;
       maintenance_mode?: boolean;
       maintenance_message?: string;
+      content_filter_enabled?: boolean;
     }) => {
       const { data, error } = await supabase.rpc('update_settings_authenticated', {
         p_password: params.password,
@@ -108,6 +110,7 @@ export function useUpdateSettingsAuthenticated() {
         p_show_install_page: params.show_install_page,
         p_maintenance_mode: params.maintenance_mode,
         p_maintenance_message: params.maintenance_message,
+        p_content_filter_enabled: params.content_filter_enabled,
       });
       
       if (error) throw error;
