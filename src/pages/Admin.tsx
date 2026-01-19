@@ -2176,6 +2176,45 @@ const AdminPage = () => {
             )}
           </TabsContent>
           <TabsContent value="settings" className="space-y-4">
+            {/* حالة صندوق الأسئلة */}
+            <div className={`border rounded-lg p-4 space-y-4 ${isBoxOpen ? 'bg-green-500/10 border-green-500/30' : 'bg-destructive/10 border-destructive/30'}`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className={`font-medium flex items-center gap-2 ${isBoxOpen ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+                    <MessageSquare className="w-4 h-4" />
+                    صندوق الأسئلة
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {isBoxOpen ? 'الصندوق مفتوح - يمكن للزوار إرسال أسئلة' : 'الصندوق مغلق - لا يمكن للزوار إرسال أسئلة'}
+                  </p>
+                </div>
+                <Switch
+                  checked={isBoxOpen}
+                  onCheckedChange={async (checked) => {
+                    if (!storedPassword) return;
+                    setIsLoading(true);
+                    try {
+                      const success = await updateSettings.mutateAsync({
+                        password: storedPassword,
+                        is_box_open: checked,
+                      });
+                      if (success) {
+                        setIsBoxOpen(checked);
+                        toast({ 
+                          title: checked ? '📬 الصندوق مفتوح' : '📪 الصندوق مغلق', 
+                          description: checked ? 'يمكن للزوار إرسال أسئلة الآن' : 'تم إغلاق صندوق الأسئلة'
+                        });
+                      }
+                    } catch {
+                      toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
+                    }
+                    setIsLoading(false);
+                  }}
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+
             {/* وضع الصيانة */}
             <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 space-y-4">
               <div className="flex items-center justify-between">
