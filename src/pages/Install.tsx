@@ -111,34 +111,34 @@ export default function Install() {
 
   const content = {
     ar: {
-      title: 'تحميل التطبيق',
+      title: 'تثبيت التطبيق',
       appName: 'صندوق فتوى',
       subtitle: 'مسجد الإيمان – 150 مسكن',
-      downloadBtn: 'تحميل التطبيق',
-      downloading: 'جارٍ التحميل...',
+      downloadBtn: 'تثبيت',
+      downloading: 'جارٍ التثبيت...',
       installed: 'تم التثبيت ✓',
       goHome: 'فتح التطبيق',
-      features: 'يعمل بدون إنترنت • سريع • إشعارات فورية',
+      showMobileGuide: 'عرض دليل التثبيت للهاتف',
     },
     fr: {
-      title: "Télécharger l'app",
+      title: "Installer l'app",
       appName: 'Boîte à Fatwas',
       subtitle: 'Mosquée Al-Iman – 150 Logements',
-      downloadBtn: "Télécharger",
-      downloading: 'Téléchargement...',
+      downloadBtn: "Installer",
+      downloading: 'Installation...',
       installed: 'Installée ✓',
       goHome: "Ouvrir l'app",
-      features: 'Fonctionne hors ligne • Rapide • Notifications',
+      showMobileGuide: 'Guide d\'installation mobile',
     },
     en: {
-      title: 'Download App',
+      title: 'Install App',
       appName: 'Fatwa Box',
       subtitle: 'Al-Iman Mosque – 150 Housing',
-      downloadBtn: 'Download App',
-      downloading: 'Downloading...',
+      downloadBtn: 'Install',
+      downloading: 'Installing...',
       installed: 'Installed ✓',
       goHome: 'Open App',
-      features: 'Works offline • Fast • Instant notifications',
+      showMobileGuide: 'Show Mobile Install Guide',
     },
   };
 
@@ -396,7 +396,7 @@ export default function Install() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="space-y-6"
+              className="space-y-4"
             >
               <Button 
                 onClick={handleInstall} 
@@ -407,7 +407,18 @@ export default function Install() {
                 <Download className="w-8 h-8" />
                 {isInstalling ? c.downloading : c.downloadBtn}
               </Button>
-              <p className="text-sm text-muted-foreground">{c.features}</p>
+              
+              {/* زر عرض دليل التثبيت للهاتف */}
+              {isMobile && (
+                <Button
+                  variant="outline"
+                  onClick={() => setShowIOSHelp(true)}
+                  className="w-full gap-2"
+                >
+                  <Smartphone className="w-4 h-4" />
+                  {c.showMobileGuide}
+                </Button>
+              )}
               
               {/* زر عرض دليل التثبيت للحاسوب */}
               {!isMobile && (
@@ -419,15 +430,6 @@ export default function Install() {
                   <Monitor className="w-4 h-4" />
                   {isRTL ? 'عرض دليل التثبيت للحاسوب' : 'View Desktop Install Guide'}
                 </Button>
-              )}
-              
-              {/* إذا كان iOS أو لم يتوفر prompt */}
-              {(isIOS || !deferredPrompt) && (
-                <p className="text-xs text-muted-foreground mt-4">
-                  {i18n.language === 'ar' 
-                    ? 'اضغط على الزر لعرض تعليمات التثبيت'
-                    : 'Tap the button to see installation instructions'}
-                </p>
               )}
             </motion.div>
           )}

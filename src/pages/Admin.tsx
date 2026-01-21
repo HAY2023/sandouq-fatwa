@@ -192,7 +192,32 @@ const AdminPage = () => {
     return { categoryData, dailyData };
   }, [questions]);
 
-  // فلترة الأسئلة حسب التصنيف والتاريخ
+  // إحصائيات الزوار حسب اليوم
+  const visitorStats = useMemo(() => {
+    const last7Days: Record<string, number> = {};
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toLocaleDateString('ar-SA', { weekday: 'short', day: 'numeric' });
+      last7Days[dateStr] = 0;
+    }
+    
+    accessLogs.forEach(log => {
+      const logDate = new Date(log.accessed_at);
+      const daysDiff = Math.floor((today.getTime() - logDate.getTime()) / (1000 * 60 * 60 * 24));
+      if (daysDiff >= 0 && daysDiff < 7) {
+        const dateStr = logDate.toLocaleDateString('ar-SA', { weekday: 'short', day: 'numeric' });
+        if (last7Days[dateStr] !== undefined) {
+          last7Days[dateStr]++;
+        }
+      }
+    });
+    
+    return Object.entries(last7Days).map(([name, count]) => ({ name, count }));
+  }, [accessLogs]);
+
+  // فلترة الأسئلة حسب التصنيف والتاريخ (قديم أولاً ثم جديد)
   const filteredQuestions = useMemo(() => {
     let filtered = [...questions];
     
@@ -211,6 +236,9 @@ const AdminPage = () => {
     if (questionCategoryFilter !== 'all') {
       filtered = filtered.filter(q => q.category === questionCategoryFilter);
     }
+    
+    // ترتيب قديم أولاً ثم جديد
+    filtered.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     
     return filtered;
   }, [questions, questionFilter, questionCategoryFilter]);
@@ -1068,6 +1096,26 @@ const AdminPage = () => {
                   </div>
                 )}
               </div>
+
+              {/* الزوار حسب اليوم */}
+              <div className="bg-card border border-border rounded-lg p-4">
+                <h4 className="font-medium mb-4 text-center">الزوار في آخر 7 أيام</h4>
+                {accessLogs.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={visitorStats}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" fontSize={12} />
+                      <YAxis fontSize={12} />
+                      <Tooltip />
+                      <Bar dataKey="count" fill="#10b981" name="عدد الزوار" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+                    لا توجد بيانات
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* ملخص الإحصائيات */}
@@ -1666,7 +1714,7 @@ const AdminPage = () => {
                 type="url"
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value)}
-                placeholder="رابط YouTube (مثال: https://www.youtube.com/watch?v=...)"
+                placeholder="رابط YouTube أو Google Drive (مثال: https://www.youtube.com/watch?v=... أو https://drive.google.com/file/d/...)"
                 dir="ltr"
               />
               <Button 
