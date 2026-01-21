@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Clock, Calendar, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 interface CountdownTimerProps {
   targetDate: string;
@@ -43,90 +43,72 @@ export function CountdownTimer({ targetDate }: CountdownTimerProps) {
     );
   }
 
+  // بناء وحدات الوقت مع إخفاء الأيام إذا كانت 0
   const timeUnits = [
-    { value: timeLeft.days, label: 'يوم', arabicLabel: 'يوم' },
-    { value: timeLeft.hours, label: 'ساعة', arabicLabel: 'ساعة' },
-    { value: timeLeft.minutes, label: 'دقيقة', arabicLabel: 'دقيقة' },
-    { value: timeLeft.seconds, label: 'ثانية', arabicLabel: 'ثانية' },
+    ...(timeLeft.days > 0 ? [{ value: timeLeft.days, label: 'DAYS', arabicLabel: 'يوم' }] : []),
+    { value: timeLeft.hours, label: 'HOURS', arabicLabel: 'ساعة' },
+    { value: timeLeft.minutes, label: 'MINUTES', arabicLabel: 'دقيقة' },
+    { value: timeLeft.seconds, label: 'SECONDS', arabicLabel: 'ثانية' },
   ];
 
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-card via-card to-muted/50 border border-border shadow-xl">
-      {/* خلفية متحركة */}
-      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 animate-pulse"></div>
-      
-      {/* زخرفة الحدود */}
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent"></div>
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent"></div>
+    <div className="relative overflow-hidden rounded-2xl bg-black/95 border border-green-900/50 shadow-2xl">
+      {/* تأثير التوهج الأخضر */}
+      <div className="absolute inset-0 bg-gradient-to-b from-green-500/5 via-transparent to-green-500/5"></div>
       
       <div className="relative p-6 md:p-8">
         {/* العنوان */}
-        <div className="flex items-center justify-center gap-3 mb-6">
-          <Calendar className="w-6 h-6 text-primary" />
-          <h3 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+        <div className="text-center mb-6">
+          <h3 className="text-lg md:text-xl font-bold text-green-400/80">
             الحلقة القادمة بعد
           </h3>
-          <Clock className="w-6 h-6 text-primary animate-pulse" />
         </div>
         
-        {/* العداد */}
-        <div className="flex justify-center gap-3 md:gap-5 flex-wrap" dir="ltr">
+        {/* العداد بنمط LED */}
+        <div className="flex justify-center items-center gap-2 md:gap-4 flex-wrap" dir="ltr">
           {timeUnits.map((unit, index) => (
-            <div
-              key={index}
-              className="group relative"
-            >
-              {/* البطاقة الرئيسية */}
-              <div className="relative bg-gradient-to-br from-primary/10 via-card to-primary/5 border border-primary/20 rounded-xl p-4 md:p-6 min-w-[80px] md:min-w-[110px] shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 hover:border-primary/40">
-                {/* تأثير التوهج */}
-                <div className="absolute inset-0 rounded-xl bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl"></div>
-                
-                {/* الرقم */}
-                <div className="relative">
-                  <div className="text-4xl md:text-5xl font-bold bg-gradient-to-b from-primary via-primary to-primary/60 bg-clip-text text-transparent tabular-nums drop-shadow-sm">
-                    {String(unit.value).padStart(2, '0')}
-                  </div>
-                  
-                  {/* خط فاصل مزخرف */}
-                  <div className="my-2 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-                  
-                  {/* التسمية */}
-                  <div className="text-sm md:text-base font-medium text-muted-foreground">
-                    {unit.arabicLabel}
-                  </div>
+            <div key={index} className="flex items-center">
+              {/* بطاقة الرقم */}
+              <div className="relative text-center">
+                {/* الرقم بنمط LED */}
+                <div 
+                  className="font-mono text-5xl md:text-7xl font-bold text-green-400 tabular-nums tracking-wider"
+                  style={{
+                    textShadow: '0 0 20px rgba(34, 197, 94, 0.8), 0 0 40px rgba(34, 197, 94, 0.4), 0 0 60px rgba(34, 197, 94, 0.2)',
+                    fontFamily: '"Share Tech Mono", "Courier New", monospace',
+                  }}
+                >
+                  {String(unit.value).padStart(2, '0')}
                 </div>
                 
-                {/* نقطة متحركة في الزاوية */}
-                {index < timeUnits.length - 1 && (
-                  <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-primary animate-ping hidden md:block"></div>
-                )}
+                {/* التسمية */}
+                <div 
+                  className="text-[10px] md:text-xs font-medium text-green-600/70 uppercase tracking-widest mt-1"
+                  style={{
+                    textShadow: '0 0 10px rgba(34, 197, 94, 0.5)',
+                  }}
+                >
+                  {unit.label}
+                </div>
               </div>
               
-              {/* الفواصل بين الأرقام */}
+              {/* الفاصل : بين الأرقام */}
               {index < timeUnits.length - 1 && (
-                <div className="absolute -left-3 top-1/2 -translate-y-1/2 text-2xl font-bold text-primary/50 hidden md:flex flex-col gap-1">
-                  <span className="block w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                  <span className="block w-1.5 h-1.5 rounded-full bg-primary/60 animate-pulse" style={{ animationDelay: '0.3s' }}></span>
+                <div 
+                  className="text-4xl md:text-6xl font-bold text-green-400 mx-1 md:mx-3 animate-pulse"
+                  style={{
+                    textShadow: '0 0 20px rgba(34, 197, 94, 0.8), 0 0 40px rgba(34, 197, 94, 0.4)',
+                  }}
+                >
+                  :
                 </div>
               )}
             </div>
           ))}
         </div>
         
-        {/* شريط التقدم */}
-        <div className="mt-8 relative">
-          <div className="h-2 bg-muted rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-primary via-primary/80 to-primary rounded-full transition-all duration-1000 ease-out animate-pulse"
-              style={{ 
-                width: `${Math.max(5, 100 - (timeLeft.days * 2))}%`
-              }}
-            ></div>
-          </div>
-          <p className="text-center text-sm text-muted-foreground mt-3">
-            ⏰ لا تفوّت الحلقة!
-          </p>
-        </div>
+        {/* شريط سفلي مضيء */}
+        <div className="mt-6 h-0.5 bg-gradient-to-r from-transparent via-green-500/50 to-transparent"></div>
       </div>
     </div>
   );
