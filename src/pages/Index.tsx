@@ -104,19 +104,17 @@ const Index = () => {
               <ReadingMode />
               <LanguageSwitcher variant={isScrolled ? 'default' : 'hero'} />
               <ThemeToggle />
-              {settings?.is_box_open && (
-                <Button 
-                  onClick={scrollToForm}
-                  variant="secondary"
-                  size="sm"
-                  className={isScrolled 
-                    ? '' 
-                    : 'bg-primary-foreground/90 text-foreground hover:bg-primary-foreground'
-                  }
-                >
-                  {t('nav.askQuestion')}
-                </Button>
-              )}
+              <Button 
+                onClick={scrollToForm}
+                variant="secondary"
+                size="sm"
+                className={isScrolled 
+                  ? '' 
+                  : 'bg-primary-foreground/90 text-foreground hover:bg-primary-foreground'
+                }
+              >
+                {t('nav.askQuestion')}
+              </Button>
             </div>
 
             {/* Mobile Menu Button */}
@@ -141,11 +139,9 @@ const Index = () => {
                   <LanguageSwitcher />
                   <ThemeToggle />
                 </div>
-                {settings?.is_box_open && (
-                  <Button onClick={scrollToForm} className="w-full">
-                    {t('nav.askQuestion')}
-                  </Button>
-                )}
+                <Button onClick={scrollToForm} className="w-full">
+                  {t('nav.askQuestion')}
+                </Button>
               </div>
             </div>
           )}
@@ -207,31 +203,21 @@ const Index = () => {
             <AnnouncementBanner />
           </div>
           
-          {settings?.is_box_open ? (
-            <>
-              <div className="text-center mb-8">
-                <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
-                  {t('form.title')}
-                </h2>
-                <p className="text-muted-foreground">
-                  {t('form.description')}
-                </p>
-              </div>
-              <div className="bg-card border border-border rounded-2xl p-6 md:p-8 shadow-lg">
-                <QuestionForm />
-              </div>
-              {/* Question Counter */}
-              {settings?.show_question_count && <QuestionCounter />}
-            </>
-          ) : (
-            <div className="bg-card border border-border rounded-2xl p-8 md:p-12 shadow-lg text-center">
-              <BookOpen className="w-16 h-16 text-muted-foreground mx-auto mb-6" />
-              <h2 className="text-2xl font-bold mb-3">{t('box.closed')}</h2>
+          <>
+            <div className="text-center mb-8">
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
+                {t('form.title')}
+              </h2>
               <p className="text-muted-foreground">
-                {t('box.closedMessage')}
+                {t('form.description')}
               </p>
             </div>
-          )}
+            <div className="bg-card border border-border rounded-2xl p-6 md:p-8 shadow-lg">
+              <QuestionForm />
+            </div>
+            {/* Question Counter */}
+            {settings?.show_question_count && <QuestionCounter />}
+          </>
         </div>
       </section>
 

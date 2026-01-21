@@ -1071,7 +1071,7 @@ const AdminPage = () => {
             </div>
 
             {/* ملخص الإحصائيات */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <div className="bg-card border border-border rounded-lg p-4 text-center">
                 <div className="text-2xl font-bold text-primary">{questions.length}</div>
                 <div className="text-sm text-muted-foreground">إجمالي الأسئلة</div>
@@ -1079,6 +1079,12 @@ const AdminPage = () => {
               <div className="bg-card border border-border rounded-lg p-4 text-center">
                 <div className="text-2xl font-bold text-green-500">{questionStats.categoryData.length}</div>
                 <div className="text-sm text-muted-foreground">فئات مختلفة</div>
+              </div>
+              <div className="bg-card border border-border rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-blue-500">
+                  {accessLogs.length}
+                </div>
+                <div className="text-sm text-muted-foreground">إجمالي الزوار</div>
               </div>
               <div className="bg-card border border-border rounded-lg p-4 text-center">
                 <div className="text-2xl font-bold text-amber-500">
@@ -2057,19 +2063,6 @@ const AdminPage = () => {
             )}
           </TabsContent>
           <TabsContent value="settings" className="space-y-4">
-            <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
-              <div>
-                <h3 className="font-medium">حالة الصندوق</h3>
-                <p className="text-sm text-muted-foreground">
-                  {isBoxOpen ? 'الصندوق مفتوح للأسئلة' : 'الصندوق مغلق حاليًا'}
-                </p>
-              </div>
-              <Switch
-                checked={isBoxOpen}
-                onCheckedChange={handleToggleBox}
-                disabled={isLoading}
-              />
-            </div>
 
             <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
               <div>
