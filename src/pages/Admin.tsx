@@ -8,6 +8,7 @@ import { useAllFlashMessages, useAddFlashMessage, useDeleteFlashMessage } from '
 import { supabase } from '@/integrations/supabase/client';
 import { logAdminAccess } from '@/hooks/useAdminAccessLog';
 import { Button } from '@/components/ui/button';
+import { CountdownTimer } from '@/components/CountdownTimer';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -2146,16 +2147,29 @@ const AdminPage = () => {
               />
             </div>
 
-            {/* اختيار شكل العداد التنازلي */}
+            {/* اختيار شكل العداد التنازلي مع معاينة */}
             {showCountdown && (
-              <div className="bg-card border border-border rounded-lg p-4">
-                <h3 className="font-medium mb-3 flex items-center gap-2">
+              <div className="bg-card border border-border rounded-lg p-4 space-y-4">
+                <h3 className="font-medium flex items-center gap-2">
                   <Clock className="w-4 h-4" />
                   شكل العداد التنازلي
                 </h3>
-                <p className="text-sm text-muted-foreground mb-4">
+                <p className="text-sm text-muted-foreground">
                   اختر الشكل المناسب للعداد التنازلي (النمط الحالي: {countdownStyle})
                 </p>
+                
+                {/* معاينة الشكل الحالي */}
+                <div className="border border-border rounded-lg p-4 bg-muted/30">
+                  <p className="text-xs text-muted-foreground mb-3 text-center">معاينة النمط {countdownStyle}</p>
+                  <div className="transform scale-75 origin-center">
+                    <CountdownTimer 
+                      targetDate={new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 5 * 60 * 60 * 1000 + 30 * 60 * 1000).toISOString()} 
+                      style={countdownStyle} 
+                    />
+                  </div>
+                </div>
+                
+                {/* أزرار اختيار الأنماط */}
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((style) => (
                     <Button
@@ -2173,7 +2187,9 @@ const AdminPage = () => {
                     </Button>
                   ))}
                 </div>
-                <div className="mt-3 text-xs text-muted-foreground space-y-1">
+                
+                {/* وصف الأنماط */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
                   <p>1: ساعة رقمية خضراء LED</p>
                   <p>2: بطاقات قلابة (Flip Clock)</p>
                   <p>3: دوائر تقدم</p>
