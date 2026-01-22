@@ -1,18 +1,24 @@
 import { useTranslation } from 'react-i18next';
 import { useSettings } from '@/hooks/useSettings';
 import { Button } from '@/components/ui/button';
-import { Download, ArrowLeft, Check, Smartphone, Share, Plus, ExternalLink, Monitor, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Download, ArrowLeft, Check, Smartphone, Share, Plus, ExternalLink, Monitor, ChevronLeft, ChevronRight, ZoomIn, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
-// استيراد صور دليل التثبيت
+// استيراد صور دليل التثبيت للحاسوب
 import step1Main from '@/assets/install-guide/step1-main.png';
 import step2Menu from '@/assets/install-guide/step2-menu.png';
 import step3Install from '@/assets/install-guide/step3-install.png';
 import step4App from '@/assets/install-guide/step4-app.png';
+
+// استيراد صور دليل التثبيت للهاتف
+import mobileStep1 from '@/assets/install-guide/mobile-step1-site.jpg';
+import mobileStep2 from '@/assets/install-guide/mobile-step2-menu.jpg';
+import mobileStep3 from '@/assets/install-guide/mobile-step3-install.jpg';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -27,8 +33,11 @@ export default function Install() {
   const [isInstalled, setIsInstalled] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
   const [showIOSHelp, setShowIOSHelp] = useState(false);
+  const [showMobileGuide, setShowMobileGuide] = useState(false);
   const [showDesktopGuide, setShowDesktopGuide] = useState(false);
   const [currentGuideStep, setCurrentGuideStep] = useState(0);
+  const [currentMobileStep, setCurrentMobileStep] = useState(0);
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
   const isRTL = i18n.language === 'ar';
   
@@ -43,6 +52,25 @@ export default function Install() {
     { image: step2Menu, title: isRTL ? 'اضغط على قائمة المتصفح' : 'Click browser menu' },
     { image: step3Install, title: isRTL ? 'اختر "تثبيت التطبيق"' : 'Choose "Install app"' },
     { image: step4App, title: isRTL ? 'التطبيق جاهز للاستخدام!' : 'App is ready!' },
+  ];
+
+  // صور دليل التثبيت للهاتف (أندرويد كروم)
+  const mobileGuideSteps = [
+    { 
+      image: mobileStep1, 
+      title: isRTL ? 'افتح الموقع في المتصفح' : 'Open the website',
+      description: isRTL ? 'افتح الموقع sandouq-fatwa.lovable.app في متصفح Chrome' : 'Open sandouq-fatwa.lovable.app in Chrome'
+    },
+    { 
+      image: mobileStep2, 
+      title: isRTL ? 'افتح قائمة المتصفح' : 'Open browser menu',
+      description: isRTL ? 'اضغط على النقاط الثلاث ⋮ ثم اختر "الإضافة إلى الشاشة الرئيسية"' : 'Tap the three dots ⋮ then choose "Add to Home screen"'
+    },
+    { 
+      image: mobileStep3, 
+      title: isRTL ? 'اضغط تثبيت' : 'Tap Install',
+      description: isRTL ? 'اضغط على زر "تثبيت" في النافذة المنبثقة' : 'Tap the "Install" button in the popup'
+    },
   ];
 
   useEffect(() => {
@@ -94,7 +122,11 @@ export default function Install() {
     }
 
     // إذا لم يتوفر prompt، أظهر تعليمات عامة
-    setShowIOSHelp(true);
+    if (isMobile) {
+      setShowMobileGuide(true);
+    } else {
+      setShowIOSHelp(true);
+    }
   };
 
   if (isLoading) {
@@ -119,6 +151,7 @@ export default function Install() {
       installed: 'تم التثبيت ✓',
       goHome: 'فتح التطبيق',
       showMobileGuide: 'عرض دليل التثبيت للهاتف',
+      tapToZoom: 'اضغط على الصورة للتكبير',
     },
     fr: {
       title: "Installer l'app",
@@ -129,6 +162,7 @@ export default function Install() {
       installed: 'Installée ✓',
       goHome: "Ouvrir l'app",
       showMobileGuide: 'Guide d\'installation mobile',
+      tapToZoom: 'Appuyez sur l\'image pour agrandir',
     },
     en: {
       title: 'Install App',
@@ -139,6 +173,7 @@ export default function Install() {
       installed: 'Installed ✓',
       goHome: 'Open App',
       showMobileGuide: 'Show Mobile Install Guide',
+      tapToZoom: 'Tap image to zoom',
     },
   };
 
@@ -179,6 +214,18 @@ export default function Install() {
     }
   };
 
+  const nextMobileStep = () => {
+    if (currentMobileStep < mobileGuideSteps.length - 1) {
+      setCurrentMobileStep(currentMobileStep + 1);
+    }
+  };
+
+  const prevMobileStep = () => {
+    if (currentMobileStep > 0) {
+      setCurrentMobileStep(currentMobileStep - 1);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/5 flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
@@ -201,13 +248,32 @@ export default function Install() {
         </div>
       </header>
 
+      {/* Dialog للتكبير */}
+      <Dialog open={!!zoomedImage} onOpenChange={() => setZoomedImage(null)}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 overflow-hidden bg-black/90 border-none">
+          <button 
+            onClick={() => setZoomedImage(null)}
+            className="absolute top-4 right-4 z-50 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          {zoomedImage && (
+            <img 
+              src={zoomedImage} 
+              alt="Zoomed" 
+              className="w-full h-full object-contain max-h-[90vh]"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Main Content */}
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-12">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-center max-w-sm mx-auto"
+          className="text-center max-w-sm mx-auto w-full"
         >
           {/* App Icon */}
           <motion.div 
@@ -259,6 +325,110 @@ export default function Install() {
                 </Button>
               </div>
             </motion.div>
+          ) : showMobileGuide ? (
+            // دليل التثبيت للهاتف مع الصور
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-6 w-full"
+            >
+              <div className="bg-card border-2 border-border rounded-2xl p-4 md:p-6 space-y-4">
+                <h3 className="font-bold text-lg flex items-center gap-2 justify-center">
+                  <Smartphone className="w-5 h-5 text-primary" />
+                  {isRTL ? 'دليل التثبيت للهاتف' : 'Mobile Install Guide'}
+                </h3>
+                
+                {/* صورة الخطوة الحالية */}
+                <div 
+                  className="relative overflow-hidden rounded-xl border border-border cursor-pointer group"
+                  onClick={() => setZoomedImage(mobileGuideSteps[currentMobileStep].image)}
+                >
+                  <AnimatePresence mode="wait">
+                    <motion.img
+                      key={currentMobileStep}
+                      src={mobileGuideSteps[currentMobileStep].image}
+                      alt={mobileGuideSteps[currentMobileStep].title}
+                      className="w-full h-auto max-h-[400px] object-contain bg-muted"
+                      initial={{ opacity: 0, x: isRTL ? -20 : 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: isRTL ? 20 : -20 }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  </AnimatePresence>
+                  {/* أيقونة التكبير */}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                    <ZoomIn className="w-10 h-10 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </div>
+                
+                <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
+                  <ZoomIn className="w-3 h-3" />
+                  {c.tapToZoom}
+                </p>
+                
+                {/* عنوان ووصف الخطوة */}
+                <div className="text-center space-y-2">
+                  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-medium">
+                    <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm">
+                      {currentMobileStep + 1}
+                    </span>
+                    {mobileGuideSteps[currentMobileStep].title}
+                  </span>
+                  <p className="text-sm text-muted-foreground">
+                    {mobileGuideSteps[currentMobileStep].description}
+                  </p>
+                </div>
+                
+                {/* أزرار التنقل */}
+                <div className="flex items-center justify-between">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={prevMobileStep}
+                    disabled={currentMobileStep === 0}
+                    className="gap-1"
+                  >
+                    {isRTL ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                    {isRTL ? 'السابق' : 'Previous'}
+                  </Button>
+                  
+                  <div className="flex gap-1">
+                    {mobileGuideSteps.map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setCurrentMobileStep(idx)}
+                        className={`w-2 h-2 rounded-full transition-all ${
+                          idx === currentMobileStep ? 'bg-primary w-6' : 'bg-muted-foreground/30'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={nextMobileStep}
+                    disabled={currentMobileStep === mobileGuideSteps.length - 1}
+                    className="gap-1"
+                  >
+                    {isRTL ? 'التالي' : 'Next'}
+                    {isRTL ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+              
+              <Button 
+                onClick={() => {
+                  setShowMobileGuide(false);
+                  setCurrentMobileStep(0);
+                }} 
+                variant="outline" 
+                size="lg" 
+                className="w-full h-14 rounded-xl"
+              >
+                {i18n.language === 'ar' ? 'رجوع' : 'Back'}
+              </Button>
+            </motion.div>
           ) : showDesktopGuide ? (
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
@@ -272,7 +442,10 @@ export default function Install() {
                 </h3>
                 
                 {/* صورة الخطوة الحالية */}
-                <div className="relative overflow-hidden rounded-xl border border-border">
+                <div 
+                  className="relative overflow-hidden rounded-xl border border-border cursor-pointer group"
+                  onClick={() => setZoomedImage(desktopGuideSteps[currentGuideStep].image)}
+                >
                   <AnimatePresence mode="wait">
                     <motion.img
                       key={currentGuideStep}
@@ -285,7 +458,15 @@ export default function Install() {
                       transition={{ duration: 0.3 }}
                     />
                   </AnimatePresence>
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                    <ZoomIn className="w-10 h-10 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
                 </div>
+                
+                <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
+                  <ZoomIn className="w-3 h-3" />
+                  {c.tapToZoom}
+                </p>
                 
                 {/* عنوان الخطوة */}
                 <div className="text-center">
@@ -412,7 +593,7 @@ export default function Install() {
               {isMobile && (
                 <Button
                   variant="outline"
-                  onClick={() => setShowIOSHelp(true)}
+                  onClick={() => setShowMobileGuide(true)}
                   className="w-full gap-2"
                 >
                   <Smartphone className="w-4 h-4" />
