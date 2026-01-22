@@ -8,7 +8,6 @@ import { useAllFlashMessages, useAddFlashMessage, useDeleteFlashMessage } from '
 import { supabase } from '@/integrations/supabase/client';
 import { logAdminAccess } from '@/hooks/useAdminAccessLog';
 import { Button } from '@/components/ui/button';
-import { CountdownTimer } from '@/components/CountdownTimer';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -90,7 +89,6 @@ const AdminPage = () => {
   const [showCountdown, setShowCountdown] = useState(true);
   const [showQuestionCount, setShowQuestionCount] = useState(false);
   const [showInstallPage, setShowInstallPage] = useState(true);
-  const [countdownStyle, setCountdownStyle] = useState(1);
   const [savingVideo, setSavingVideo] = useState(false);
   const [localVideos, setLocalVideos] = useState<VideoType[]>([]);
   
@@ -316,7 +314,6 @@ const AdminPage = () => {
       setShowQuestionCount(settings.show_question_count ?? false);
       setShowInstallPage(settings.show_install_page ?? true);
       setContentFilterEnabled((settings as any).content_filter_enabled ?? true);
-      setCountdownStyle(settings.countdown_style ?? 1);
     }
   }, [settings]);
 
@@ -672,24 +669,6 @@ const AdminPage = () => {
       if (success) {
         setShowCountdown(!showCountdown);
         toast({ title: 'تم التحديث', description: `العداد التنازلي ${!showCountdown ? 'مفعّل' : 'معطّل'} الآن` });
-      }
-    } catch {
-      toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
-    }
-    setIsLoading(false);
-  };
-
-  const handleChangeCountdownStyle = async (newStyle: number) => {
-    if (!storedPassword) return;
-    setIsLoading(true);
-    try {
-      const success = await updateSettings.mutateAsync({
-        password: storedPassword,
-        countdown_style: newStyle,
-      });
-      if (success) {
-        setCountdownStyle(newStyle);
-        toast({ title: 'تم التحديث', description: `تم تغيير شكل العداد إلى النمط ${newStyle}` });
       }
     } catch {
       toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
@@ -2146,63 +2125,6 @@ const AdminPage = () => {
                 disabled={isLoading}
               />
             </div>
-
-            {/* اختيار شكل العداد التنازلي مع معاينة */}
-            {showCountdown && (
-              <div className="bg-card border border-border rounded-lg p-4 space-y-4">
-                <h3 className="font-medium flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  شكل العداد التنازلي
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  اختر الشكل المناسب للعداد التنازلي (النمط الحالي: {countdownStyle})
-                </p>
-                
-                {/* معاينة الشكل الحالي */}
-                <div className="border border-border rounded-lg p-4 bg-muted/30">
-                  <p className="text-xs text-muted-foreground mb-3 text-center">معاينة النمط {countdownStyle}</p>
-                  <div className="transform scale-75 origin-center">
-                    <CountdownTimer 
-                      targetDate={new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 5 * 60 * 60 * 1000 + 30 * 60 * 1000).toISOString()} 
-                      style={countdownStyle} 
-                    />
-                  </div>
-                </div>
-                
-                {/* أزرار اختيار الأنماط */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((style) => (
-                    <Button
-                      key={style}
-                      variant={countdownStyle === style ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => handleChangeCountdownStyle(style)}
-                      disabled={isLoading}
-                      className="relative"
-                    >
-                      النمط {style}
-                      {countdownStyle === style && (
-                        <CheckCircle className="w-3 h-3 absolute top-1 right-1" />
-                      )}
-                    </Button>
-                  ))}
-                </div>
-                
-                {/* وصف الأنماط */}
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                  <p>1: ساعة رقمية خضراء LED</p>
-                  <p>2: بطاقات قلابة (Flip Clock)</p>
-                  <p>3: دوائر تقدم</p>
-                  <p>4: توهج نيون</p>
-                  <p>5: بطاقات بسيطة</p>
-                  <p>6: صناديق متدرجة</p>
-                  <p>7: شاشة LCD كلاسيكية</p>
-                  <p>8: زجاج شفاف (Glassmorphism)</p>
-                  <p>9: أناقة داكنة</p>
-                  <p>10: تقسيم حديث</p>
-                </div>
-              </div>
-            )}
 
             <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
               <div>
