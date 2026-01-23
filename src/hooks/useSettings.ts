@@ -10,6 +10,8 @@ export interface Settings {
   show_countdown: boolean;
   show_question_count: boolean;
   show_install_page: boolean;
+  content_filter_enabled: boolean;
+  countdown_style: number;
 }
 
 export function useSettings() {
@@ -18,7 +20,7 @@ export function useSettings() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('settings')
-        .select('id, is_box_open, next_session_date, video_url, video_title, show_countdown, show_question_count, show_install_page')
+        .select('id, is_box_open, next_session_date, video_url, video_title, show_countdown, show_question_count, show_install_page, content_filter_enabled, countdown_style')
         .maybeSingle();
       
       if (error) throw error;
@@ -53,6 +55,8 @@ export function useUpdateSettingsAuthenticated() {
       show_countdown?: boolean;
       show_question_count?: boolean;
       show_install_page?: boolean;
+      content_filter_enabled?: boolean;
+      countdown_style?: number;
     }) => {
       const { data, error } = await supabase.rpc('update_settings_authenticated', {
         p_password: params.password,
@@ -63,6 +67,8 @@ export function useUpdateSettingsAuthenticated() {
         p_show_countdown: params.show_countdown,
         p_show_question_count: params.show_question_count,
         p_show_install_page: params.show_install_page,
+        p_content_filter_enabled: params.content_filter_enabled,
+        p_countdown_style: params.countdown_style,
       });
       
       if (error) throw error;
