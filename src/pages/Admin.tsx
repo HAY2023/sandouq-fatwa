@@ -2112,6 +2112,24 @@ const AdminPage = () => {
           </TabsContent>
           <TabsContent value="settings" className="space-y-4">
 
+            {/* فتح/إغلاق الصندوق */}
+            <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
+              <div>
+                <h3 className="font-medium flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4" />
+                  صندوق الأسئلة
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {isBoxOpen ? 'الصندوق مفتوح - يمكن للزوار إرسال الأسئلة' : 'الصندوق مغلق - لا يمكن إرسال الأسئلة'}
+                </p>
+              </div>
+              <Switch
+                checked={isBoxOpen}
+                onCheckedChange={handleToggleBox}
+                disabled={isLoading}
+              />
+            </div>
+
             <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
               <div>
                 <h3 className="font-medium">العداد التنازلي</h3>
