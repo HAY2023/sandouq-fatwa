@@ -11,7 +11,7 @@ import { AnnouncementBanner } from '@/components/AnnouncementBanner';
 import { FlashMessageBanner } from '@/components/FlashMessageBanner';
 import { QuestionCounter } from '@/components/QuestionCounter';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Menu, X, Download } from 'lucide-react';
+import { BookOpen, Menu, X, Download, MessageSquare } from 'lucide-react';
 import { useBrowserNotifications } from '@/hooks/useBrowserNotifications';
 import mosqueImage from '@/assets/mosque-hero.jpg';
 import ShareButton from '@/components/ShareButton';
@@ -203,21 +203,35 @@ const Index = () => {
             <AnnouncementBanner />
           </div>
           
-          <>
-            <div className="text-center mb-8">
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
-                {t('form.title')}
-              </h2>
-              <p className="text-muted-foreground">
-                {t('form.description')}
-              </p>
+          {settings?.is_box_open !== false ? (
+            <>
+              <div className="text-center mb-8">
+                <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
+                  {t('form.title')}
+                </h2>
+                <p className="text-muted-foreground">
+                  {t('form.description')}
+                </p>
+              </div>
+              <div className="bg-card border border-border rounded-2xl p-6 md:p-8 shadow-lg">
+                <QuestionForm />
+              </div>
+              {/* Question Counter */}
+              {settings?.show_question_count && <QuestionCounter />}
+            </>
+          ) : (
+            <div className="text-center py-12">
+              <div className="bg-card border border-border rounded-2xl p-8 shadow-lg">
+                <MessageSquare className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
+                <h2 className="text-2xl font-bold text-foreground mb-3">
+                  {t('form.boxClosed', 'صندوق الأسئلة مغلق حالياً')}
+                </h2>
+                <p className="text-muted-foreground">
+                  {t('form.boxClosedDescription', 'سيتم فتح الصندوق قريباً إن شاء الله')}
+                </p>
+              </div>
             </div>
-            <div className="bg-card border border-border rounded-2xl p-6 md:p-8 shadow-lg">
-              <QuestionForm />
-            </div>
-            {/* Question Counter */}
-            {settings?.show_question_count && <QuestionCounter />}
-          </>
+          )}
         </div>
       </section>
 
