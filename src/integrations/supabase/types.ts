@@ -377,7 +377,6 @@ export type Database = {
       settings: {
         Row: {
           content_filter_enabled: boolean | null
-          countdown_style: number | null
           created_at: string
           id: string
           is_box_open: boolean
@@ -393,7 +392,6 @@ export type Database = {
         }
         Insert: {
           content_filter_enabled?: boolean | null
-          countdown_style?: number | null
           created_at?: string
           id?: string
           is_box_open?: boolean
@@ -409,7 +407,6 @@ export type Database = {
         }
         Update: {
           content_filter_enabled?: boolean | null
-          countdown_style?: number | null
           created_at?: string
           id?: string
           is_box_open?: boolean
@@ -748,7 +745,6 @@ export type Database = {
       update_settings_authenticated: {
         Args: {
           p_content_filter_enabled?: boolean
-          p_countdown_style?: number
           p_is_box_open?: boolean
           p_maintenance_message?: string
           p_maintenance_mode?: boolean

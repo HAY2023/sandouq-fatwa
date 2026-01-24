@@ -20,7 +20,6 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableVideoItem } from '@/components/SortableVideoItem';
-import { VideoPreview } from '@/components/VideoPreview';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { 
   Lock, MessageSquare, Calendar, Video, 
@@ -137,9 +136,6 @@ const AdminPage = () => {
   
   // Content filter state
   const [contentFilterEnabled, setContentFilterEnabled] = useState(true);
-  
-  // Countdown style state
-  const [countdownStyle, setCountdownStyle] = useState(1);
   
   // User reports state
   const [userReports, setUserReports] = useState<Array<{
@@ -317,8 +313,7 @@ const AdminPage = () => {
       setShowCountdown(settings.show_countdown);
       setShowQuestionCount(settings.show_question_count ?? false);
       setShowInstallPage(settings.show_install_page ?? true);
-      setContentFilterEnabled(settings.content_filter_enabled ?? true);
-      setCountdownStyle(settings.countdown_style ?? 1);
+      setContentFilterEnabled((settings as any).content_filter_enabled ?? true);
     }
   }, [settings]);
 
@@ -724,28 +719,10 @@ const AdminPage = () => {
       const success = await updateSettings.mutateAsync({
         password: storedPassword,
         content_filter_enabled: !contentFilterEnabled,
-      });
+      } as any);
       if (success) {
         setContentFilterEnabled(!contentFilterEnabled);
         toast({ title: 'تم التحديث', description: `فلتر المحتوى ${!contentFilterEnabled ? 'مفعّل' : 'معطّل'} الآن` });
-      }
-    } catch {
-      toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
-    }
-    setIsLoading(false);
-  };
-
-  const handleChangeCountdownStyle = async (newStyle: number) => {
-    if (!storedPassword) return;
-    setIsLoading(true);
-    try {
-      const success = await updateSettings.mutateAsync({
-        password: storedPassword,
-        countdown_style: newStyle,
-      });
-      if (success) {
-        setCountdownStyle(newStyle);
-        toast({ title: 'تم التحديث', description: `تم تغيير نمط العداد التنازلي` });
       }
     } catch {
       toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
@@ -1740,12 +1717,6 @@ const AdminPage = () => {
                 placeholder="رابط YouTube أو Google Drive (مثال: https://www.youtube.com/watch?v=... أو https://drive.google.com/file/d/...)"
                 dir="ltr"
               />
-              
-              {/* معاينة الفيديو */}
-              {videoUrl && (
-                <VideoPreview url={videoUrl} />
-              )}
-              
               <Button 
                 onClick={handleSaveVideo} 
                 disabled={savingVideo || !videoUrl || !videoTitle}
@@ -2154,39 +2125,6 @@ const AdminPage = () => {
                 disabled={isLoading}
               />
             </div>
-
-            {/* اختيار نمط العداد التنازلي */}
-            {showCountdown && (
-              <div className="bg-card border border-border rounded-lg p-4 space-y-4">
-                <h3 className="font-medium flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  نمط العداد التنازلي
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                  {[
-                    { id: 1, name: 'LED أخضر', color: 'from-green-600 to-green-800' },
-                    { id: 2, name: 'بطاقات زرقاء', color: 'from-blue-600 to-indigo-800' },
-                    { id: 3, name: 'دوائر متحركة', color: 'from-purple-600 to-pink-800' },
-                    { id: 4, name: 'بسيط أنيق', color: 'from-gray-500 to-gray-700' },
-                    { id: 5, name: 'ذهبي فخم', color: 'from-amber-500 to-yellow-700' },
-                  ].map((style) => (
-                    <button
-                      key={style.id}
-                      onClick={() => handleChangeCountdownStyle(style.id)}
-                      disabled={isLoading}
-                      className={`p-3 rounded-xl border-2 transition-all ${
-                        countdownStyle === style.id 
-                          ? 'border-primary ring-2 ring-primary/20' 
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                    >
-                      <div className={`h-8 rounded-lg bg-gradient-to-r ${style.color} mb-2`}></div>
-                      <span className="text-xs font-medium">{style.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
 
             <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
               <div>
