@@ -13,10 +13,13 @@ import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { exportToExcel, exportToPDF } from '@/lib/exportUtils';
 import { getCategoryLabel } from '@/lib/categories';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { CountdownTimerPreview } from '@/components/CountdownTimer';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableVideoItem } from '@/components/SortableVideoItem';
@@ -24,7 +27,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { 
   Lock, MessageSquare, Calendar, Video, 
   FileSpreadsheet, FileText, Bell, BellOff, Trash2, Settings, List, Home, AlertTriangle, CheckSquare, Plus, Megaphone, Zap, Hash,
-  Shield, MapPin, Monitor, Globe, CheckCircle, XCircle, Clock, Wifi, Smartphone, Fingerprint, ChevronDown, ChevronUp, Search, Filter, BarChart3, BellRing, Send, Bug, AlertCircle, RefreshCw
+  Shield, MapPin, Monitor, Globe, CheckCircle, XCircle, Clock, Wifi, Smartphone, Fingerprint, ChevronDown, ChevronUp, Search, Filter, BarChart3, BellRing, Send, Bug, AlertCircle, RefreshCw, Timer
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
@@ -114,9 +117,11 @@ const AdminPage = () => {
   const [videoTitle, setVideoTitle] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [showCountdown, setShowCountdown] = useState(true);
+  const [countdownStyle, setCountdownStyle] = useState(1);
   const [showQuestionCount, setShowQuestionCount] = useState(false);
   const [showInstallPage, setShowInstallPage] = useState(true);
   const [savingVideo, setSavingVideo] = useState(false);
+  const [savingCountdownStyle, setSavingCountdownStyle] = useState(false);
   const [localVideos, setLocalVideos] = useState<VideoType[]>([]);
   
   // Announcement states
@@ -338,6 +343,7 @@ const AdminPage = () => {
       setVideoTitle(settings.video_title || '');
       setVideoUrl(settings.video_url || '');
       setShowCountdown(settings.show_countdown);
+      setCountdownStyle(settings.countdown_style ?? 1);
       setShowQuestionCount(settings.show_question_count ?? false);
       setShowInstallPage(settings.show_install_page ?? true);
       setContentFilterEnabled((settings as any).content_filter_enabled ?? true);
@@ -701,6 +707,24 @@ const AdminPage = () => {
       toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
     }
     setIsLoading(false);
+  };
+
+  const handleSaveCountdownStyle = async (newStyle: number) => {
+    if (!storedPassword) return;
+    setSavingCountdownStyle(true);
+    try {
+      const success = await updateSettings.mutateAsync({
+        password: storedPassword,
+        countdown_style: newStyle,
+      });
+      if (success) {
+        setCountdownStyle(newStyle);
+        toast({ title: 'تم التحديث', description: 'تم حفظ نمط العداد التنازلي' });
+      }
+    } catch {
+      toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
+    }
+    setSavingCountdownStyle(false);
   };
 
   const handleToggleQuestionCount = async () => {
@@ -2198,7 +2222,10 @@ const AdminPage = () => {
 
             <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
               <div>
-                <h3 className="font-medium">العداد التنازلي</h3>
+                <h3 className="font-medium flex items-center gap-2">
+                  <Timer className="w-4 h-4" />
+                  العداد التنازلي
+                </h3>
                 <p className="text-sm text-muted-foreground">
                   {showCountdown ? 'يظهر العداد التنازلي للحلقة القادمة' : 'العداد التنازلي مخفي'}
                 </p>
@@ -2209,6 +2236,84 @@ const AdminPage = () => {
                 disabled={isLoading}
               />
             </div>
+
+            {/* اختيار نمط العداد التنازلي */}
+            {showCountdown && (
+              <div className="bg-card border border-border rounded-lg p-4 space-y-4">
+                <div>
+                  <h3 className="font-medium flex items-center gap-2 mb-2">
+                    <Clock className="w-4 h-4" />
+                    نمط العداد التنازلي
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    اختر النمط المناسب وشاهد المعاينة قبل الحفظ
+                  </p>
+                </div>
+                
+                <RadioGroup 
+                  value={String(countdownStyle)} 
+                  onValueChange={(val) => setCountdownStyle(Number(val))}
+                  className="grid grid-cols-2 md:grid-cols-4 gap-3"
+                >
+                  <div>
+                    <RadioGroupItem value="1" id="style-1" className="peer sr-only" />
+                    <Label 
+                      htmlFor="style-1" 
+                      className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer"
+                    >
+                      <Monitor className="w-6 h-6 mb-1" />
+                      <span className="text-sm font-medium">LED رقمي</span>
+                    </Label>
+                  </div>
+                  <div>
+                    <RadioGroupItem value="2" id="style-2" className="peer sr-only" />
+                    <Label 
+                      htmlFor="style-2" 
+                      className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer"
+                    >
+                      <Clock className="w-6 h-6 mb-1" />
+                      <span className="text-sm font-medium">كلاسيكي</span>
+                    </Label>
+                  </div>
+                  <div>
+                    <RadioGroupItem value="3" id="style-3" className="peer sr-only" />
+                    <Label 
+                      htmlFor="style-3" 
+                      className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer"
+                    >
+                      <Timer className="w-6 h-6 mb-1" />
+                      <span className="text-sm font-medium">بسيط</span>
+                    </Label>
+                  </div>
+                  <div>
+                    <RadioGroupItem value="4" id="style-4" className="peer sr-only" />
+                    <Label 
+                      htmlFor="style-4" 
+                      className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer"
+                    >
+                      <RefreshCw className="w-6 h-6 mb-1" />
+                      <span className="text-sm font-medium">دائري</span>
+                    </Label>
+                  </div>
+                </RadioGroup>
+
+                {/* معاينة النمط */}
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium text-muted-foreground mb-3">معاينة:</h4>
+                  <div className="max-w-xl mx-auto">
+                    <CountdownTimerPreview style={countdownStyle} />
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => handleSaveCountdownStyle(countdownStyle)}
+                  disabled={savingCountdownStyle || countdownStyle === (settings?.countdown_style ?? 1)}
+                  className="w-full"
+                >
+                  {savingCountdownStyle ? 'جارٍ الحفظ...' : 'حفظ نمط العداد'}
+                </Button>
+              </div>
+            )}
 
             <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
               <div>
