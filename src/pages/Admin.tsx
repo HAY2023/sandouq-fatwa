@@ -40,6 +40,33 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
+// Helper functions for video URL parsing
+function getYouTubeVideoId(url: string): string | null {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+    /youtube\.com\/shorts\/([^&\n?#]+)/,
+  ];
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1];
+  }
+  return null;
+}
+
+function getGoogleDriveFileId(url: string): string | null {
+  const patterns = [
+    /drive\.google\.com\/file\/d\/([^/\n?#]+)/,
+    /drive\.google\.com\/open\?id=([^&\n?#]+)/,
+    /drive\.google\.com\/uc\?.*id=([^&\n?#]+)/,
+    /docs\.google\.com\/file\/d\/([^/\n?#]+)/,
+  ];
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1];
+  }
+  return null;
+}
+
 const AdminPage = () => {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -1717,6 +1744,45 @@ const AdminPage = () => {
                 placeholder="رابط YouTube أو Google Drive (مثال: https://www.youtube.com/watch?v=... أو https://drive.google.com/file/d/...)"
                 dir="ltr"
               />
+              
+              {/* معاينة الفيديو */}
+              {videoUrl && (
+                <div className="border border-border rounded-lg overflow-hidden">
+                  <div className="bg-muted/50 px-3 py-2 text-sm font-medium flex items-center gap-2">
+                    <Video className="w-4 h-4" />
+                    معاينة الفيديو
+                  </div>
+                  <div className="aspect-video">
+                    {videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be') ? (
+                      <iframe
+                        src={`https://www.youtube.com/embed/${getYouTubeVideoId(videoUrl)}`}
+                        title="معاينة"
+                        className="w-full h-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    ) : videoUrl.includes('drive.google.com') || videoUrl.includes('docs.google.com/file') ? (
+                      <iframe
+                        src={`https://drive.google.com/file/d/${getGoogleDriveFileId(videoUrl)}/preview`}
+                        title="معاينة"
+                        className="w-full h-full"
+                        allow="autoplay; encrypted-media"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <video
+                        src={videoUrl}
+                        controls
+                        className="w-full h-full"
+                        preload="metadata"
+                      >
+                        متصفحك لا يدعم تشغيل الفيديو
+                      </video>
+                    )}
+                  </div>
+                </div>
+              )}
+              
               <Button 
                 onClick={handleSaveVideo} 
                 disabled={savingVideo || !videoUrl || !videoTitle}
