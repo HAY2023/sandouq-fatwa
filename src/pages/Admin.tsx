@@ -118,9 +118,6 @@ const AdminPage = () => {
   const [videoUrl, setVideoUrl] = useState('');
   const [showCountdown, setShowCountdown] = useState(true);
   const [countdownStyle, setCountdownStyle] = useState(1);
-  const [countdownBgColor, setCountdownBgColor] = useState('#000000');
-  const [countdownTextColor, setCountdownTextColor] = useState('#22c55e');
-  const [countdownBorderColor, setCountdownBorderColor] = useState('#166534');
   const [showQuestionCount, setShowQuestionCount] = useState(false);
   const [showInstallPage, setShowInstallPage] = useState(true);
   const [savingVideo, setSavingVideo] = useState(false);
@@ -347,9 +344,6 @@ const AdminPage = () => {
       setVideoUrl(settings.video_url || '');
       setShowCountdown(settings.show_countdown);
       setCountdownStyle(settings.countdown_style ?? 1);
-      setCountdownBgColor(settings.countdown_bg_color || '#000000');
-      setCountdownTextColor(settings.countdown_text_color || '#22c55e');
-      setCountdownBorderColor(settings.countdown_border_color || '#166534');
       setShowQuestionCount(settings.show_question_count ?? false);
       setShowInstallPage(settings.show_install_page ?? true);
       setContentFilterEnabled((settings as any).content_filter_enabled ?? true);
@@ -715,23 +709,17 @@ const AdminPage = () => {
     setIsLoading(false);
   };
 
-  const handleSaveCountdownStyle = async (newStyle: number, bgColor?: string, textColor?: string, borderColor?: string) => {
+  const handleSaveCountdownStyle = async (newStyle: number) => {
     if (!storedPassword) return;
     setSavingCountdownStyle(true);
     try {
       const success = await updateSettings.mutateAsync({
         password: storedPassword,
         countdown_style: newStyle,
-        countdown_bg_color: bgColor,
-        countdown_text_color: textColor,
-        countdown_border_color: borderColor,
       });
       if (success) {
         setCountdownStyle(newStyle);
-        if (bgColor) setCountdownBgColor(bgColor);
-        if (textColor) setCountdownTextColor(textColor);
-        if (borderColor) setCountdownBorderColor(borderColor);
-        toast({ title: 'تم التحديث', description: 'تم حفظ إعدادات العداد التنازلي' });
+        toast({ title: 'تم التحديث', description: 'تم حفظ نمط العداد التنازلي' });
       }
     } catch {
       toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
@@ -2214,7 +2202,7 @@ const AdminPage = () => {
           </TabsContent>
           <TabsContent value="settings" className="space-y-4">
 
-            {/* صندوق الأسئلة */}
+            {/* فتح/إغلاق الصندوق */}
             <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
               <div>
                 <h3 className="font-medium flex items-center gap-2">
@@ -2232,23 +2220,6 @@ const AdminPage = () => {
               />
             </div>
 
-            {/* موعد الحلقة القادمة */}
-            <div className="bg-card border border-border rounded-lg p-4 space-y-4">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-primary" />
-                <h3 className="font-medium">موعد الحلقة القادمة</h3>
-              </div>
-              <Input
-                type="datetime-local"
-                value={nextSessionDate}
-                onChange={(e) => setNextSessionDate(e.target.value)}
-              />
-              <Button onClick={handleUpdateSession} disabled={isLoading || !nextSessionDate}>
-                {isLoading ? 'جارٍ الحفظ...' : 'حفظ الموعد'}
-              </Button>
-            </div>
-
-            {/* العداد التنازلي */}
             <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
               <div>
                 <h3 className="font-medium flex items-center gap-2">
@@ -2266,7 +2237,7 @@ const AdminPage = () => {
               />
             </div>
 
-            {/* اختيار نمط العداد التنازلي مع الألوان */}
+            {/* اختيار نمط العداد التنازلي */}
             {showCountdown && (
               <div className="bg-card border border-border rounded-lg p-4 space-y-4">
                 <div>
@@ -2275,7 +2246,7 @@ const AdminPage = () => {
                     نمط العداد التنازلي
                   </h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    اختر النمط المناسب وخصص الألوان
+                    اختر النمط المناسب وشاهد المعاينة قبل الحفظ
                   </p>
                 </div>
                 
@@ -2326,93 +2297,24 @@ const AdminPage = () => {
                   </div>
                 </RadioGroup>
 
-                {/* تخصيص الألوان - يظهر فقط لنمط LED */}
-                {countdownStyle === 1 && (
-                  <div className="border-t border-border pt-4 mt-4">
-                    <h4 className="text-sm font-medium mb-3">تخصيص ألوان العداد:</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm mb-2">لون الخلفية</label>
-                        <div className="flex gap-2">
-                          <Input
-                            type="color"
-                            value={countdownBgColor}
-                            onChange={(e) => setCountdownBgColor(e.target.value)}
-                            className="w-12 h-10 p-1 cursor-pointer"
-                          />
-                          <Input
-                            type="text"
-                            value={countdownBgColor}
-                            onChange={(e) => setCountdownBgColor(e.target.value)}
-                            className="flex-1"
-                            dir="ltr"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm mb-2">لون النص</label>
-                        <div className="flex gap-2">
-                          <Input
-                            type="color"
-                            value={countdownTextColor}
-                            onChange={(e) => setCountdownTextColor(e.target.value)}
-                            className="w-12 h-10 p-1 cursor-pointer"
-                          />
-                          <Input
-                            type="text"
-                            value={countdownTextColor}
-                            onChange={(e) => setCountdownTextColor(e.target.value)}
-                            className="flex-1"
-                            dir="ltr"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm mb-2">لون الإطار</label>
-                        <div className="flex gap-2">
-                          <Input
-                            type="color"
-                            value={countdownBorderColor}
-                            onChange={(e) => setCountdownBorderColor(e.target.value)}
-                            className="w-12 h-10 p-1 cursor-pointer"
-                          />
-                          <Input
-                            type="text"
-                            value={countdownBorderColor}
-                            onChange={(e) => setCountdownBorderColor(e.target.value)}
-                            className="flex-1"
-                            dir="ltr"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 {/* معاينة النمط */}
                 <div className="mt-4">
                   <h4 className="text-sm font-medium text-muted-foreground mb-3">معاينة:</h4>
                   <div className="max-w-xl mx-auto">
-                    <CountdownTimerPreview 
-                      style={countdownStyle} 
-                      bgColor={countdownBgColor}
-                      textColor={countdownTextColor}
-                      borderColor={countdownBorderColor}
-                    />
+                    <CountdownTimerPreview style={countdownStyle} />
                   </div>
                 </div>
 
                 <Button
-                  onClick={() => handleSaveCountdownStyle(countdownStyle, countdownBgColor, countdownTextColor, countdownBorderColor)}
-                  disabled={savingCountdownStyle}
+                  onClick={() => handleSaveCountdownStyle(countdownStyle)}
+                  disabled={savingCountdownStyle || countdownStyle === (settings?.countdown_style ?? 1)}
                   className="w-full"
                 >
-                  {savingCountdownStyle ? 'جارٍ الحفظ...' : 'حفظ إعدادات العداد'}
+                  {savingCountdownStyle ? 'جارٍ الحفظ...' : 'حفظ نمط العداد'}
                 </Button>
               </div>
             )}
 
-            {/* عداد الأسئلة */}
             <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
               <div>
                 <h3 className="font-medium flex items-center gap-2">
@@ -2430,7 +2332,6 @@ const AdminPage = () => {
               />
             </div>
 
-            {/* صفحة التثبيت */}
             <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
               <div>
                 <h3 className="font-medium flex items-center gap-2">
@@ -2448,7 +2349,6 @@ const AdminPage = () => {
               />
             </div>
 
-            {/* فلتر المحتوى */}
             <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
               <div>
                 <h3 className="font-medium flex items-center gap-2">
@@ -2464,6 +2364,21 @@ const AdminPage = () => {
                 onCheckedChange={handleToggleContentFilter}
                 disabled={isLoading}
               />
+            </div>
+
+            <div className="bg-card border border-border rounded-lg p-4 space-y-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-primary" />
+                <h3 className="font-medium">موعد الحلقة القادمة</h3>
+              </div>
+              <Input
+                type="datetime-local"
+                value={nextSessionDate}
+                onChange={(e) => setNextSessionDate(e.target.value)}
+              />
+              <Button onClick={handleUpdateSession} disabled={isLoading || !nextSessionDate}>
+                {isLoading ? 'جارٍ الحفظ...' : 'حفظ الموعد'}
+              </Button>
             </div>
 
             {/* قسم الإشعارات */}

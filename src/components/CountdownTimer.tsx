@@ -4,9 +4,6 @@ import { Sparkles, Clock, Timer } from 'lucide-react';
 interface CountdownTimerProps {
   targetDate: string;
   style?: number; // 1: LED أخضر, 2: كلاسيكي, 3: بسيط, 4: دائري
-  bgColor?: string;
-  textColor?: string;
-  borderColor?: string;
 }
 
 // حساب الوقت المتبقي
@@ -26,16 +23,7 @@ function calculateTimeLeft(targetDate: string) {
 }
 
 // نمط LED الأخضر الرقمي
-function LEDStyle({ timeLeft, bgColor, textColor, borderColor }: { 
-  timeLeft: { days: number; hours: number; minutes: number; seconds: number };
-  bgColor?: string;
-  textColor?: string;
-  borderColor?: string;
-}) {
-  const bg = bgColor || '#000000';
-  const text = textColor || '#22c55e';
-  const border = borderColor || '#166534';
-  
+function LEDStyle({ timeLeft }: { timeLeft: { days: number; hours: number; minutes: number; seconds: number } }) {
   const timeUnits = [
     ...(timeLeft.days > 0 ? [{ value: timeLeft.days, label: 'DAYS' }] : []),
     { value: timeLeft.hours, label: 'HOURS' },
@@ -44,15 +32,12 @@ function LEDStyle({ timeLeft, bgColor, textColor, borderColor }: {
   ];
 
   return (
-    <div 
-      className="relative overflow-hidden rounded-2xl shadow-2xl"
-      style={{ backgroundColor: bg, borderColor: border, borderWidth: '1px', borderStyle: 'solid' }}
-    >
-      <div className="absolute inset-0" style={{ background: `linear-gradient(to bottom, ${text}10, transparent, ${text}10)` }}></div>
+    <div className="relative overflow-hidden rounded-2xl bg-black/95 border border-green-900/50 shadow-2xl">
+      <div className="absolute inset-0 bg-gradient-to-b from-green-500/5 via-transparent to-green-500/5"></div>
       
       <div className="relative p-6 md:p-8">
         <div className="text-center mb-6">
-          <h3 className="text-lg md:text-xl font-bold" style={{ color: `${text}cc` }}>
+          <h3 className="text-lg md:text-xl font-bold text-green-400/80">
             الحلقة القادمة بعد
           </h3>
         </div>
@@ -62,18 +47,17 @@ function LEDStyle({ timeLeft, bgColor, textColor, borderColor }: {
             <div key={index} className="flex items-center">
               <div className="relative text-center">
                 <div 
-                  className="font-mono text-5xl md:text-7xl font-bold tabular-nums tracking-wider"
+                  className="font-mono text-5xl md:text-7xl font-bold text-green-400 tabular-nums tracking-wider"
                   style={{
-                    color: text,
-                    textShadow: `0 0 20px ${text}cc, 0 0 40px ${text}66, 0 0 60px ${text}33`,
+                    textShadow: '0 0 20px rgba(34, 197, 94, 0.8), 0 0 40px rgba(34, 197, 94, 0.4), 0 0 60px rgba(34, 197, 94, 0.2)',
                     fontFamily: '"Share Tech Mono", "Courier New", monospace',
                   }}
                 >
                   {String(unit.value).padStart(2, '0')}
                 </div>
                 <div 
-                  className="text-[10px] md:text-xs font-medium uppercase tracking-widest mt-1"
-                  style={{ color: `${text}b3`, textShadow: `0 0 10px ${text}80` }}
+                  className="text-[10px] md:text-xs font-medium text-green-600/70 uppercase tracking-widest mt-1"
+                  style={{ textShadow: '0 0 10px rgba(34, 197, 94, 0.5)' }}
                 >
                   {unit.label}
                 </div>
@@ -81,8 +65,8 @@ function LEDStyle({ timeLeft, bgColor, textColor, borderColor }: {
               
               {index < timeUnits.length - 1 && (
                 <div 
-                  className="text-4xl md:text-6xl font-bold mx-1 md:mx-3 animate-pulse"
-                  style={{ color: text, textShadow: `0 0 20px ${text}cc, 0 0 40px ${text}66` }}
+                  className="text-4xl md:text-6xl font-bold text-green-400 mx-1 md:mx-3 animate-pulse"
+                  style={{ textShadow: '0 0 20px rgba(34, 197, 94, 0.8), 0 0 40px rgba(34, 197, 94, 0.4)' }}
                 >
                   :
                 </div>
@@ -91,7 +75,7 @@ function LEDStyle({ timeLeft, bgColor, textColor, borderColor }: {
           ))}
         </div>
         
-        <div className="mt-6 h-0.5" style={{ background: `linear-gradient(to right, transparent, ${text}80, transparent)` }}></div>
+        <div className="mt-6 h-0.5 bg-gradient-to-r from-transparent via-green-500/50 to-transparent"></div>
       </div>
     </div>
   );
@@ -248,7 +232,7 @@ function ExpiredState() {
   );
 }
 
-export function CountdownTimer({ targetDate, style = 1, bgColor, textColor, borderColor }: CountdownTimerProps) {
+export function CountdownTimer({ targetDate, style = 1 }: CountdownTimerProps) {
   const [timeLeft, setTimeLeft] = useState(calculateTimeLeft(targetDate));
 
   useEffect(() => {
@@ -270,19 +254,12 @@ export function CountdownTimer({ targetDate, style = 1, bgColor, textColor, bord
     case 4:
       return <CircularStyle timeLeft={timeLeft} />;
     default:
-      return <LEDStyle timeLeft={timeLeft} bgColor={bgColor} textColor={textColor} borderColor={borderColor} />;
+      return <LEDStyle timeLeft={timeLeft} />;
   }
 }
 
 // مكون المعاينة للإعدادات
-interface CountdownTimerPreviewProps {
-  style: number;
-  bgColor?: string;
-  textColor?: string;
-  borderColor?: string;
-}
-
-export function CountdownTimerPreview({ style, bgColor, textColor, borderColor }: CountdownTimerPreviewProps) {
+export function CountdownTimerPreview({ style }: { style: number }) {
   // استخدام وقت ثابت للمعاينة (3 أيام و 5 ساعات و 23 دقيقة و 45 ثانية)
   const previewTimeLeft = { days: 3, hours: 5, minutes: 23, seconds: 45 };
 
@@ -294,6 +271,6 @@ export function CountdownTimerPreview({ style, bgColor, textColor, borderColor }
     case 4:
       return <CircularStyle timeLeft={previewTimeLeft} />;
     default:
-      return <LEDStyle timeLeft={previewTimeLeft} bgColor={bgColor} textColor={textColor} borderColor={borderColor} />;
+      return <LEDStyle timeLeft={previewTimeLeft} />;
   }
 }
