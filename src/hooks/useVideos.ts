@@ -46,6 +46,27 @@ export function useAddVideo() {
   });
 }
 
+export function useUpdateVideo() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (params: { password: string; videoId: string; title?: string; url?: string }) => {
+      const { data, error } = await supabase.rpc('update_video_authenticated', {
+        p_password: params.password,
+        p_video_id: params.videoId,
+        p_title: params.title || null,
+        p_url: params.url || null,
+      });
+      
+      if (error) throw error;
+      return data as boolean;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['videos'] });
+    },
+  });
+}
+
 export function useDeleteVideo() {
   const queryClient = useQueryClient();
   

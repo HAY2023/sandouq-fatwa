@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSettings, useVerifyAdminPassword, useUpdateSettingsAuthenticated, useDeleteAllQuestionsAuthenticated, useDeleteSelectedQuestionsAuthenticated } from '@/hooks/useSettings';
 import { useGetQuestionsAuthenticated, useGetAccessLogsAuthenticated, Question, AccessLog } from '@/hooks/useQuestionsList';
-import { useVideos, useAddVideo, useDeleteVideo, useReorderVideos, Video as VideoType } from '@/hooks/useVideos';
+import { useVideos, useAddVideo, useDeleteVideo, useReorderVideos, useUpdateVideo, Video as VideoType } from '@/hooks/useVideos';
 import { useAnnouncements, useAddAnnouncement, useDeleteAnnouncement } from '@/hooks/useAnnouncements';
 import { useAllFlashMessages, useAddFlashMessage, useDeleteFlashMessage } from '@/hooks/useFlashMessages';
 import { supabase } from '@/integrations/supabase/client';
@@ -107,6 +107,7 @@ const AdminPage = () => {
   const addVideo = useAddVideo();
   const deleteVideo = useDeleteVideo();
   const reorderVideos = useReorderVideos();
+  const updateVideo = useUpdateVideo();
   const addAnnouncement = useAddAnnouncement();
   const deleteAnnouncement = useDeleteAnnouncement();
   const addFlashMessage = useAddFlashMessage();
@@ -122,6 +123,12 @@ const AdminPage = () => {
   const [showInstallPage, setShowInstallPage] = useState(true);
   const [savingVideo, setSavingVideo] = useState(false);
   const [savingCountdownStyle, setSavingCountdownStyle] = useState(false);
+  
+  // Countdown color customization
+  const [countdownBgColor, setCountdownBgColor] = useState('#000000');
+  const [countdownTextColor, setCountdownTextColor] = useState('#22c55e');
+  const [countdownBorderColor, setCountdownBorderColor] = useState('#166534');
+  const [savingCountdownColors, setSavingCountdownColors] = useState(false);
   const [localVideos, setLocalVideos] = useState<VideoType[]>([]);
   
   // Announcement states
@@ -347,6 +354,9 @@ const AdminPage = () => {
       setShowQuestionCount(settings.show_question_count ?? false);
       setShowInstallPage(settings.show_install_page ?? true);
       setContentFilterEnabled((settings as any).content_filter_enabled ?? true);
+      setCountdownBgColor(settings.countdown_bg_color ?? '#000000');
+      setCountdownTextColor(settings.countdown_text_color ?? '#22c55e');
+      setCountdownBorderColor(settings.countdown_border_color ?? '#166534');
     }
   }, [settings]);
 
@@ -588,6 +598,46 @@ const AdminPage = () => {
     } catch {
       toast({ title: 'خطأ', description: 'فشل الحذف', variant: 'destructive' });
     }
+  };
+
+  const handleEditVideo = async (videoId: string, title: string, url: string) => {
+    if (!storedPassword) return;
+    try {
+      const success = await updateVideo.mutateAsync({
+        password: storedPassword,
+        videoId,
+        title,
+        url,
+      });
+      if (success) {
+        toast({ title: 'تم التحديث', description: 'تم تعديل الفيديو بنجاح' });
+      } else {
+        toast({ title: 'خطأ', description: 'فشل التعديل', variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'خطأ', description: 'فشل تعديل الفيديو', variant: 'destructive' });
+    }
+  };
+
+  const handleSaveCountdownColors = async () => {
+    if (!storedPassword) return;
+    setSavingCountdownColors(true);
+    try {
+      const success = await updateSettings.mutateAsync({
+        password: storedPassword,
+        countdown_bg_color: countdownBgColor,
+        countdown_text_color: countdownTextColor,
+        countdown_border_color: countdownBorderColor,
+      });
+      if (success) {
+        toast({ title: 'تم الحفظ', description: 'تم حفظ ألوان العداد بنجاح' });
+      } else {
+        toast({ title: 'خطأ', description: 'فشل حفظ الألوان', variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'خطأ', description: 'فشل حفظ الألوان', variant: 'destructive' });
+    }
+    setSavingCountdownColors(false);
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -1738,6 +1788,7 @@ const AdminPage = () => {
                         key={video.id}
                         video={video}
                         onDelete={handleDeleteVideo}
+                        onEdit={handleEditVideo}
                       />
                     ))}
                   </SortableContext>
@@ -2297,11 +2348,87 @@ const AdminPage = () => {
                   </div>
                 </RadioGroup>
 
+                {/* تخصيص الألوان */}
+                <div className="border-t border-border pt-4 mt-4">
+                  <h4 className="text-sm font-medium text-muted-foreground mb-4 flex items-center gap-2">
+                    🎨 تخصيص الألوان
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm mb-2">لون الخلفية</label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="color"
+                          value={countdownBgColor}
+                          onChange={(e) => setCountdownBgColor(e.target.value)}
+                          className="w-12 h-10 p-1 cursor-pointer"
+                        />
+                        <Input
+                          type="text"
+                          value={countdownBgColor}
+                          onChange={(e) => setCountdownBgColor(e.target.value)}
+                          className="flex-1"
+                          dir="ltr"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm mb-2">لون النص</label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="color"
+                          value={countdownTextColor}
+                          onChange={(e) => setCountdownTextColor(e.target.value)}
+                          className="w-12 h-10 p-1 cursor-pointer"
+                        />
+                        <Input
+                          type="text"
+                          value={countdownTextColor}
+                          onChange={(e) => setCountdownTextColor(e.target.value)}
+                          className="flex-1"
+                          dir="ltr"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm mb-2">لون الإطار</label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="color"
+                          value={countdownBorderColor}
+                          onChange={(e) => setCountdownBorderColor(e.target.value)}
+                          className="w-12 h-10 p-1 cursor-pointer"
+                        />
+                        <Input
+                          type="text"
+                          value={countdownBorderColor}
+                          onChange={(e) => setCountdownBorderColor(e.target.value)}
+                          className="flex-1"
+                          dir="ltr"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={handleSaveCountdownColors}
+                    disabled={savingCountdownColors}
+                    variant="outline"
+                    className="w-full mt-4"
+                  >
+                    {savingCountdownColors ? 'جارٍ الحفظ...' : 'حفظ الألوان'}
+                  </Button>
+                </div>
+
                 {/* معاينة النمط */}
                 <div className="mt-4">
                   <h4 className="text-sm font-medium text-muted-foreground mb-3">معاينة:</h4>
                   <div className="max-w-xl mx-auto">
-                    <CountdownTimerPreview style={countdownStyle} />
+                    <CountdownTimerPreview 
+                      style={countdownStyle}
+                      bgColor={countdownBgColor}
+                      textColor={countdownTextColor}
+                      borderColor={countdownBorderColor}
+                    />
                   </div>
                 </div>
 
