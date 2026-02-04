@@ -190,7 +190,13 @@ const Index = () => {
       {settings?.show_countdown && settings?.next_session_date && (
         <section className="py-8 px-4 bg-secondary/30">
           <div className="container mx-auto max-w-xl">
-            <CountdownTimer targetDate={settings.next_session_date} style={settings.countdown_style ?? 1} />
+            <CountdownTimer 
+              targetDate={settings.next_session_date} 
+              style={settings.countdown_style ?? 1}
+              bgColor={settings.countdown_bg_color ?? undefined}
+              textColor={settings.countdown_text_color ?? undefined}
+              borderColor={settings.countdown_border_color ?? undefined}
+            />
           </div>
         </section>
       )}
