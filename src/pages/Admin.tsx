@@ -27,7 +27,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { 
   Lock, MessageSquare, Calendar, Video, 
   FileSpreadsheet, FileText, Bell, BellOff, Trash2, Settings, List, Home, AlertTriangle, CheckSquare, Plus, Megaphone, Zap, Hash,
-  Shield, MapPin, Monitor, Globe, CheckCircle, XCircle, Clock, Wifi, Smartphone, Fingerprint, ChevronDown, ChevronUp, Search, Filter, BarChart3, BellRing, Send, Bug, AlertCircle, RefreshCw, Timer
+  Shield, MapPin, Monitor, Globe, CheckCircle, XCircle, Clock, Wifi, Smartphone, Fingerprint, ChevronDown, ChevronUp, Search, Filter, BarChart3, BellRing, Send, Bug, AlertCircle, RefreshCw, Timer, Sparkles
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
@@ -2304,7 +2304,7 @@ const AdminPage = () => {
                 <RadioGroup 
                   value={String(countdownStyle)} 
                   onValueChange={(val) => setCountdownStyle(Number(val))}
-                  className="grid grid-cols-2 md:grid-cols-4 gap-3"
+                  className="grid grid-cols-2 md:grid-cols-5 gap-3"
                 >
                   <div>
                     <RadioGroupItem value="1" id="style-1" className="peer sr-only" />
@@ -2344,6 +2344,16 @@ const AdminPage = () => {
                     >
                       <RefreshCw className="w-6 h-6 mb-1" />
                       <span className="text-sm font-medium">دائري</span>
+                    </Label>
+                  </div>
+                  <div>
+                    <RadioGroupItem value="5" id="style-5" className="peer sr-only" />
+                    <Label 
+                      htmlFor="style-5" 
+                      className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer"
+                    >
+                      <Sparkles className="w-6 h-6 mb-1" />
+                      <span className="text-sm font-medium">زجاجي 3D</span>
                     </Label>
                   </div>
                 </RadioGroup>
