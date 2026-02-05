@@ -277,6 +277,112 @@ function CircularStyle({ timeLeft, textColor, borderColor }: StyleProps) {
   );
 }
 
+// النمط الزجاجي ثلاثي الأبعاد
+function GlassStyle({ timeLeft, bgColor, textColor, borderColor }: StyleProps) {
+  const timeUnits = [
+    ...(timeLeft.days > 0 ? [{ value: timeLeft.days, label: 'يوم' }] : []),
+    { value: timeLeft.hours, label: 'ساعة' },
+    { value: timeLeft.minutes, label: 'دقيقة' },
+    { value: timeLeft.seconds, label: 'ثانية' },
+  ];
+
+  const glassBg = bgColor || 'rgba(255, 255, 255, 0.1)';
+  const text = textColor || '#ffffff';
+  const border = borderColor || 'rgba(255, 255, 255, 0.3)';
+
+  return (
+    <div 
+      className="relative overflow-hidden rounded-3xl shadow-2xl"
+      style={{
+        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.8) 0%, rgba(168, 85, 247, 0.8) 50%, rgba(236, 72, 153, 0.8) 100%)',
+      }}
+    >
+      {/* تأثير الضبابية الزجاجية */}
+      <div 
+        className="absolute inset-0"
+        style={{
+          background: 'radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.3) 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, rgba(255, 255, 255, 0.15) 0%, transparent 50%)',
+        }}
+      />
+      
+      {/* شريط الضوء العلوي */}
+      <div 
+        className="absolute top-0 left-0 right-0 h-px"
+        style={{ background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.6), transparent)' }}
+      />
+      
+      <div className="relative p-6 md:p-8 backdrop-blur-sm">
+        <div className="text-center mb-6">
+          <h3 
+            className="text-lg md:text-xl font-bold drop-shadow-lg"
+            style={{ color: text }}
+          >
+            ✨ الحلقة القادمة بعد ✨
+          </h3>
+        </div>
+        
+        <div className="flex justify-center items-center gap-3 md:gap-5 flex-wrap" dir="rtl">
+          {timeUnits.map((unit, index) => (
+            <div key={index} className="text-center group">
+              <div 
+                className="relative rounded-2xl p-4 md:p-5 min-w-[70px] md:min-w-[90px] transition-all duration-300 hover:scale-105"
+                style={{
+                  background: glassBg,
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
+                  border: `1px solid ${border}`,
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -1px 0 rgba(0, 0, 0, 0.1)',
+                }}
+              >
+                {/* انعكاس الضوء الداخلي */}
+                <div 
+                  className="absolute inset-0 rounded-2xl"
+                  style={{
+                    background: 'linear-gradient(to bottom, rgba(255,255,255,0.2) 0%, transparent 50%)',
+                    pointerEvents: 'none',
+                  }}
+                />
+                <div 
+                  className="relative text-4xl md:text-5xl font-bold tabular-nums drop-shadow-lg"
+                  style={{ 
+                    color: text,
+                    textShadow: '0 2px 10px rgba(0,0,0,0.3)',
+                  }}
+                >
+                  {String(unit.value).padStart(2, '0')}
+                </div>
+              </div>
+              <div 
+                className="text-sm md:text-base font-medium mt-2 drop-shadow-md"
+                style={{ color: text }}
+              >
+                {unit.label}
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        {/* خط تزييني سفلي */}
+        <div 
+          className="mt-6 h-0.5"
+          style={{ 
+            background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.4), transparent)' 
+          }}
+        />
+      </div>
+      
+      {/* تأثير التوهج السفلي */}
+      <div 
+        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-px"
+        style={{ 
+          background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.5), transparent)',
+          boxShadow: '0 0 20px rgba(255,255,255,0.3)',
+        }}
+      />
+    </div>
+  );
+}
+
 // المكون المنتهي
 function ExpiredState() {
   return (
@@ -313,6 +419,8 @@ export function CountdownTimer({ targetDate, style = 1, bgColor, textColor, bord
       return <MinimalStyle {...styleProps} />;
     case 4:
       return <CircularStyle {...styleProps} />;
+    case 5:
+      return <GlassStyle {...styleProps} />;
     default:
       return <LEDStyle {...styleProps} />;
   }
@@ -338,6 +446,8 @@ export function CountdownTimerPreview({ style, bgColor, textColor, borderColor }
       return <MinimalStyle {...styleProps} />;
     case 4:
       return <CircularStyle {...styleProps} />;
+    case 5:
+      return <GlassStyle {...styleProps} />;
     default:
       return <LEDStyle {...styleProps} />;
   }
