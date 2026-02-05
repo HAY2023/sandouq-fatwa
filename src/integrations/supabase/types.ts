@@ -778,7 +778,10 @@ export type Database = {
         | {
             Args: {
               p_content_filter_enabled?: boolean
+              p_countdown_bg_color?: string
+              p_countdown_border_color?: string
               p_countdown_style?: number
+              p_countdown_text_color?: string
               p_is_box_open?: boolean
               p_maintenance_message?: string
               p_maintenance_mode?: boolean
