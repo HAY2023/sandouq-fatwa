@@ -1540,9 +1540,21 @@ const AdminPage = () => {
                 <Shield className="w-5 h-5 text-primary" />
                 سجل محاولات الدخول ({filteredLogs.length})
               </h3>
-              <Button variant="outline" size="sm" onClick={loadAccessLogs}>
-                تحديث
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  onClick={() => navigate('/security-logs')}
+                  className="bg-amber-600 hover:bg-amber-700"
+                >
+                  <Lock className="w-4 h-4 ml-2" />
+                  سجلات الأمان المتقدمة
+                </Button>
+                <Button variant="outline" size="sm" onClick={loadAccessLogs}>
+                  <RefreshCw className="w-4 h-4 ml-2" />
+                  تحديث
+                </Button>
+              </div>
             </div>
 
             {/* فلاتر البحث */}
