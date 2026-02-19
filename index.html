@@ -41,6 +41,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     
+    <!-- Preload LCP image -->
+    <link rel="preload" as="image" href="/src/assets/mosque-hero.jpg" fetchpriority="high" />
+    
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://sandouq-fatwa.lovable.app/" />
@@ -111,7 +114,11 @@
     </script>
   </head>
   <body>
+    <!-- Non-blocking Google Fonts -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap" onload="this.rel='stylesheet'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap" /></noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+  </body>
   </body>
 </html>
