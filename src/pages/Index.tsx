@@ -81,7 +81,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Sticky Navigation */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      <nav aria-label={t('nav.title')} className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled 
           ? 'bg-background/95 backdrop-blur-md shadow-lg border-b border-border' 
           : 'bg-transparent'
@@ -121,6 +121,8 @@ const Index = () => {
             <button 
               className="md:hidden p-2"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? t('nav.closeMenu', 'إغلاق القائمة') : t('nav.openMenu', 'فتح القائمة')}
+              aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? (
                 <X className={`w-6 h-6 ${isScrolled ? 'text-foreground' : 'text-primary-foreground'}`} />
@@ -150,9 +152,12 @@ const Index = () => {
 
       {/* Hero Section */}
       <section className="relative h-[60vh] min-h-[400px] flex items-center justify-center overflow-hidden">
-        <div 
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${mosqueImage})` }}
+        <img 
+          src={mosqueImage}
+          alt={t('hero.imageAlt', 'صورة مسجد الإيمان')}
+          className="absolute inset-0 w-full h-full object-cover"
+          fetchPriority="high"
+          decoding="async"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-foreground/60 via-foreground/50 to-foreground/70" />
         
@@ -171,7 +176,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Flash Messages - Right below hero */}
+      <main>
       <section className="bg-background py-4">
         <div className="container mx-auto max-w-3xl px-4">
           <FlashMessageBanner />
@@ -240,6 +245,7 @@ const Index = () => {
           )}
         </div>
       </section>
+      </main>
 
       {/* Footer */}
       <footer className="py-8 px-4 bg-card border-t border-border">
