@@ -321,7 +321,7 @@ export function QuestionForm() {
             <span>{t('form.questionLabel')}</span>
             <span className="text-destructive">{t('form.required')}</span>
           </label>
-        <div className="flex gap-2">
+        <div className="space-y-3">
             <Textarea
               value={questionText}
               onChange={(e) => {
@@ -329,10 +329,10 @@ export function QuestionForm() {
                 setContentWarning(null);
               }}
               placeholder={t('form.questionPlaceholder')}
-              className="min-h-[120px] resize-none bg-background flex-1"
+              className="min-h-[120px] resize-none bg-background w-full"
               dir={isRTL ? 'rtl' : 'ltr'}
             />
-            <div className="flex flex-col gap-2 justify-end">
+            <div className="flex gap-3 justify-center">
               <VoiceInput 
                 onTranscript={handleVoiceTranscript}
                 disabled={submitQuestion.isPending || isCorrecting}
@@ -344,12 +344,12 @@ export function QuestionForm() {
                 onClick={handleCorrectQuestion}
                 disabled={isCorrecting || !questionText.trim() || questionText.trim().length < 10}
                 title={i18n.language === 'ar' ? "تصحيح السؤال تلقائياً" : "Auto-correct question"}
-                className="h-10 w-10"
+                className="h-12 w-12 rounded-xl border-2 border-accent/30 hover:border-accent hover:bg-accent/10 shadow-md hover:shadow-lg transition-all"
               >
                 {isCorrecting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
-                  <Sparkles className="w-4 h-4" />
+                  <Sparkles className="w-5 h-5 text-accent" />
                 )}
               </Button>
             </div>
