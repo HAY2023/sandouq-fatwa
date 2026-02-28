@@ -91,6 +91,13 @@ const AdminPage = () => {
   // فلتر الأسئلة
   const [questionFilter, setQuestionFilter] = useState<'all' | 'new' | 'old'>('all');
   const [questionCategoryFilter, setQuestionCategoryFilter] = useState<string>('all');
+  const [expandedQuestionId, setExpandedQuestionId] = useState<string | null>(null);
+  
+  // WhatsApp share states
+  const [showWhatsAppDialog, setShowWhatsAppDialog] = useState(false);
+  const [whatsappCount, setWhatsappCount] = useState<number>(10);
+  const [whatsappSort, setWhatsappSort] = useState<'old' | 'new'>('old');
+  const [whatsappStartFrom, setWhatsappStartFrom] = useState<'first' | 'last'>('first');
   
   const { toast } = useToast();
   
@@ -992,6 +999,32 @@ const AdminPage = () => {
     setExpandedLogId(expandedLogId === logId ? null : logId);
   };
 
+  const handleWhatsAppShare = () => {
+    let sorted = [...filteredQuestions];
+    if (whatsappSort === 'new') {
+      sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    } else {
+      sorted.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    }
+    
+    if (whatsappStartFrom === 'last') {
+      sorted = sorted.slice(-whatsappCount);
+    } else {
+      sorted = sorted.slice(0, whatsappCount);
+    }
+    
+    const text = sorted.map((q, i) => 
+      `${i + 1}. [${getCategoryLabel(q.category)}]\n${q.question_text}\n`
+    ).join('\n');
+    
+    const header = `📋 أسئلة صندوق الفتوى (${sorted.length} سؤال)\n${'─'.repeat(20)}\n\n`;
+    const fullText = header + text;
+    
+    const url = `https://wa.me/?text=${encodeURIComponent(fullText)}`;
+    window.open(url, '_blank');
+    setShowWhatsAppDialog(false);
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-primary/10 flex items-center justify-center p-4" dir="rtl">
@@ -1282,6 +1315,16 @@ const AdminPage = () => {
                     {selectedQuestions.length === questions.length ? 'إلغاء التحديد' : 'تحديد الكل'}
                   </Button>
                 )}
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowWhatsAppDialog(true)}
+                  disabled={filteredQuestions.length === 0}
+                  className="bg-green-600 hover:bg-green-700 text-white border-green-600"
+                >
+                  <Send className="w-4 h-4 ml-2" />
+                  واتساب
+                </Button>
               </div>
               
               <div className="flex gap-2">
@@ -1410,13 +1453,14 @@ const AdminPage = () => {
                   <p className="text-lg">لا توجد أسئلة حتى الآن</p>
                 </div>
               ) : (
-                filteredQuestions.map((q, index) => (
+                filteredQuestions.map((q, index) => {
+                  const isExpanded = expandedQuestionId === q.id;
+                  return (
                   <div 
                     key={q.id} 
-                    className={`bg-card border rounded-lg p-4 cursor-pointer transition-colors ${
+                    className={`bg-card border rounded-lg p-4 cursor-pointer transition-all ${
                       selectedQuestions.includes(q.id) ? 'border-primary bg-primary/5' : 'border-border'
-                    }`}
-                    onClick={() => toggleQuestionSelection(q.id)}
+                    } ${isExpanded ? 'ring-2 ring-primary/30 shadow-lg' : ''}`}
                   >
                     <div className="flex items-start gap-3">
                       <Checkbox
@@ -1425,7 +1469,10 @@ const AdminPage = () => {
                         className="mt-1"
                         onClick={(e) => e.stopPropagation()}
                       />
-                      <div className="flex-1">
+                      <div 
+                        className="flex-1"
+                        onClick={() => setExpandedQuestionId(isExpanded ? null : q.id)}
+                      >
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded">
                             {getCategoryLabel(q.category)}
@@ -1434,13 +1481,88 @@ const AdminPage = () => {
                             #{index + 1} - {new Date(q.created_at).toLocaleDateString('ar-SA')}
                           </span>
                         </div>
-                        <p className="text-sm">{q.question_text}</p>
+                        <p className={`transition-all ${isExpanded ? 'text-lg leading-relaxed font-medium' : 'text-sm'}`}>
+                          {q.question_text}
+                        </p>
+                        {isExpanded && (
+                          <div className="mt-3 pt-3 border-t border-border flex items-center gap-2 text-xs text-muted-foreground">
+                            <Clock className="w-3 h-3" />
+                            {new Date(q.created_at).toLocaleString('ar-SA')}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
-                ))
+                  );
+                })
               )}
             </div>
+
+            {/* WhatsApp Share Dialog */}
+            {showWhatsAppDialog && (
+              <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowWhatsAppDialog(false)}>
+                <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
+                  <h3 className="text-lg font-bold flex items-center gap-2">
+                    <Send className="w-5 h-5 text-green-600" />
+                    إرسال عبر واتساب
+                  </h3>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm mb-1">عدد الأسئلة</label>
+                      <Select value={String(whatsappCount)} onValueChange={(v) => setWhatsappCount(Number(v))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="5">5 أسئلة</SelectItem>
+                          <SelectItem value="10">10 أسئلة</SelectItem>
+                          <SelectItem value="20">20 أسئلة</SelectItem>
+                          <SelectItem value="50">50 سؤال</SelectItem>
+                          <SelectItem value={String(filteredQuestions.length)}>الكل ({filteredQuestions.length})</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm mb-1">الترتيب</label>
+                      <Select value={whatsappSort} onValueChange={(v) => setWhatsappSort(v as 'old' | 'new')}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="old">الأقدم أولاً</SelectItem>
+                          <SelectItem value="new">الأحدث أولاً</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm mb-1">ابدأ من</label>
+                      <Select value={whatsappStartFrom} onValueChange={(v) => setWhatsappStartFrom(v as 'first' | 'last')}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="first">أول الأسئلة</SelectItem>
+                          <SelectItem value="last">آخر الأسئلة</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2 pt-2">
+                    <Button onClick={handleWhatsAppShare} className="flex-1 bg-green-600 hover:bg-green-700 text-white">
+                      <Send className="w-4 h-4 ml-2" />
+                      إرسال
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowWhatsAppDialog(false)}>
+                      إلغاء
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </TabsContent>
 
           {/* User Reports Tab - بلاغات المستخدمين */}
