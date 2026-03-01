@@ -96,7 +96,7 @@ const AdminPage = () => {
   // WhatsApp share states
   const [showWhatsAppDialog, setShowWhatsAppDialog] = useState(false);
   const [whatsappCount, setWhatsappCount] = useState<number>(10);
-  const [whatsappSort, setWhatsappSort] = useState<'old' | 'new'>('old');
+  const [whatsappSort, setWhatsappSort] = useState<'old' | 'new' | 'category'>('old');
   const [whatsappStartFrom, setWhatsappStartFrom] = useState<'first' | 'last'>('first');
   
   const { toast } = useToast();
@@ -1001,7 +1001,19 @@ const AdminPage = () => {
 
   const handleWhatsAppShare = () => {
     let sorted = [...filteredQuestions];
-    if (whatsappSort === 'new') {
+    
+    if (whatsappSort === 'category') {
+      // ترتيب حسب تكرار النوع: الأكثر أسئلة أولاً
+      const categoryCount: Record<string, number> = {};
+      sorted.forEach(q => {
+        categoryCount[q.category] = (categoryCount[q.category] || 0) + 1;
+      });
+      sorted.sort((a, b) => {
+        const diff = (categoryCount[b.category] || 0) - (categoryCount[a.category] || 0);
+        if (diff !== 0) return diff;
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      });
+    } else if (whatsappSort === 'new') {
       sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     } else {
       sorted.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
@@ -1013,11 +1025,28 @@ const AdminPage = () => {
       sorted = sorted.slice(0, whatsappCount);
     }
     
-    const text = sorted.map((q, i) => 
-      `${i + 1}. [${getCategoryLabel(q.category)}]\n${q.question_text}\n`
-    ).join('\n');
+    // تجميع حسب النوع عند الترتيب بالتكرار
+    let text = '';
+    if (whatsappSort === 'category') {
+      let currentCategory = '';
+      let idx = 1;
+      sorted.forEach(q => {
+        const cat = getCategoryLabel(q.category);
+        if (cat !== currentCategory) {
+          currentCategory = cat;
+          const count = sorted.filter(s => s.category === q.category).length;
+          text += `\n📌 ${cat} (${count} سؤال)\n${'─'.repeat(15)}\n`;
+        }
+        text += `${idx}. ${q.question_text}\n`;
+        idx++;
+      });
+    } else {
+      text = sorted.map((q, i) => 
+        `${i + 1}. [${getCategoryLabel(q.category)}]\n${q.question_text}\n`
+      ).join('\n');
+    }
     
-    const header = `📋 أسئلة صندوق الفتوى (${sorted.length} سؤال)\n${'─'.repeat(20)}\n\n`;
+    const header = `📋 أسئلة صندوق الفتوى (${sorted.length} سؤال)\n${'─'.repeat(20)}\n`;
     const fullText = header + text;
     
     const url = `https://wa.me/?text=${encodeURIComponent(fullText)}`;
@@ -1526,13 +1555,14 @@ const AdminPage = () => {
                     
                     <div>
                       <label className="block text-sm mb-1">الترتيب</label>
-                      <Select value={whatsappSort} onValueChange={(v) => setWhatsappSort(v as 'old' | 'new')}>
+                      <Select value={whatsappSort} onValueChange={(v) => setWhatsappSort(v as 'old' | 'new' | 'category')}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="old">الأقدم أولاً</SelectItem>
                           <SelectItem value="new">الأحدث أولاً</SelectItem>
+                          <SelectItem value="category">حسب النوع (الأكثر أولاً)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
