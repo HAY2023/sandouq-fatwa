@@ -29,6 +29,8 @@ import {
   FileSpreadsheet, FileText, Bell, BellOff, Trash2, Settings, List, Home, AlertTriangle, CheckSquare, Plus, Megaphone, Zap, Hash,
   Shield, MapPin, Monitor, Globe, CheckCircle, XCircle, Clock, Wifi, Smartphone, Fingerprint, ChevronDown, ChevronUp, Search, Filter, BarChart3, BellRing, Send, Bug, AlertCircle, RefreshCw, Timer, Sparkles
 } from 'lucide-react';
+import { AdminStats } from '@/components/admin/AdminStats';
+import { AdminSettings } from '@/components/admin/AdminSettings';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -1204,112 +1206,7 @@ const AdminPage = () => {
 
           {/* Statistics Tab */}
           <TabsContent value="stats" className="space-y-6">
-            <h3 className="text-lg font-medium flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-primary" />
-              إحصائيات الأسئلة
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* الأسئلة حسب الفئة */}
-              <div className="bg-card border border-border rounded-lg p-4">
-                <h4 className="font-medium mb-4 text-center">الأسئلة حسب الفئة</h4>
-                {questionStats.categoryData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={250}>
-                    <PieChart>
-                      <Pie
-                        data={questionStats.categoryData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {questionStats.categoryData.map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="h-[250px] flex items-center justify-center text-muted-foreground">
-                    لا توجد بيانات
-                  </div>
-                )}
-              </div>
-
-              {/* الأسئلة حسب اليوم */}
-              <div className="bg-card border border-border rounded-lg p-4">
-                <h4 className="font-medium mb-4 text-center">الأسئلة في آخر 7 أيام</h4>
-                {questions.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={250}>
-                    <BarChart data={questionStats.dailyData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" fontSize={12} />
-                      <YAxis fontSize={12} />
-                      <Tooltip />
-                      <Bar dataKey="count" fill="#3b82f6" name="عدد الأسئلة" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="h-[250px] flex items-center justify-center text-muted-foreground">
-                    لا توجد بيانات
-                  </div>
-                )}
-              </div>
-
-              {/* الزوار حسب اليوم */}
-              <div className="bg-card border border-border rounded-lg p-4">
-                <h4 className="font-medium mb-4 text-center">الزوار في آخر 7 أيام</h4>
-                {accessLogs.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={250}>
-                    <BarChart data={visitorStats}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" fontSize={12} />
-                      <YAxis fontSize={12} />
-                      <Tooltip />
-                      <Bar dataKey="count" fill="#10b981" name="عدد الزوار" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="h-[250px] flex items-center justify-center text-muted-foreground">
-                    لا توجد بيانات
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* ملخص الإحصائيات */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <div className="bg-card border border-border rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-primary">{questions.length}</div>
-                <div className="text-sm text-muted-foreground">إجمالي الأسئلة</div>
-              </div>
-              <div className="bg-card border border-border rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-green-500">{questionStats.categoryData.length}</div>
-                <div className="text-sm text-muted-foreground">فئات مختلفة</div>
-              </div>
-              <div className="bg-card border border-border rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-blue-500">
-                  {accessLogs.length}
-                </div>
-                <div className="text-sm text-muted-foreground">إجمالي الزوار</div>
-              </div>
-              <div className="bg-card border border-border rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-amber-500">
-                  {accessLogs.filter(l => l.is_authorized).length}
-                </div>
-                <div className="text-sm text-muted-foreground">دخول ناجح</div>
-              </div>
-              <div className="bg-card border border-border rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-destructive">
-                  {accessLogs.filter(l => !l.is_authorized).length}
-                </div>
-                <div className="text-sm text-muted-foreground">محاولات فاشلة</div>
-              </div>
-            </div>
+            <AdminStats questions={questions} accessLogs={accessLogs} />
           </TabsContent>
 
           {/* Questions Tab */}
@@ -2416,317 +2313,37 @@ const AdminPage = () => {
             )}
           </TabsContent>
           <TabsContent value="settings" className="space-y-4">
-
-            {/* فتح/إغلاق الصندوق */}
-            <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
-              <div>
-                <h3 className="font-medium flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4" />
-                  صندوق الأسئلة
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {isBoxOpen ? 'الصندوق مفتوح - يمكن للزوار إرسال الأسئلة' : 'الصندوق مغلق - لا يمكن إرسال الأسئلة'}
-                </p>
-              </div>
-              <Switch
-                checked={isBoxOpen}
-                onCheckedChange={handleToggleBox}
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
-              <div>
-                <h3 className="font-medium flex items-center gap-2">
-                  <Timer className="w-4 h-4" />
-                  العداد التنازلي
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {showCountdown ? 'يظهر العداد التنازلي للحلقة القادمة' : 'العداد التنازلي مخفي'}
-                </p>
-              </div>
-              <Switch
-                checked={showCountdown}
-                onCheckedChange={handleToggleCountdown}
-                disabled={isLoading}
-              />
-            </div>
-
-            {/* اختيار نمط العداد التنازلي */}
-            {showCountdown && (
-              <div className="bg-card border border-border rounded-lg p-4 space-y-4">
-                <div>
-                  <h3 className="font-medium flex items-center gap-2 mb-2">
-                    <Clock className="w-4 h-4" />
-                    نمط العداد التنازلي
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    اختر النمط المناسب وشاهد المعاينة قبل الحفظ
-                  </p>
-                </div>
-                
-                <RadioGroup 
-                  value={String(countdownStyle)} 
-                  onValueChange={(val) => setCountdownStyle(Number(val))}
-                  className="grid grid-cols-2 md:grid-cols-5 gap-3"
-                >
-                  <div>
-                    <RadioGroupItem value="1" id="style-1" className="peer sr-only" />
-                    <Label 
-                      htmlFor="style-1" 
-                      className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer"
-                    >
-                      <Monitor className="w-6 h-6 mb-1" />
-                      <span className="text-sm font-medium">LED رقمي</span>
-                    </Label>
-                  </div>
-                  <div>
-                    <RadioGroupItem value="2" id="style-2" className="peer sr-only" />
-                    <Label 
-                      htmlFor="style-2" 
-                      className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer"
-                    >
-                      <Clock className="w-6 h-6 mb-1" />
-                      <span className="text-sm font-medium">كلاسيكي</span>
-                    </Label>
-                  </div>
-                  <div>
-                    <RadioGroupItem value="3" id="style-3" className="peer sr-only" />
-                    <Label 
-                      htmlFor="style-3" 
-                      className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer"
-                    >
-                      <Timer className="w-6 h-6 mb-1" />
-                      <span className="text-sm font-medium">بسيط</span>
-                    </Label>
-                  </div>
-                  <div>
-                    <RadioGroupItem value="4" id="style-4" className="peer sr-only" />
-                    <Label 
-                      htmlFor="style-4" 
-                      className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer"
-                    >
-                      <RefreshCw className="w-6 h-6 mb-1" />
-                      <span className="text-sm font-medium">دائري</span>
-                    </Label>
-                  </div>
-                  <div>
-                    <RadioGroupItem value="5" id="style-5" className="peer sr-only" />
-                    <Label 
-                      htmlFor="style-5" 
-                      className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer"
-                    >
-                      <Sparkles className="w-6 h-6 mb-1" />
-                      <span className="text-sm font-medium">زجاجي 3D</span>
-                    </Label>
-                  </div>
-                </RadioGroup>
-
-                {/* تخصيص الألوان */}
-                <div className="border-t border-border pt-4 mt-4">
-                  <h4 className="text-sm font-medium text-muted-foreground mb-4 flex items-center gap-2">
-                    🎨 تخصيص الألوان
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm mb-2">لون الخلفية</label>
-                      <div className="flex gap-2">
-                        <Input
-                          type="color"
-                          value={countdownBgColor}
-                          onChange={(e) => setCountdownBgColor(e.target.value)}
-                          className="w-12 h-10 p-1 cursor-pointer"
-                        />
-                        <Input
-                          type="text"
-                          value={countdownBgColor}
-                          onChange={(e) => setCountdownBgColor(e.target.value)}
-                          className="flex-1"
-                          dir="ltr"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm mb-2">لون النص</label>
-                      <div className="flex gap-2">
-                        <Input
-                          type="color"
-                          value={countdownTextColor}
-                          onChange={(e) => setCountdownTextColor(e.target.value)}
-                          className="w-12 h-10 p-1 cursor-pointer"
-                        />
-                        <Input
-                          type="text"
-                          value={countdownTextColor}
-                          onChange={(e) => setCountdownTextColor(e.target.value)}
-                          className="flex-1"
-                          dir="ltr"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm mb-2">لون الإطار</label>
-                      <div className="flex gap-2">
-                        <Input
-                          type="color"
-                          value={countdownBorderColor}
-                          onChange={(e) => setCountdownBorderColor(e.target.value)}
-                          className="w-12 h-10 p-1 cursor-pointer"
-                        />
-                        <Input
-                          type="text"
-                          value={countdownBorderColor}
-                          onChange={(e) => setCountdownBorderColor(e.target.value)}
-                          className="flex-1"
-                          dir="ltr"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <Button
-                    onClick={handleSaveCountdownColors}
-                    disabled={savingCountdownColors}
-                    variant="outline"
-                    className="w-full mt-4"
-                  >
-                    {savingCountdownColors ? 'جارٍ الحفظ...' : 'حفظ الألوان'}
-                  </Button>
-                </div>
-
-                {/* معاينة النمط */}
-                <div className="mt-4">
-                  <h4 className="text-sm font-medium text-muted-foreground mb-3">معاينة:</h4>
-                  <div className="max-w-xl mx-auto">
-                    <CountdownTimerPreview 
-                      style={countdownStyle}
-                      bgColor={countdownBgColor}
-                      textColor={countdownTextColor}
-                      borderColor={countdownBorderColor}
-                    />
-                  </div>
-                </div>
-
-                <Button
-                  onClick={() => handleSaveCountdownStyle(countdownStyle)}
-                  disabled={savingCountdownStyle || countdownStyle === (settings?.countdown_style ?? 1)}
-                  className="w-full"
-                >
-                  {savingCountdownStyle ? 'جارٍ الحفظ...' : 'حفظ نمط العداد'}
-                </Button>
-              </div>
-            )}
-
-            <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
-              <div>
-                <h3 className="font-medium flex items-center gap-2">
-                  <Hash className="w-4 h-4" />
-                  عداد الأسئلة
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {showQuestionCount ? 'يظهر عدد الأسئلة المستلمة للزوار' : 'عداد الأسئلة مخفي عن الزوار'}
-                </p>
-              </div>
-              <Switch
-                checked={showQuestionCount}
-                onCheckedChange={handleToggleQuestionCount}
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
-              <div>
-                <h3 className="font-medium flex items-center gap-2">
-                  <Smartphone className="w-4 h-4" />
-                  صفحة التثبيت
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {showInstallPage ? 'صفحة التثبيت متاحة للزوار (/install)' : 'صفحة التثبيت معطّلة'}
-                </p>
-              </div>
-              <Switch
-                checked={showInstallPage}
-                onCheckedChange={handleToggleInstallPage}
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
-              <div>
-                <h3 className="font-medium flex items-center gap-2">
-                  <Shield className="w-4 h-4" />
-                  فلتر المحتوى
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {contentFilterEnabled ? 'يمنع الأسئلة غير اللائقة' : 'فلتر المحتوى معطّل'}
-                </p>
-              </div>
-              <Switch
-                checked={contentFilterEnabled}
-                onCheckedChange={handleToggleContentFilter}
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="bg-card border border-border rounded-lg p-4 space-y-4">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-primary" />
-                <h3 className="font-medium">موعد الحلقة القادمة</h3>
-              </div>
-              <Input
-                type="datetime-local"
-                value={nextSessionDate}
-                onChange={(e) => setNextSessionDate(e.target.value)}
-              />
-              <Button onClick={handleUpdateSession} disabled={isLoading || !nextSessionDate}>
-                {isLoading ? 'جارٍ الحفظ...' : 'حفظ الموعد'}
-              </Button>
-            </div>
-
-            {/* قسم الإشعارات */}
-            <div className="bg-card border border-border rounded-lg p-4 space-y-4">
-              <div className="flex items-center gap-2">
-                <BellRing className="w-5 h-5 text-primary" />
-                <h3 className="font-medium">إشعارات الأسئلة الجديدة</h3>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                تلقي إشعارات في المتصفح عند وصول أسئلة جديدة أثناء تواجدك في لوحة التحكم
-              </p>
-              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                <div>
-                  <p className="font-medium text-sm">إشعارات الصوت</p>
-                  <p className="text-xs text-muted-foreground">تشغيل صوت عند وصول سؤال جديد</p>
-                </div>
-                <Switch
-                  checked={soundEnabled}
-                  onCheckedChange={setSoundEnabled}
-                />
-              </div>
-              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                <div>
-                  <p className="font-medium text-sm">إشعارات المتصفح</p>
-                  <p className="text-xs text-muted-foreground">عرض إشعار في المتصفح</p>
-                </div>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => {
-                    if ('Notification' in window) {
-                      Notification.requestPermission().then(permission => {
-                        if (permission === 'granted') {
-                          new Notification('تم تفعيل الإشعارات!', { 
-                            body: 'ستصلك إشعارات عند وصول أسئلة جديدة',
-                            icon: '/favicon.jpg' 
-                          });
-                        }
-                      });
-                    }
-                  }}
-                >
-                  <Bell className="w-4 h-4 ml-2" />
-                  تفعيل
-                </Button>
-              </div>
-            </div>
+            <AdminSettings
+              isBoxOpen={isBoxOpen}
+              showCountdown={showCountdown}
+              countdownStyle={countdownStyle}
+              showQuestionCount={showQuestionCount}
+              showInstallPage={showInstallPage}
+              contentFilterEnabled={contentFilterEnabled}
+              soundEnabled={soundEnabled}
+              nextSessionDate={nextSessionDate}
+              countdownBgColor={countdownBgColor}
+              countdownTextColor={countdownTextColor}
+              countdownBorderColor={countdownBorderColor}
+              isLoading={isLoading}
+              savingCountdownStyle={savingCountdownStyle}
+              savingCountdownColors={savingCountdownColors}
+              savedCountdownStyle={settings?.countdown_style ?? 1}
+              onToggleBox={handleToggleBox}
+              onToggleCountdown={handleToggleCountdown}
+              onToggleQuestionCount={handleToggleQuestionCount}
+              onToggleInstallPage={handleToggleInstallPage}
+              onToggleContentFilter={handleToggleContentFilter}
+              onSoundToggle={setSoundEnabled}
+              onSessionDateChange={setNextSessionDate}
+              onUpdateSession={handleUpdateSession}
+              onCountdownStyleChange={setCountdownStyle}
+              onSaveCountdownStyle={handleSaveCountdownStyle}
+              onCountdownBgColorChange={setCountdownBgColor}
+              onCountdownTextColorChange={setCountdownTextColor}
+              onCountdownBorderColorChange={setCountdownBorderColor}
+              onSaveCountdownColors={handleSaveCountdownColors}
+            />
           </TabsContent>
         </Tabs>
       </main>
