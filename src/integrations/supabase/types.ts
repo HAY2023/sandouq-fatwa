@@ -546,6 +546,7 @@ export type Database = {
         }
         Returns: string
       }
+      check_admin_lock_status: { Args: never; Returns: Json }
       delete_access_log_authenticated: {
         Args: { p_log_id: string; p_password: string }
         Returns: boolean
