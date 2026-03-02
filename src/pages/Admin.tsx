@@ -83,6 +83,7 @@ const AdminPage = () => {
   const [accessLogs, setAccessLogs] = useState<AccessLog[]>([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
+  const [newQuestionsCount, setNewQuestionsCount] = useState(0);
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
   
   // فلاتر السجل
@@ -479,6 +480,7 @@ const AdminPage = () => {
           if (soundEnabled) {
             playNotificationSound();
           }
+          setNewQuestionsCount(prev => prev + 1);
           loadQuestions();
           
           // إرسال إشعار المتصفح
@@ -491,7 +493,11 @@ const AdminPage = () => {
             });
           }
           
-          toast({ title: '📩 سؤال جديد', description: 'تم استلام سؤال جديد' });
+          const question = payload.new as { category?: string; question_text?: string };
+          toast({ 
+            title: '📩 سؤال جديد', 
+            description: `${getCategoryLabel(question.category || 'other')}: ${question.question_text?.slice(0, 60) || ''}...`
+          });
         }
       )
       .subscribe();
@@ -516,6 +522,19 @@ const AdminPage = () => {
     e.preventDefault();
     setIsLoading(true);
     try {
+      // Check lock status first
+      const { data: lockStatus } = await supabase.rpc('check_admin_lock_status');
+      if (lockStatus && (lockStatus as any).is_locked) {
+        const mins = Math.ceil((lockStatus as any).remaining_seconds / 60);
+        toast({ 
+          title: '🔒 الحساب مقفل', 
+          description: `تم قفل الحساب بسبب محاولات فاشلة متعددة. حاول بعد ${mins} دقيقة.`, 
+          variant: 'destructive' 
+        });
+        setIsLoading(false);
+        return;
+      }
+
       const isValid = await verifyPassword.mutateAsync(password);
       logAdminAccess(isValid, true);
       
@@ -523,7 +542,14 @@ const AdminPage = () => {
         setIsAuthenticated(true);
         setStoredPassword(password);
       } else {
-        toast({ title: 'خطأ', description: 'كلمة المرور غير صحيحة', variant: 'destructive' });
+        const { data: newLockStatus } = await supabase.rpc('check_admin_lock_status');
+        if (newLockStatus && (newLockStatus as any).is_locked) {
+          const mins = Math.ceil((newLockStatus as any).remaining_seconds / 60);
+          toast({ title: '🔒 تم قفل الحساب', description: `تم قفل الحساب لمدة ${mins} دقيقة بسبب محاولات فاشلة متعددة.`, variant: 'destructive' });
+        } else {
+          const remaining = 5 - ((newLockStatus as any)?.failed_attempts || 0);
+          toast({ title: 'خطأ', description: `كلمة المرور غير صحيحة. متبقي ${remaining} محاولات قبل القفل.`, variant: 'destructive' });
+        }
       }
     } catch {
       logAdminAccess(false, true);
@@ -1140,10 +1166,18 @@ const AdminPage = () => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setSoundEnabled(!soundEnabled)}
+              onClick={() => {
+                setSoundEnabled(!soundEnabled);
+              }}
               title={soundEnabled ? 'إيقاف الصوت' : 'تشغيل الصوت'}
+              className="relative"
             >
               {soundEnabled ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
+              {newQuestionsCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center animate-pulse">
+                  {newQuestionsCount}
+                </span>
+              )}
             </Button>
             <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
               <Home className="w-5 h-5" />
