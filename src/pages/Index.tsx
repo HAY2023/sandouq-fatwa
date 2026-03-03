@@ -201,6 +201,7 @@ const Index = () => {
               bgColor={settings.countdown_bg_color ?? undefined}
               textColor={settings.countdown_text_color ?? undefined}
               borderColor={settings.countdown_border_color ?? undefined}
+              title={(settings as any).countdown_title ?? undefined}
             />
           </div>
         </section>

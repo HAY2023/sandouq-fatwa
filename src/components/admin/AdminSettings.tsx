@@ -28,6 +28,7 @@ interface AdminSettingsProps {
   savingCountdownStyle: boolean;
   savingCountdownColors: boolean;
   savedCountdownStyle: number;
+  countdownTitle: string;
   onToggleBox: (v: boolean) => void;
   onToggleCountdown: (v: boolean) => void;
   onToggleQuestionCount: (v: boolean) => void;
@@ -42,6 +43,8 @@ interface AdminSettingsProps {
   onCountdownTextColorChange: (v: string) => void;
   onCountdownBorderColorChange: (v: string) => void;
   onSaveCountdownColors: () => void;
+  onCountdownTitleChange: (v: string) => void;
+  onSaveCountdownTitle: () => void;
 }
 
 export function AdminSettings(props: AdminSettingsProps) {
@@ -67,6 +70,10 @@ export function AdminSettings(props: AdminSettingsProps) {
     </button>
   );
 
+  const previewUrl = typeof window !== 'undefined' 
+    ? window.location.origin.replace('/admin', '/') 
+    : '/';
+
   return (
     <div className="space-y-3">
       {/* معاينة الموقع على الهاتف */}
@@ -80,16 +87,28 @@ export function AdminSettings(props: AdminSettingsProps) {
             {/* Notch */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-5 bg-foreground/30 rounded-b-xl z-10" />
             {/* Screen */}
-            <iframe
-              src="/"
-              className="w-[400px] h-[800px] border-0 origin-top-left"
-              style={{ transform: 'scale(0.5)', transformOrigin: 'top left' }}
-              title="معاينة الموقع"
-            />
+            <div className="w-full h-full overflow-hidden">
+              <iframe
+                src="/"
+                className="border-0"
+                style={{ 
+                  width: '400px', 
+                  height: '800px', 
+                  transform: 'scale(0.5)', 
+                  transformOrigin: 'top left',
+                  pointerEvents: 'none'
+                }}
+                title="معاينة الموقع"
+                key="mobile-preview"
+              />
+            </div>
             {/* Home bar */}
             <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-16 h-1 bg-foreground/30 rounded-full" />
           </div>
         </div>
+        <p className="text-xs text-muted-foreground text-center mt-2">
+          المعاينة تعمل بشكل كامل على الموقع المنشور
+        </p>
       </div>
 
       {/* القسم العام */}
@@ -209,6 +228,14 @@ export function AdminSettings(props: AdminSettingsProps) {
                   size="sm"
                 >
                   {props.savingCountdownStyle ? 'جارٍ الحفظ...' : 'حفظ نمط العداد'}
+                </Button>
+              </div>
+
+              <div className="bg-card border border-border rounded-xl p-4 space-y-3">
+                <h4 className="font-medium text-sm flex items-center gap-2">✏️ عنوان العداد التنازلي</h4>
+                <Input value={props.countdownTitle} onChange={(e) => props.onCountdownTitleChange(e.target.value)} placeholder="حلقة الإفتاء ستكون بعد" dir="rtl" />
+                <Button onClick={props.onSaveCountdownTitle} disabled={props.isLoading} size="sm" className="w-full">
+                  {props.isLoading ? 'جارٍ الحفظ...' : 'حفظ العنوان'}
                 </Button>
               </div>
 

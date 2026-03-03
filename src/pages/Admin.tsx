@@ -139,6 +139,7 @@ const AdminPage = () => {
   const [countdownTextColor, setCountdownTextColor] = useState('#22c55e');
   const [countdownBorderColor, setCountdownBorderColor] = useState('#166534');
   const [savingCountdownColors, setSavingCountdownColors] = useState(false);
+  const [countdownTitle, setCountdownTitle] = useState('حلقة الإفتاء ستكون بعد');
   const [localVideos, setLocalVideos] = useState<VideoType[]>([]);
   
   // Announcement states
@@ -367,6 +368,7 @@ const AdminPage = () => {
       setCountdownBgColor(settings.countdown_bg_color ?? '#000000');
       setCountdownTextColor(settings.countdown_text_color ?? '#22c55e');
       setCountdownBorderColor(settings.countdown_border_color ?? '#166534');
+      setCountdownTitle((settings as any).countdown_title ?? 'حلقة الإفتاء ستكون بعد');
     }
   }, [settings]);
 
@@ -810,6 +812,23 @@ const AdminPage = () => {
       toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
     }
     setSavingCountdownStyle(false);
+  };
+
+  const handleSaveCountdownTitle = async () => {
+    if (!storedPassword) return;
+    setIsLoading(true);
+    try {
+      const success = await updateSettings.mutateAsync({
+        password: storedPassword,
+        countdown_title: countdownTitle,
+      });
+      if (success) {
+        toast({ title: 'تم التحديث', description: 'تم حفظ عنوان العداد التنازلي' });
+      }
+    } catch {
+      toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
+    }
+    setIsLoading(false);
   };
 
   const handleToggleQuestionCount = async () => {
@@ -2377,6 +2396,9 @@ const AdminPage = () => {
               onCountdownTextColorChange={setCountdownTextColor}
               onCountdownBorderColorChange={setCountdownBorderColor}
               onSaveCountdownColors={handleSaveCountdownColors}
+              countdownTitle={countdownTitle}
+              onCountdownTitleChange={setCountdownTitle}
+              onSaveCountdownTitle={handleSaveCountdownTitle}
             />
           </TabsContent>
         </Tabs>
