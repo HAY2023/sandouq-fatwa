@@ -4,11 +4,12 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { CountdownTimerPreview } from '@/components/CountdownTimer';
+import { CountdownTimerPreview, COUNTDOWN_STYLES } from '@/components/CountdownTimer';
 import { 
   MessageSquare, Calendar, Timer, Clock, Hash, 
   Smartphone, Shield, BellRing, Bell, Monitor, 
-  RefreshCw, Sparkles, ChevronDown, ChevronUp
+  RefreshCw, Sparkles, ChevronDown, ChevronUp,
+  Zap, Flame, Star
 } from 'lucide-react';
 
 interface AdminSettingsProps {
@@ -150,18 +151,11 @@ export function AdminSettings(props: AdminSettingsProps) {
                   onValueChange={(val) => props.onCountdownStyleChange(Number(val))}
                   className="grid grid-cols-5 gap-2"
                 >
-                  {[
-                    { val: '1', icon: <Monitor className="w-5 h-5" />, label: 'LED' },
-                    { val: '2', icon: <Clock className="w-5 h-5" />, label: 'كلاسيك' },
-                    { val: '3', icon: <Timer className="w-5 h-5" />, label: 'بسيط' },
-                    { val: '4', icon: <RefreshCw className="w-5 h-5" />, label: 'دائري' },
-                    { val: '5', icon: <Sparkles className="w-5 h-5" />, label: '3D' },
-                  ].map(s => (
+                  {COUNTDOWN_STYLES.map(s => (
                     <div key={s.val}>
-                      <RadioGroupItem value={s.val} id={`s-${s.val}`} className="peer sr-only" />
-                      <Label htmlFor={`s-${s.val}`} className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-2 hover:bg-accent peer-data-[state=checked]:border-primary cursor-pointer">
-                        {s.icon}
-                        <span className="text-xs mt-1">{s.label}</span>
+                      <RadioGroupItem value={String(s.val)} id={`s-${s.val}`} className="peer sr-only" />
+                      <Label htmlFor={`s-${s.val}`} className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-2 hover:bg-accent peer-data-[state=checked]:border-primary cursor-pointer text-center">
+                        <span className="text-xs font-medium">{s.label}</span>
                       </Label>
                     </div>
                   ))}
