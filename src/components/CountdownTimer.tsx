@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Sparkles, Clock, Timer, Zap, Flame, Star } from 'lucide-react';
 
 interface CountdownTimerProps {
@@ -7,6 +7,7 @@ interface CountdownTimerProps {
   bgColor?: string;
   textColor?: string;
   borderColor?: string;
+  title?: string;
 }
 
 interface StyleProps {
@@ -14,9 +15,10 @@ interface StyleProps {
   bgColor?: string;
   textColor?: string;
   borderColor?: string;
+  title: string;
 }
 
-const TITLE = 'حلقة الإفتاء ستكون بعد';
+const DEFAULT_TITLE = 'حلقة الإفتاء ستكون بعد';
 
 function calculateTimeLeft(targetDate: string) {
   const difference = new Date(targetDate).getTime() - new Date().getTime();
@@ -29,7 +31,6 @@ function calculateTimeLeft(targetDate: string) {
   };
 }
 
-// الوحدات المشتركة
 function getTimeUnits(timeLeft: StyleProps['timeLeft'], labelsAr = true) {
   const labels = labelsAr
     ? { d: 'يوم', h: 'ساعة', m: 'دقيقة', s: 'ثانية' }
@@ -42,21 +43,58 @@ function getTimeUnits(timeLeft: StyleProps['timeLeft'], labelsAr = true) {
   ];
 }
 
-// ===== نمط 1: LED أخضر رقمي =====
-function LEDStyle({ timeLeft, bgColor = '#000000', textColor = '#22c55e', borderColor = '#166534' }: StyleProps) {
+// ===== مكون الرقم المتحرك =====
+function AnimatedDigit({ value, color, className = '' }: { value: string; color?: string; className?: string }) {
+  const [displayValue, setDisplayValue] = useState(value);
+  const [isFlipping, setIsFlipping] = useState(false);
+  const prevValue = useRef(value);
+
+  useEffect(() => {
+    if (prevValue.current !== value) {
+      setIsFlipping(true);
+      const timer = setTimeout(() => {
+        setDisplayValue(value);
+        setIsFlipping(false);
+      }, 150);
+      prevValue.current = value;
+      return () => clearTimeout(timer);
+    }
+  }, [value]);
+
+  return (
+    <span
+      className={`inline-block transition-all duration-300 ${isFlipping ? 'scale-y-0 opacity-50' : 'scale-y-100 opacity-100'} ${className}`}
+      style={{ color, transformOrigin: 'center' }}
+    >
+      {displayValue}
+    </span>
+  );
+}
+
+function AnimatedNumber({ value, padStart = 2, color, className = '' }: { value: number; padStart?: number; color?: string; className?: string }) {
+  const str = String(value).padStart(padStart, '0');
+  return (
+    <span className={className}>
+      {str.split('').map((digit, i) => (
+        <AnimatedDigit key={i} value={digit} color={color} />
+      ))}
+    </span>
+  );
+}
+
+// ===== نمط 1: LED =====
+function LEDStyle({ timeLeft, bgColor = '#000000', textColor = '#22c55e', borderColor = '#166534', title }: StyleProps) {
   const units = getTimeUnits(timeLeft, false);
   return (
     <div className="relative overflow-hidden rounded-2xl shadow-2xl" style={{ backgroundColor: bgColor, border: `1px solid ${borderColor}80` }}>
       <div className="absolute inset-0" style={{ background: `linear-gradient(to bottom, ${textColor}0D, transparent, ${textColor}0D)` }} />
       <div className="relative p-6 md:p-8">
-        <h3 className="text-center text-lg md:text-xl font-bold mb-6" style={{ color: textColor + 'CC' }}>{TITLE}</h3>
+        <h3 className="text-center text-lg md:text-xl font-bold mb-6" style={{ color: textColor + 'CC' }}>{title}</h3>
         <div className="flex justify-center items-center gap-3 md:gap-6" dir="ltr">
           {units.map((u, i) => (
             <div key={i} className="flex items-center gap-2 md:gap-4">
               <div className="text-center">
-                <div className="font-mono text-4xl md:text-6xl font-bold tabular-nums" style={{ color: textColor, textShadow: `0 0 20px ${textColor}CC, 0 0 40px ${textColor}66`, fontFamily: '"Share Tech Mono", monospace' }}>
-                  {String(u.value).padStart(2, '0')}
-                </div>
+                <AnimatedNumber value={u.value} color={textColor} className="font-mono text-4xl md:text-6xl font-bold tabular-nums" />
                 <div className="text-[10px] md:text-xs uppercase tracking-widest mt-1" style={{ color: textColor + 'B3' }}>{u.label}</div>
               </div>
               {i < units.length - 1 && (
@@ -72,7 +110,7 @@ function LEDStyle({ timeLeft, bgColor = '#000000', textColor = '#22c55e', border
 }
 
 // ===== نمط 2: كلاسيكي =====
-function ClassicStyle({ timeLeft, bgColor, textColor, borderColor }: StyleProps) {
+function ClassicStyle({ timeLeft, bgColor, textColor, borderColor, title }: StyleProps) {
   const units = getTimeUnits(timeLeft);
   const cardBg = bgColor || 'hsl(var(--card))';
   const text = textColor || 'hsl(var(--primary))';
@@ -82,13 +120,13 @@ function ClassicStyle({ timeLeft, bgColor, textColor, borderColor }: StyleProps)
       <div className="relative p-6 md:p-8">
         <div className="text-center mb-6 flex items-center justify-center gap-2">
           <Clock className="w-5 h-5" style={{ color: text }} />
-          <h3 className="text-lg md:text-xl font-bold" style={{ color: text }}>{TITLE}</h3>
+          <h3 className="text-lg md:text-xl font-bold" style={{ color: text }}>{title}</h3>
         </div>
         <div className="flex justify-center items-center gap-3 md:gap-6" dir="rtl">
           {units.map((u, i) => (
             <div key={i} className="text-center">
               <div className="rounded-xl p-3 md:p-5 shadow-lg min-w-[60px] md:min-w-[80px]" style={{ backgroundColor: cardBg, border: `2px solid ${border}4D` }}>
-                <div className="text-3xl md:text-5xl font-bold tabular-nums text-foreground">{String(u.value).padStart(2, '0')}</div>
+                <AnimatedNumber value={u.value} className="text-3xl md:text-5xl font-bold tabular-nums text-foreground" />
               </div>
               <div className="text-sm font-medium text-muted-foreground mt-2">{u.label}</div>
             </div>
@@ -100,7 +138,7 @@ function ClassicStyle({ timeLeft, bgColor, textColor, borderColor }: StyleProps)
 }
 
 // ===== نمط 3: بسيط =====
-function MinimalStyle({ timeLeft, bgColor, textColor }: StyleProps) {
+function MinimalStyle({ timeLeft, bgColor, textColor, title }: StyleProps) {
   const parts: string[] = [];
   if (timeLeft.days > 0) parts.push(`${timeLeft.days}d`);
   parts.push(`${String(timeLeft.hours).padStart(2, '0')}:${String(timeLeft.minutes).padStart(2, '0')}:${String(timeLeft.seconds).padStart(2, '0')}`);
@@ -109,7 +147,7 @@ function MinimalStyle({ timeLeft, bgColor, textColor }: StyleProps) {
       <div className="text-center">
         <div className="flex items-center justify-center gap-2 mb-3">
           <Timer className="w-5 h-5 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">{TITLE}</span>
+          <span className="text-sm text-muted-foreground">{title}</span>
         </div>
         <div className="text-4xl md:text-6xl font-mono font-bold tabular-nums tracking-wider" dir="ltr" style={{ color: textColor || 'hsl(var(--foreground))' }}>
           {parts.join(' ')}
@@ -120,7 +158,7 @@ function MinimalStyle({ timeLeft, bgColor, textColor }: StyleProps) {
 }
 
 // ===== نمط 4: دائري =====
-function CircularStyle({ timeLeft, textColor, borderColor }: StyleProps) {
+function CircularStyle({ timeLeft, textColor, borderColor, title }: StyleProps) {
   const colors = [borderColor || '#3b82f6', textColor || '#10b981', borderColor || '#f59e0b', textColor || '#ef4444'];
   const units = getTimeUnits(timeLeft);
   const CircleProgress = ({ value, max, color }: { value: number; max: number; color: string }) => {
@@ -136,14 +174,14 @@ function CircularStyle({ timeLeft, textColor, borderColor }: StyleProps) {
   return (
     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-700/50 shadow-2xl">
       <div className="relative p-6 md:p-8">
-        <h3 className="text-center text-lg md:text-xl font-bold text-white/90 mb-6">{TITLE}</h3>
+        <h3 className="text-center text-lg md:text-xl font-bold text-white/90 mb-6">{title}</h3>
         <div className="flex justify-center items-center gap-3 md:gap-5" dir="rtl">
           {units.map((u, i) => (
             <div key={i} className="flex flex-col items-center">
               <div className="relative">
                 <CircleProgress value={u.value} max={maxes[timeLeft.days > 0 ? i : i + 1] || 60} color={colors[i % colors.length]} />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-xl md:text-2xl font-bold text-white tabular-nums">{String(u.value).padStart(2, '0')}</span>
+                  <AnimatedNumber value={u.value} className="text-xl md:text-2xl font-bold text-white tabular-nums" />
                 </div>
               </div>
               <span className="text-xs text-white/60 mt-1">{u.label}</span>
@@ -156,7 +194,7 @@ function CircularStyle({ timeLeft, textColor, borderColor }: StyleProps) {
 }
 
 // ===== نمط 5: زجاجي 3D =====
-function GlassStyle({ timeLeft, bgColor, textColor, borderColor }: StyleProps) {
+function GlassStyle({ timeLeft, bgColor, textColor, borderColor, title }: StyleProps) {
   const units = getTimeUnits(timeLeft);
   const glassBg = bgColor || 'rgba(255,255,255,0.1)';
   const text = textColor || '#ffffff';
@@ -165,12 +203,12 @@ function GlassStyle({ timeLeft, bgColor, textColor, borderColor }: StyleProps) {
     <div className="relative overflow-hidden rounded-3xl shadow-2xl" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.8), rgba(168,85,247,0.8), rgba(236,72,153,0.8))' }}>
       <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.3) 0%, transparent 50%)' }} />
       <div className="relative p-6 md:p-8 backdrop-blur-sm">
-        <h3 className="text-center text-lg md:text-xl font-bold drop-shadow-lg mb-6" style={{ color: text }}>✨ {TITLE} ✨</h3>
+        <h3 className="text-center text-lg md:text-xl font-bold drop-shadow-lg mb-6" style={{ color: text }}>✨ {title} ✨</h3>
         <div className="flex justify-center items-center gap-3 md:gap-5" dir="rtl">
           {units.map((u, i) => (
             <div key={i} className="text-center">
               <div className="rounded-2xl p-3 md:p-5 min-w-[60px] md:min-w-[80px] hover:scale-105 transition-transform" style={{ background: glassBg, backdropFilter: 'blur(20px)', border: `1px solid ${border}`, boxShadow: '0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2)' }}>
-                <div className="text-3xl md:text-5xl font-bold tabular-nums drop-shadow-lg" style={{ color: text }}>{String(u.value).padStart(2, '0')}</div>
+                <AnimatedNumber value={u.value} color={text} className="text-3xl md:text-5xl font-bold tabular-nums drop-shadow-lg" />
               </div>
               <div className="text-sm font-medium mt-2 drop-shadow-md" style={{ color: text }}>{u.label}</div>
             </div>
@@ -181,23 +219,21 @@ function GlassStyle({ timeLeft, bgColor, textColor, borderColor }: StyleProps) {
   );
 }
 
-// ===== نمط 6: نيون متوهج =====
-function NeonStyle({ timeLeft, textColor }: StyleProps) {
+// ===== نمط 6: نيون =====
+function NeonStyle({ timeLeft, textColor, title }: StyleProps) {
   const units = getTimeUnits(timeLeft);
   const neon = textColor || '#00ffff';
   return (
     <div className="relative overflow-hidden rounded-2xl shadow-2xl" style={{ backgroundColor: '#0a0a0a', border: `1px solid ${neon}33` }}>
       <div className="relative p-6 md:p-8">
         <h3 className="text-center text-lg md:text-xl font-bold mb-6" style={{ color: neon, textShadow: `0 0 10px ${neon}, 0 0 30px ${neon}66` }}>
-          <Zap className="inline w-5 h-5 mr-1" /> {TITLE}
+          <Zap className="inline w-5 h-5 mr-1" /> {title}
         </h3>
         <div className="flex justify-center items-center gap-3 md:gap-6" dir="rtl">
           {units.map((u, i) => (
             <div key={i} className="text-center">
               <div className="rounded-xl p-3 md:p-5 min-w-[60px] md:min-w-[80px]" style={{ border: `2px solid ${neon}66`, boxShadow: `0 0 15px ${neon}33, inset 0 0 15px ${neon}11`, backgroundColor: `${neon}08` }}>
-                <div className="text-3xl md:text-5xl font-mono font-bold tabular-nums" style={{ color: neon, textShadow: `0 0 20px ${neon}, 0 0 40px ${neon}88` }}>
-                  {String(u.value).padStart(2, '0')}
-                </div>
+                <AnimatedNumber value={u.value} color={neon} className="text-3xl md:text-5xl font-mono font-bold tabular-nums" />
               </div>
               <div className="text-xs mt-2" style={{ color: neon + '99' }}>{u.label}</div>
             </div>
@@ -208,20 +244,20 @@ function NeonStyle({ timeLeft, textColor }: StyleProps) {
   );
 }
 
-// ===== نمط 7: تدرج دافئ =====
-function WarmGradientStyle({ timeLeft }: StyleProps) {
+// ===== نمط 7: دافئ =====
+function WarmGradientStyle({ timeLeft, title }: StyleProps) {
   const units = getTimeUnits(timeLeft);
   return (
     <div className="relative overflow-hidden rounded-2xl shadow-2xl" style={{ background: 'linear-gradient(135deg, #f97316, #ef4444, #ec4899)' }}>
       <div className="relative p-6 md:p-8">
         <h3 className="text-center text-lg md:text-xl font-bold text-white mb-6">
-          <Flame className="inline w-5 h-5 mr-1" /> {TITLE}
+          <Flame className="inline w-5 h-5 mr-1" /> {title}
         </h3>
         <div className="flex justify-center items-center gap-3 md:gap-6" dir="rtl">
           {units.map((u, i) => (
             <div key={i} className="text-center">
               <div className="rounded-2xl p-3 md:p-5 min-w-[60px] md:min-w-[80px] bg-white/20 backdrop-blur-sm border border-white/30">
-                <div className="text-3xl md:text-5xl font-bold tabular-nums text-white drop-shadow-lg">{String(u.value).padStart(2, '0')}</div>
+                <AnimatedNumber value={u.value} color="#ffffff" className="text-3xl md:text-5xl font-bold tabular-nums drop-shadow-lg" />
               </div>
               <div className="text-sm text-white/80 mt-2">{u.label}</div>
             </div>
@@ -232,8 +268,8 @@ function WarmGradientStyle({ timeLeft }: StyleProps) {
   );
 }
 
-// ===== نمط 8: إسلامي أنيق =====
-function IslamicStyle({ timeLeft, textColor }: StyleProps) {
+// ===== نمط 8: إسلامي =====
+function IslamicStyle({ timeLeft, textColor, title }: StyleProps) {
   const units = getTimeUnits(timeLeft);
   const gold = textColor || '#d4af37';
   return (
@@ -241,14 +277,14 @@ function IslamicStyle({ timeLeft, textColor }: StyleProps) {
       <div className="absolute inset-0 islamic-pattern opacity-10" />
       <div className="relative p-6 md:p-8">
         <h3 className="text-center text-lg md:text-xl font-bold mb-1" style={{ color: gold, fontFamily: 'Amiri, serif' }}>
-          ﴿ {TITLE} ﴾
+          ﴿ {title} ﴾
         </h3>
         <div className="w-16 h-0.5 mx-auto mb-6" style={{ background: `linear-gradient(to right, transparent, ${gold}, transparent)` }} />
         <div className="flex justify-center items-center gap-3 md:gap-6" dir="rtl">
           {units.map((u, i) => (
             <div key={i} className="text-center">
               <div className="rounded-lg p-3 md:p-5 min-w-[60px] md:min-w-[80px]" style={{ backgroundColor: `${gold}0D`, border: `1px solid ${gold}33` }}>
-                <div className="text-3xl md:text-5xl font-bold tabular-nums" style={{ color: gold, fontFamily: 'Amiri, serif' }}>{String(u.value).padStart(2, '0')}</div>
+                <AnimatedNumber value={u.value} color={gold} className="text-3xl md:text-5xl font-bold tabular-nums" />
               </div>
               <div className="text-sm mt-2" style={{ color: `${gold}AA` }}>{u.label}</div>
             </div>
@@ -259,21 +295,21 @@ function IslamicStyle({ timeLeft, textColor }: StyleProps) {
   );
 }
 
-// ===== نمط 9: فليب (Flip Clock) =====
-function FlipStyle({ timeLeft, bgColor, textColor }: StyleProps) {
+// ===== نمط 9: فليب =====
+function FlipStyle({ timeLeft, bgColor, textColor, title }: StyleProps) {
   const units = getTimeUnits(timeLeft);
   const bg = bgColor || '#1e293b';
   const text = textColor || '#f8fafc';
   return (
     <div className="relative overflow-hidden rounded-2xl shadow-2xl p-6 md:p-8" style={{ backgroundColor: '#0f172a' }}>
-      <h3 className="text-center text-lg md:text-xl font-bold text-slate-300 mb-6">{TITLE}</h3>
+      <h3 className="text-center text-lg md:text-xl font-bold text-slate-300 mb-6">{title}</h3>
       <div className="flex justify-center items-center gap-3 md:gap-6" dir="rtl">
         {units.map((u, i) => (
           <div key={i} className="text-center">
             <div className="relative rounded-lg overflow-hidden min-w-[60px] md:min-w-[80px]" style={{ backgroundColor: bg }}>
               <div className="absolute inset-x-0 top-1/2 h-px bg-black/30 z-10" />
               <div className="p-3 md:p-5">
-                <div className="text-3xl md:text-5xl font-bold tabular-nums font-mono" style={{ color: text }}>{String(u.value).padStart(2, '0')}</div>
+                <AnimatedNumber value={u.value} color={text} className="text-3xl md:text-5xl font-bold tabular-nums font-mono" />
               </div>
               <div className="absolute bottom-0 inset-x-0 h-1/2 bg-black/10" />
             </div>
@@ -285,23 +321,23 @@ function FlipStyle({ timeLeft, bgColor, textColor }: StyleProps) {
   );
 }
 
-// ===== نمط 10: ذهبي فاخر =====
-function LuxuryStyle({ timeLeft }: StyleProps) {
+// ===== نمط 10: فاخر =====
+function LuxuryStyle({ timeLeft, title }: StyleProps) {
   const units = getTimeUnits(timeLeft);
   return (
     <div className="relative overflow-hidden rounded-2xl shadow-2xl" style={{ background: 'linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)' }}>
       <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(212,175,55,0.15) 0%, transparent 60%)' }} />
       <div className="relative p-6 md:p-8">
         <h3 className="text-center text-lg md:text-xl font-bold mb-6" style={{ color: '#d4af37', textShadow: '0 0 10px rgba(212,175,55,0.5)' }}>
-          <Star className="inline w-5 h-5 mr-1" /> {TITLE}
+          <Star className="inline w-5 h-5 mr-1" /> {title}
         </h3>
         <div className="flex justify-center items-center gap-3 md:gap-6" dir="rtl">
           {units.map((u, i) => (
             <div key={i} className="text-center">
               <div className="rounded-xl p-3 md:p-5 min-w-[60px] md:min-w-[80px]" style={{ background: 'linear-gradient(180deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))', border: '1px solid rgba(212,175,55,0.3)', boxShadow: '0 4px 20px rgba(212,175,55,0.1)' }}>
-                <div className="text-3xl md:text-5xl font-bold tabular-nums" style={{ background: 'linear-gradient(180deg, #ffd700, #d4af37)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                <span className="text-3xl md:text-5xl font-bold tabular-nums" style={{ background: 'linear-gradient(180deg, #ffd700, #d4af37)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                   {String(u.value).padStart(2, '0')}
-                </div>
+                </span>
               </div>
               <div className="text-sm mt-2" style={{ color: '#d4af3799' }}>{u.label}</div>
             </div>
@@ -312,7 +348,6 @@ function LuxuryStyle({ timeLeft }: StyleProps) {
   );
 }
 
-// المكون المنتهي
 function ExpiredState() {
   return (
     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/70 p-8 text-center shadow-2xl">
@@ -323,19 +358,11 @@ function ExpiredState() {
 }
 
 const STYLE_COMPONENTS: Record<number, React.FC<StyleProps>> = {
-  1: LEDStyle,
-  2: ClassicStyle,
-  3: MinimalStyle,
-  4: CircularStyle,
-  5: GlassStyle,
-  6: NeonStyle,
-  7: WarmGradientStyle,
-  8: IslamicStyle,
-  9: FlipStyle,
-  10: LuxuryStyle,
+  1: LEDStyle, 2: ClassicStyle, 3: MinimalStyle, 4: CircularStyle, 5: GlassStyle,
+  6: NeonStyle, 7: WarmGradientStyle, 8: IslamicStyle, 9: FlipStyle, 10: LuxuryStyle,
 };
 
-export function CountdownTimer({ targetDate, style = 1, bgColor, textColor, borderColor }: CountdownTimerProps) {
+export function CountdownTimer({ targetDate, style = 1, bgColor, textColor, borderColor, title }: CountdownTimerProps) {
   const [timeLeft, setTimeLeft] = useState(calculateTimeLeft(targetDate));
   useEffect(() => {
     const timer = setInterval(() => setTimeLeft(calculateTimeLeft(targetDate)), 1000);
@@ -345,25 +372,18 @@ export function CountdownTimer({ targetDate, style = 1, bgColor, textColor, bord
   if (!timeLeft) return <ExpiredState />;
 
   const StyleComponent = STYLE_COMPONENTS[style] || LEDStyle;
-  return <StyleComponent timeLeft={timeLeft} bgColor={bgColor} textColor={textColor} borderColor={borderColor} />;
+  return <StyleComponent timeLeft={timeLeft} bgColor={bgColor} textColor={textColor} borderColor={borderColor} title={title || DEFAULT_TITLE} />;
 }
 
-// معاينة
 export function CountdownTimerPreview({ style, bgColor, textColor, borderColor }: { style: number; bgColor?: string; textColor?: string; borderColor?: string }) {
   const previewTimeLeft = { days: 3, hours: 5, minutes: 23, seconds: 45 };
   const StyleComponent = STYLE_COMPONENTS[style] || LEDStyle;
-  return <StyleComponent timeLeft={previewTimeLeft} bgColor={bgColor} textColor={textColor} borderColor={borderColor} />;
+  return <StyleComponent timeLeft={previewTimeLeft} bgColor={bgColor} textColor={textColor} borderColor={borderColor} title={DEFAULT_TITLE} />;
 }
 
 export const COUNTDOWN_STYLES = [
-  { val: 1, label: 'LED' },
-  { val: 2, label: 'كلاسيك' },
-  { val: 3, label: 'بسيط' },
-  { val: 4, label: 'دائري' },
-  { val: 5, label: '3D' },
-  { val: 6, label: 'نيون' },
-  { val: 7, label: 'دافئ' },
-  { val: 8, label: 'إسلامي' },
-  { val: 9, label: 'فليب' },
+  { val: 1, label: 'LED' }, { val: 2, label: 'كلاسيك' }, { val: 3, label: 'بسيط' },
+  { val: 4, label: 'دائري' }, { val: 5, label: '3D' }, { val: 6, label: 'نيون' },
+  { val: 7, label: 'دافئ' }, { val: 8, label: 'إسلامي' }, { val: 9, label: 'فليب' },
   { val: 10, label: 'فاخر' },
 ];
