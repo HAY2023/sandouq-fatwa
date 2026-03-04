@@ -4,18 +4,19 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { CountdownTimerPreview, COUNTDOWN_STYLES } from '@/components/CountdownTimer';
+import { CountdownTimerPreview, COUNTDOWN_STYLES, COUNTDOWN_ANIMATIONS } from '@/components/CountdownTimer';
 import { 
   MessageSquare, Calendar, Timer, Clock, Hash, 
-  Smartphone, Shield, BellRing, Bell, Monitor, 
-  RefreshCw, Sparkles, ChevronDown, ChevronUp,
-  Zap, Flame, Star
+  Smartphone, Shield, BellRing, Bell, 
+  ChevronDown, ChevronUp,
+  Zap
 } from 'lucide-react';
 
 interface AdminSettingsProps {
   isBoxOpen: boolean;
   showCountdown: boolean;
   countdownStyle: number;
+  countdownAnimationType: number;
   showQuestionCount: boolean;
   showInstallPage: boolean;
   contentFilterEnabled: boolean;
@@ -38,6 +39,7 @@ interface AdminSettingsProps {
   onSessionDateChange: (v: string) => void;
   onUpdateSession: () => void;
   onCountdownStyleChange: (v: number) => void;
+  onCountdownAnimationTypeChange: (v: number) => void;
   onSaveCountdownStyle: (v: number) => void;
   onCountdownBgColorChange: (v: string) => void;
   onCountdownTextColorChange: (v: string) => void;
@@ -70,10 +72,6 @@ export function AdminSettings(props: AdminSettingsProps) {
     </button>
   );
 
-  const previewUrl = typeof window !== 'undefined' 
-    ? window.location.origin.replace('/admin', '/') 
-    : '/';
-
   return (
     <div className="space-y-3">
       {/* معاينة الموقع على الهاتف */}
@@ -84,9 +82,7 @@ export function AdminSettings(props: AdminSettingsProps) {
         </h3>
         <div className="flex justify-center">
           <div className="relative w-[200px] h-[400px] border-[3px] border-foreground/30 rounded-[24px] overflow-hidden shadow-lg bg-background">
-            {/* Notch */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-5 bg-foreground/30 rounded-b-xl z-10" />
-            {/* Screen */}
             <div className="w-full h-full overflow-hidden">
               <iframe
                 src="/"
@@ -102,7 +98,6 @@ export function AdminSettings(props: AdminSettingsProps) {
                 key="mobile-preview"
               />
             </div>
-            {/* Home bar */}
             <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-16 h-1 bg-foreground/30 rounded-full" />
           </div>
         </div>
@@ -150,7 +145,7 @@ export function AdminSettings(props: AdminSettingsProps) {
       )}
 
       {/* العداد التنازلي */}
-      <SectionHeader id="countdown" icon={<Timer className="w-4 h-4 text-primary" />} title="العداد التنازلي" subtitle="نمط العداد، الألوان، الموعد" />
+      <SectionHeader id="countdown" icon={<Timer className="w-4 h-4 text-primary" />} title="العداد التنازلي" subtitle="نمط العداد، الألوان، الموعد، التحريك" />
       {expandedSection === 'countdown' && (
         <div className="space-y-4 pr-2">
           <div className="bg-card border border-border rounded-xl p-4 flex items-center justify-between">
@@ -179,6 +174,26 @@ export function AdminSettings(props: AdminSettingsProps) {
                     </div>
                   ))}
                 </RadioGroup>
+
+                {/* نوع التحريك */}
+                <div className="pt-3 border-t border-border">
+                  <h4 className="font-medium text-sm flex items-center gap-2 mb-3"><Zap className="w-4 h-4" /> تأثير تحريك الأرقام</h4>
+                  <RadioGroup 
+                    value={String(props.countdownAnimationType)} 
+                    onValueChange={(val) => props.onCountdownAnimationTypeChange(Number(val))}
+                    className="grid grid-cols-5 gap-2"
+                  >
+                    {COUNTDOWN_ANIMATIONS.map(a => (
+                      <div key={a.val}>
+                        <RadioGroupItem value={String(a.val)} id={`a-${a.val}`} className="peer sr-only" />
+                        <Label htmlFor={`a-${a.val}`} className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-1.5 hover:bg-accent peer-data-[state=checked]:border-primary cursor-pointer text-center gap-0.5">
+                          <span className="text-base">{a.icon}</span>
+                          <span className="text-[10px] font-medium leading-tight">{a.label}</span>
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
 
                 {/* ألوان */}
                 <div className="grid grid-cols-3 gap-3 pt-2 border-t border-border">
@@ -217,17 +232,18 @@ export function AdminSettings(props: AdminSettingsProps) {
                       bgColor={props.countdownBgColor}
                       textColor={props.countdownTextColor}
                       borderColor={props.countdownBorderColor}
+                      animationType={props.countdownAnimationType}
                     />
                   </div>
                 </div>
 
                 <Button
                   onClick={() => props.onSaveCountdownStyle(props.countdownStyle)}
-                  disabled={props.savingCountdownStyle || props.countdownStyle === props.savedCountdownStyle}
+                  disabled={props.savingCountdownStyle}
                   className="w-full"
                   size="sm"
                 >
-                  {props.savingCountdownStyle ? 'جارٍ الحفظ...' : 'حفظ نمط العداد'}
+                  {props.savingCountdownStyle ? 'جارٍ الحفظ...' : 'حفظ النمط والتحريك'}
                 </Button>
               </div>
 
