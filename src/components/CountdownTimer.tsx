@@ -8,6 +8,7 @@ interface CountdownTimerProps {
   textColor?: string;
   borderColor?: string;
   title?: string;
+  animationType?: number;
 }
 
 interface StyleProps {
@@ -16,6 +17,7 @@ interface StyleProps {
   textColor?: string;
   borderColor?: string;
   title: string;
+  animationType?: number;
 }
 
 const DEFAULT_TITLE = 'حلقة الإفتاء ستكون بعد';
@@ -43,47 +45,114 @@ function getTimeUnits(timeLeft: StyleProps['timeLeft'], labelsAr = true) {
   ];
 }
 
-// ===== مكون الرقم المتحرك =====
-function AnimatedDigit({ value, color, className = '' }: { value: string; color?: string; className?: string }) {
+// ===== Animation Types =====
+// 1: Flip (بطاقة تنقلب)
+// 2: Fade (تلاشي)
+// 3: Slide Up (انزلاق للأعلى)
+// 4: Slide Down (انزلاق للأسفل)
+// 5: Scale Bounce (نبضة)
+// 6: Rotate (دوران)
+// 7: Blur (ضبابي)
+// 8: Wave (موجة)
+// 9: Typewriter (آلة كاتبة)
+// 10: Glitch (تشويش)
+
+function AnimatedNumber({ value, padStart = 2, color, className = '', animationType = 1 }: { 
+  value: number; padStart?: number; color?: string; className?: string; animationType?: number 
+}) {
+  const str = String(value).padStart(padStart, '0');
+  return (
+    <span className={className}>
+      {str.split('').map((digit, i) => (
+        <AnimatedDigit key={i} value={digit} color={color} animationType={animationType} index={i} />
+      ))}
+    </span>
+  );
+}
+
+function AnimatedDigit({ value, color, animationType = 1, index = 0 }: { 
+  value: string; color?: string; animationType?: number; index?: number 
+}) {
   const [displayValue, setDisplayValue] = useState(value);
-  const [isFlipping, setIsFlipping] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
   const prevValue = useRef(value);
 
   useEffect(() => {
     if (prevValue.current !== value) {
-      setIsFlipping(true);
+      setIsAnimating(true);
       const timer = setTimeout(() => {
         setDisplayValue(value);
-        setIsFlipping(false);
-      }, 150);
+        setIsAnimating(false);
+      }, 200);
       prevValue.current = value;
       return () => clearTimeout(timer);
     }
   }, [value]);
 
+  const getAnimationStyle = (): React.CSSProperties => {
+    const base: React.CSSProperties = { 
+      color, 
+      display: 'inline-block',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    };
+
+    if (!isAnimating) return base;
+
+    switch (animationType) {
+      case 1: // Flip
+        return { ...base, transform: 'rotateX(90deg)', transformOrigin: 'center', transition: 'transform 0.2s ease-in' };
+      case 2: // Fade
+        return { ...base, opacity: 0, transition: 'opacity 0.2s ease-in' };
+      case 3: // Slide Up
+        return { ...base, transform: 'translateY(-100%)', opacity: 0, transition: 'all 0.2s ease-in' };
+      case 4: // Slide Down
+        return { ...base, transform: 'translateY(100%)', opacity: 0, transition: 'all 0.2s ease-in' };
+      case 5: // Scale Bounce
+        return { ...base, transform: 'scale(1.5)', opacity: 0.5, transition: 'all 0.25s cubic-bezier(0.68, -0.55, 0.27, 1.55)' };
+      case 6: // Rotate
+        return { ...base, transform: 'rotate(180deg) scale(0.5)', opacity: 0, transition: 'all 0.3s ease-in' };
+      case 7: // Blur
+        return { ...base, filter: 'blur(8px)', opacity: 0.3, transition: 'all 0.25s ease-in' };
+      case 8: // Wave
+        return { ...base, transform: `translateY(${index % 2 === 0 ? '-20px' : '20px'}) scale(0.8)`, opacity: 0.5, transition: 'all 0.3s ease-in' };
+      case 9: // Typewriter
+        return { ...base, transform: 'scaleX(0)', transformOrigin: 'left', transition: 'transform 0.15s ease-in' };
+      case 10: // Glitch
+        return { 
+          ...base, 
+          transform: `translate(${Math.random() * 4 - 2}px, ${Math.random() * 4 - 2}px)`,
+          textShadow: `2px 0 #ff0000, -2px 0 #00ffff`,
+          transition: 'all 0.1s steps(2)' 
+        };
+      default:
+        return { ...base, transform: 'rotateX(90deg)', transition: 'transform 0.2s ease-in' };
+    }
+  };
+
   return (
     <span
-      className={`inline-block transition-all duration-300 ${isFlipping ? 'scale-y-0 opacity-50' : 'scale-y-100 opacity-100'} ${className}`}
-      style={{ color, transformOrigin: 'center' }}
+      className="inline-block"
+      style={{
+        ...getAnimationStyle(),
+        perspective: '400px',
+        ...(isAnimating ? {} : { 
+          color, 
+          display: 'inline-block',
+          transform: 'none', 
+          opacity: 1, 
+          filter: 'none',
+          textShadow: 'none',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' 
+        }),
+      }}
     >
       {displayValue}
     </span>
   );
 }
 
-function AnimatedNumber({ value, padStart = 2, color, className = '' }: { value: number; padStart?: number; color?: string; className?: string }) {
-  const str = String(value).padStart(padStart, '0');
-  return (
-    <span className={className}>
-      {str.split('').map((digit, i) => (
-        <AnimatedDigit key={i} value={digit} color={color} />
-      ))}
-    </span>
-  );
-}
-
 // ===== نمط 1: LED =====
-function LEDStyle({ timeLeft, bgColor = '#000000', textColor = '#22c55e', borderColor = '#166534', title }: StyleProps) {
+function LEDStyle({ timeLeft, bgColor = '#000000', textColor = '#22c55e', borderColor = '#166534', title, animationType }: StyleProps) {
   const units = getTimeUnits(timeLeft, false);
   return (
     <div className="relative overflow-hidden rounded-2xl shadow-2xl" style={{ backgroundColor: bgColor, border: `1px solid ${borderColor}80` }}>
@@ -94,7 +163,7 @@ function LEDStyle({ timeLeft, bgColor = '#000000', textColor = '#22c55e', border
           {units.map((u, i) => (
             <div key={i} className="flex items-center gap-2 md:gap-4">
               <div className="text-center">
-                <AnimatedNumber value={u.value} color={textColor} className="font-mono text-4xl md:text-6xl font-bold tabular-nums" />
+                <AnimatedNumber value={u.value} color={textColor} className="font-mono text-4xl md:text-6xl font-bold tabular-nums" animationType={animationType} />
                 <div className="text-[10px] md:text-xs uppercase tracking-widest mt-1" style={{ color: textColor + 'B3' }}>{u.label}</div>
               </div>
               {i < units.length - 1 && (
@@ -110,7 +179,7 @@ function LEDStyle({ timeLeft, bgColor = '#000000', textColor = '#22c55e', border
 }
 
 // ===== نمط 2: كلاسيكي =====
-function ClassicStyle({ timeLeft, bgColor, textColor, borderColor, title }: StyleProps) {
+function ClassicStyle({ timeLeft, bgColor, textColor, borderColor, title, animationType }: StyleProps) {
   const units = getTimeUnits(timeLeft);
   const cardBg = bgColor || 'hsl(var(--card))';
   const text = textColor || 'hsl(var(--primary))';
@@ -126,7 +195,7 @@ function ClassicStyle({ timeLeft, bgColor, textColor, borderColor, title }: Styl
           {units.map((u, i) => (
             <div key={i} className="text-center">
               <div className="rounded-xl p-3 md:p-5 shadow-lg min-w-[60px] md:min-w-[80px]" style={{ backgroundColor: cardBg, border: `2px solid ${border}4D` }}>
-                <AnimatedNumber value={u.value} className="text-3xl md:text-5xl font-bold tabular-nums text-foreground" />
+                <AnimatedNumber value={u.value} className="text-3xl md:text-5xl font-bold tabular-nums text-foreground" animationType={animationType} />
               </div>
               <div className="text-sm font-medium text-muted-foreground mt-2">{u.label}</div>
             </div>
@@ -158,7 +227,7 @@ function MinimalStyle({ timeLeft, bgColor, textColor, title }: StyleProps) {
 }
 
 // ===== نمط 4: دائري =====
-function CircularStyle({ timeLeft, textColor, borderColor, title }: StyleProps) {
+function CircularStyle({ timeLeft, textColor, borderColor, title, animationType }: StyleProps) {
   const colors = [borderColor || '#3b82f6', textColor || '#10b981', borderColor || '#f59e0b', textColor || '#ef4444'];
   const units = getTimeUnits(timeLeft);
   const CircleProgress = ({ value, max, color }: { value: number; max: number; color: string }) => {
@@ -181,7 +250,7 @@ function CircularStyle({ timeLeft, textColor, borderColor, title }: StyleProps) 
               <div className="relative">
                 <CircleProgress value={u.value} max={maxes[timeLeft.days > 0 ? i : i + 1] || 60} color={colors[i % colors.length]} />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <AnimatedNumber value={u.value} className="text-xl md:text-2xl font-bold text-white tabular-nums" />
+                  <AnimatedNumber value={u.value} className="text-xl md:text-2xl font-bold text-white tabular-nums" animationType={animationType} />
                 </div>
               </div>
               <span className="text-xs text-white/60 mt-1">{u.label}</span>
@@ -194,7 +263,7 @@ function CircularStyle({ timeLeft, textColor, borderColor, title }: StyleProps) 
 }
 
 // ===== نمط 5: زجاجي 3D =====
-function GlassStyle({ timeLeft, bgColor, textColor, borderColor, title }: StyleProps) {
+function GlassStyle({ timeLeft, bgColor, textColor, borderColor, title, animationType }: StyleProps) {
   const units = getTimeUnits(timeLeft);
   const glassBg = bgColor || 'rgba(255,255,255,0.1)';
   const text = textColor || '#ffffff';
@@ -208,7 +277,7 @@ function GlassStyle({ timeLeft, bgColor, textColor, borderColor, title }: StyleP
           {units.map((u, i) => (
             <div key={i} className="text-center">
               <div className="rounded-2xl p-3 md:p-5 min-w-[60px] md:min-w-[80px] hover:scale-105 transition-transform" style={{ background: glassBg, backdropFilter: 'blur(20px)', border: `1px solid ${border}`, boxShadow: '0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2)' }}>
-                <AnimatedNumber value={u.value} color={text} className="text-3xl md:text-5xl font-bold tabular-nums drop-shadow-lg" />
+                <AnimatedNumber value={u.value} color={text} className="text-3xl md:text-5xl font-bold tabular-nums drop-shadow-lg" animationType={animationType} />
               </div>
               <div className="text-sm font-medium mt-2 drop-shadow-md" style={{ color: text }}>{u.label}</div>
             </div>
@@ -220,7 +289,7 @@ function GlassStyle({ timeLeft, bgColor, textColor, borderColor, title }: StyleP
 }
 
 // ===== نمط 6: نيون =====
-function NeonStyle({ timeLeft, textColor, title }: StyleProps) {
+function NeonStyle({ timeLeft, textColor, title, animationType }: StyleProps) {
   const units = getTimeUnits(timeLeft);
   const neon = textColor || '#00ffff';
   return (
@@ -233,7 +302,7 @@ function NeonStyle({ timeLeft, textColor, title }: StyleProps) {
           {units.map((u, i) => (
             <div key={i} className="text-center">
               <div className="rounded-xl p-3 md:p-5 min-w-[60px] md:min-w-[80px]" style={{ border: `2px solid ${neon}66`, boxShadow: `0 0 15px ${neon}33, inset 0 0 15px ${neon}11`, backgroundColor: `${neon}08` }}>
-                <AnimatedNumber value={u.value} color={neon} className="text-3xl md:text-5xl font-mono font-bold tabular-nums" />
+                <AnimatedNumber value={u.value} color={neon} className="text-3xl md:text-5xl font-mono font-bold tabular-nums" animationType={animationType} />
               </div>
               <div className="text-xs mt-2" style={{ color: neon + '99' }}>{u.label}</div>
             </div>
@@ -245,7 +314,7 @@ function NeonStyle({ timeLeft, textColor, title }: StyleProps) {
 }
 
 // ===== نمط 7: دافئ =====
-function WarmGradientStyle({ timeLeft, title }: StyleProps) {
+function WarmGradientStyle({ timeLeft, title, animationType }: StyleProps) {
   const units = getTimeUnits(timeLeft);
   return (
     <div className="relative overflow-hidden rounded-2xl shadow-2xl" style={{ background: 'linear-gradient(135deg, #f97316, #ef4444, #ec4899)' }}>
@@ -257,7 +326,7 @@ function WarmGradientStyle({ timeLeft, title }: StyleProps) {
           {units.map((u, i) => (
             <div key={i} className="text-center">
               <div className="rounded-2xl p-3 md:p-5 min-w-[60px] md:min-w-[80px] bg-white/20 backdrop-blur-sm border border-white/30">
-                <AnimatedNumber value={u.value} color="#ffffff" className="text-3xl md:text-5xl font-bold tabular-nums drop-shadow-lg" />
+                <AnimatedNumber value={u.value} color="#ffffff" className="text-3xl md:text-5xl font-bold tabular-nums drop-shadow-lg" animationType={animationType} />
               </div>
               <div className="text-sm text-white/80 mt-2">{u.label}</div>
             </div>
@@ -269,7 +338,7 @@ function WarmGradientStyle({ timeLeft, title }: StyleProps) {
 }
 
 // ===== نمط 8: إسلامي =====
-function IslamicStyle({ timeLeft, textColor, title }: StyleProps) {
+function IslamicStyle({ timeLeft, textColor, title, animationType }: StyleProps) {
   const units = getTimeUnits(timeLeft);
   const gold = textColor || '#d4af37';
   return (
@@ -284,7 +353,7 @@ function IslamicStyle({ timeLeft, textColor, title }: StyleProps) {
           {units.map((u, i) => (
             <div key={i} className="text-center">
               <div className="rounded-lg p-3 md:p-5 min-w-[60px] md:min-w-[80px]" style={{ backgroundColor: `${gold}0D`, border: `1px solid ${gold}33` }}>
-                <AnimatedNumber value={u.value} color={gold} className="text-3xl md:text-5xl font-bold tabular-nums" />
+                <AnimatedNumber value={u.value} color={gold} className="text-3xl md:text-5xl font-bold tabular-nums" animationType={animationType} />
               </div>
               <div className="text-sm mt-2" style={{ color: `${gold}AA` }}>{u.label}</div>
             </div>
@@ -296,7 +365,7 @@ function IslamicStyle({ timeLeft, textColor, title }: StyleProps) {
 }
 
 // ===== نمط 9: فليب =====
-function FlipStyle({ timeLeft, bgColor, textColor, title }: StyleProps) {
+function FlipStyle({ timeLeft, bgColor, textColor, title, animationType }: StyleProps) {
   const units = getTimeUnits(timeLeft);
   const bg = bgColor || '#1e293b';
   const text = textColor || '#f8fafc';
@@ -309,7 +378,7 @@ function FlipStyle({ timeLeft, bgColor, textColor, title }: StyleProps) {
             <div className="relative rounded-lg overflow-hidden min-w-[60px] md:min-w-[80px]" style={{ backgroundColor: bg }}>
               <div className="absolute inset-x-0 top-1/2 h-px bg-black/30 z-10" />
               <div className="p-3 md:p-5">
-                <AnimatedNumber value={u.value} color={text} className="text-3xl md:text-5xl font-bold tabular-nums font-mono" />
+                <AnimatedNumber value={u.value} color={text} className="text-3xl md:text-5xl font-bold tabular-nums font-mono" animationType={animationType} />
               </div>
               <div className="absolute bottom-0 inset-x-0 h-1/2 bg-black/10" />
             </div>
@@ -362,7 +431,7 @@ const STYLE_COMPONENTS: Record<number, React.FC<StyleProps>> = {
   6: NeonStyle, 7: WarmGradientStyle, 8: IslamicStyle, 9: FlipStyle, 10: LuxuryStyle,
 };
 
-export function CountdownTimer({ targetDate, style = 1, bgColor, textColor, borderColor, title }: CountdownTimerProps) {
+export function CountdownTimer({ targetDate, style = 1, bgColor, textColor, borderColor, title, animationType = 1 }: CountdownTimerProps) {
   const [timeLeft, setTimeLeft] = useState(calculateTimeLeft(targetDate));
   useEffect(() => {
     const timer = setInterval(() => setTimeLeft(calculateTimeLeft(targetDate)), 1000);
@@ -372,13 +441,13 @@ export function CountdownTimer({ targetDate, style = 1, bgColor, textColor, bord
   if (!timeLeft) return <ExpiredState />;
 
   const StyleComponent = STYLE_COMPONENTS[style] || LEDStyle;
-  return <StyleComponent timeLeft={timeLeft} bgColor={bgColor} textColor={textColor} borderColor={borderColor} title={title || DEFAULT_TITLE} />;
+  return <StyleComponent timeLeft={timeLeft} bgColor={bgColor} textColor={textColor} borderColor={borderColor} title={title || DEFAULT_TITLE} animationType={animationType} />;
 }
 
-export function CountdownTimerPreview({ style, bgColor, textColor, borderColor }: { style: number; bgColor?: string; textColor?: string; borderColor?: string }) {
+export function CountdownTimerPreview({ style, bgColor, textColor, borderColor, animationType }: { style: number; bgColor?: string; textColor?: string; borderColor?: string; animationType?: number }) {
   const previewTimeLeft = { days: 3, hours: 5, minutes: 23, seconds: 45 };
   const StyleComponent = STYLE_COMPONENTS[style] || LEDStyle;
-  return <StyleComponent timeLeft={previewTimeLeft} bgColor={bgColor} textColor={textColor} borderColor={borderColor} title={DEFAULT_TITLE} />;
+  return <StyleComponent timeLeft={previewTimeLeft} bgColor={bgColor} textColor={textColor} borderColor={borderColor} title={DEFAULT_TITLE} animationType={animationType} />;
 }
 
 export const COUNTDOWN_STYLES = [
@@ -386,4 +455,17 @@ export const COUNTDOWN_STYLES = [
   { val: 4, label: 'دائري' }, { val: 5, label: '3D' }, { val: 6, label: 'نيون' },
   { val: 7, label: 'دافئ' }, { val: 8, label: 'إسلامي' }, { val: 9, label: 'فليب' },
   { val: 10, label: 'فاخر' },
+];
+
+export const COUNTDOWN_ANIMATIONS = [
+  { val: 1, label: 'انقلاب', icon: '🔄' },
+  { val: 2, label: 'تلاشي', icon: '✨' },
+  { val: 3, label: 'انزلاق ↑', icon: '⬆️' },
+  { val: 4, label: 'انزلاق ↓', icon: '⬇️' },
+  { val: 5, label: 'نبضة', icon: '💫' },
+  { val: 6, label: 'دوران', icon: '🌀' },
+  { val: 7, label: 'ضبابي', icon: '🌫️' },
+  { val: 8, label: 'موجة', icon: '🌊' },
+  { val: 9, label: 'كاتبة', icon: '⌨️' },
+  { val: 10, label: 'تشويش', icon: '⚡' },
 ];

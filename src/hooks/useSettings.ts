@@ -15,6 +15,8 @@ export interface Settings {
   countdown_text_color: string | null;
   countdown_border_color: string | null;
   countdown_title: string | null;
+  content_filter_enabled: boolean | null;
+  countdown_animation_type: number | null;
 }
 
 export function useSettings() {
@@ -23,7 +25,7 @@ export function useSettings() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('settings')
-        .select('id, is_box_open, next_session_date, video_url, video_title, show_countdown, show_question_count, show_install_page, countdown_style, countdown_bg_color, countdown_text_color, countdown_border_color, countdown_title')
+        .select('id, is_box_open, next_session_date, video_url, video_title, show_countdown, show_question_count, show_install_page, countdown_style, countdown_bg_color, countdown_text_color, countdown_border_color, countdown_title, content_filter_enabled, countdown_animation_type')
         .maybeSingle();
       
       if (error) throw error;
@@ -63,6 +65,8 @@ export function useUpdateSettingsAuthenticated() {
       countdown_text_color?: string;
       countdown_border_color?: string;
       countdown_title?: string;
+      content_filter_enabled?: boolean;
+      countdown_animation_type?: number;
     }) => {
       const { data, error } = await supabase.rpc('update_settings_authenticated', {
         p_password: params.password,
@@ -78,6 +82,8 @@ export function useUpdateSettingsAuthenticated() {
         p_countdown_text_color: params.countdown_text_color,
         p_countdown_border_color: params.countdown_border_color,
         p_countdown_title: params.countdown_title,
+        p_content_filter_enabled: params.content_filter_enabled,
+        p_countdown_animation_type: params.countdown_animation_type,
       } as any);
       
       if (error) throw error;

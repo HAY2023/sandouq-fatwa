@@ -129,6 +129,7 @@ const AdminPage = () => {
   const [videoUrl, setVideoUrl] = useState('');
   const [showCountdown, setShowCountdown] = useState(true);
   const [countdownStyle, setCountdownStyle] = useState(1);
+  const [countdownAnimationType, setCountdownAnimationType] = useState(1);
   const [showQuestionCount, setShowQuestionCount] = useState(false);
   const [showInstallPage, setShowInstallPage] = useState(true);
   const [savingVideo, setSavingVideo] = useState(false);
@@ -364,11 +365,12 @@ const AdminPage = () => {
       setCountdownStyle(settings.countdown_style ?? 1);
       setShowQuestionCount(settings.show_question_count ?? false);
       setShowInstallPage(settings.show_install_page ?? true);
-      setContentFilterEnabled((settings as any).content_filter_enabled ?? true);
+      setContentFilterEnabled(settings.content_filter_enabled ?? true);
       setCountdownBgColor(settings.countdown_bg_color ?? '#000000');
       setCountdownTextColor(settings.countdown_text_color ?? '#22c55e');
       setCountdownBorderColor(settings.countdown_border_color ?? '#166534');
-      setCountdownTitle((settings as any).countdown_title ?? 'حلقة الإفتاء ستكون بعد');
+      setCountdownTitle(settings.countdown_title ?? 'حلقة الإفتاء ستكون بعد');
+      setCountdownAnimationType(settings.countdown_animation_type ?? 1);
     }
   }, [settings]);
 
@@ -803,6 +805,7 @@ const AdminPage = () => {
       const success = await updateSettings.mutateAsync({
         password: storedPassword,
         countdown_style: newStyle,
+        countdown_animation_type: countdownAnimationType,
       });
       if (success) {
         setCountdownStyle(newStyle);
@@ -874,7 +877,7 @@ const AdminPage = () => {
       const success = await updateSettings.mutateAsync({
         password: storedPassword,
         content_filter_enabled: !contentFilterEnabled,
-      } as any);
+      });
       if (success) {
         setContentFilterEnabled(!contentFilterEnabled);
         toast({ title: 'تم التحديث', description: `فلتر المحتوى ${!contentFilterEnabled ? 'مفعّل' : 'معطّل'} الآن` });
@@ -2391,6 +2394,7 @@ const AdminPage = () => {
               onSessionDateChange={setNextSessionDate}
               onUpdateSession={handleUpdateSession}
               onCountdownStyleChange={setCountdownStyle}
+              onCountdownAnimationTypeChange={setCountdownAnimationType}
               onSaveCountdownStyle={handleSaveCountdownStyle}
               onCountdownBgColorChange={setCountdownBgColor}
               onCountdownTextColorChange={setCountdownTextColor}
@@ -2399,6 +2403,7 @@ const AdminPage = () => {
               countdownTitle={countdownTitle}
               onCountdownTitleChange={setCountdownTitle}
               onSaveCountdownTitle={handleSaveCountdownTitle}
+              countdownAnimationType={countdownAnimationType}
             />
           </TabsContent>
         </Tabs>
