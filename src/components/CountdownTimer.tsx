@@ -163,7 +163,7 @@ function LEDStyle({ timeLeft, bgColor = '#000000', textColor = '#22c55e', border
           {units.map((u, i) => (
             <div key={i} className="flex items-center gap-2 md:gap-4">
               <div className="text-center">
-                <AnimatedNumber value={u.value} color={textColor} className="font-mono text-5xl md:text-7xl font-bold tabular-nums" animationType={animationType} />
+                <AnimatedNumber value={u.value} color={textColor} className="font-mono text-6xl md:text-8xl font-bold tabular-nums" animationType={animationType} />
                 <div className="text-[10px] md:text-xs uppercase tracking-widest mt-1" style={{ color: textColor + 'B3' }}>{u.label}</div>
               </div>
               {i < units.length - 1 && (
@@ -194,8 +194,8 @@ function ClassicStyle({ timeLeft, bgColor, textColor, borderColor, title, animat
         <div className="flex justify-center items-center gap-3 md:gap-6" dir="rtl">
           {units.map((u, i) => (
             <div key={i} className="text-center">
-              <div className="rounded-xl p-3 md:p-5 shadow-lg min-w-[60px] md:min-w-[80px]" style={{ backgroundColor: cardBg, border: `2px solid ${border}4D` }}>
-                <AnimatedNumber value={u.value} className="text-4xl md:text-6xl font-bold tabular-nums text-foreground" animationType={animationType} />
+              <div className="rounded-xl p-4 md:p-6 shadow-lg min-w-[80px] md:min-w-[110px]" style={{ backgroundColor: cardBg, border: `2px solid ${border}4D` }}>
+                <AnimatedNumber value={u.value} className="text-5xl md:text-7xl font-bold tabular-nums text-foreground" animationType={animationType} />
               </div>
               <div className="text-sm font-medium text-muted-foreground mt-2">{u.label}</div>
             </div>
@@ -276,8 +276,8 @@ function GlassStyle({ timeLeft, bgColor, textColor, borderColor, title, animatio
         <div className="flex justify-center items-center gap-3 md:gap-5" dir="rtl">
           {units.map((u, i) => (
             <div key={i} className="text-center">
-              <div className="rounded-2xl p-3 md:p-5 min-w-[60px] md:min-w-[80px] hover:scale-105 transition-transform" style={{ background: glassBg, backdropFilter: 'blur(20px)', border: `1px solid ${border}`, boxShadow: '0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2)' }}>
-                <AnimatedNumber value={u.value} color={text} className="text-4xl md:text-6xl font-bold tabular-nums drop-shadow-lg" animationType={animationType} />
+              <div className="rounded-2xl p-4 md:p-6 min-w-[80px] md:min-w-[110px] hover:scale-105 transition-transform" style={{ background: glassBg, backdropFilter: 'blur(20px)', border: `1px solid ${border}`, boxShadow: '0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2)' }}>
+                <AnimatedNumber value={u.value} color={text} className="text-5xl md:text-7xl font-bold tabular-nums drop-shadow-lg" animationType={animationType} />
               </div>
               <div className="text-sm font-medium mt-2 drop-shadow-md" style={{ color: text }}>{u.label}</div>
             </div>
@@ -301,8 +301,8 @@ function NeonStyle({ timeLeft, textColor, title, animationType }: StyleProps) {
         <div className="flex justify-center items-center gap-3 md:gap-6" dir="rtl">
           {units.map((u, i) => (
             <div key={i} className="text-center">
-              <div className="rounded-xl p-3 md:p-5 min-w-[60px] md:min-w-[80px]" style={{ border: `2px solid ${neon}66`, boxShadow: `0 0 15px ${neon}33, inset 0 0 15px ${neon}11`, backgroundColor: `${neon}08` }}>
-                <AnimatedNumber value={u.value} color={neon} className="text-4xl md:text-6xl font-mono font-bold tabular-nums" animationType={animationType} />
+              <div className="rounded-xl p-4 md:p-6 min-w-[80px] md:min-w-[110px]" style={{ border: `2px solid ${neon}66`, boxShadow: `0 0 15px ${neon}33, inset 0 0 15px ${neon}11`, backgroundColor: `${neon}08` }}>
+                <AnimatedNumber value={u.value} color={neon} className="text-5xl md:text-7xl font-mono font-bold tabular-nums" animationType={animationType} />
               </div>
               <div className="text-xs mt-2" style={{ color: neon + '99' }}>{u.label}</div>
             </div>
@@ -325,8 +325,8 @@ function WarmGradientStyle({ timeLeft, title, animationType }: StyleProps) {
         <div className="flex justify-center items-center gap-3 md:gap-6" dir="rtl">
           {units.map((u, i) => (
             <div key={i} className="text-center">
-              <div className="rounded-2xl p-3 md:p-5 min-w-[60px] md:min-w-[80px] bg-white/20 backdrop-blur-sm border border-white/30">
-                <AnimatedNumber value={u.value} color="#ffffff" className="text-4xl md:text-6xl font-bold tabular-nums drop-shadow-lg" animationType={animationType} />
+              <div className="rounded-2xl p-4 md:p-6 min-w-[80px] md:min-w-[110px] bg-white/20 backdrop-blur-sm border border-white/30">
+                <AnimatedNumber value={u.value} color="#ffffff" className="text-5xl md:text-7xl font-bold tabular-nums drop-shadow-lg" animationType={animationType} />
               </div>
               <div className="text-sm text-white/80 mt-2">{u.label}</div>
             </div>
@@ -352,8 +352,8 @@ function IslamicStyle({ timeLeft, textColor, title, animationType }: StyleProps)
         <div className="flex justify-center items-center gap-3 md:gap-6" dir="rtl">
           {units.map((u, i) => (
             <div key={i} className="text-center">
-              <div className="rounded-lg p-3 md:p-5 min-w-[60px] md:min-w-[80px]" style={{ backgroundColor: `${gold}0D`, border: `1px solid ${gold}33` }}>
-                <AnimatedNumber value={u.value} color={gold} className="text-4xl md:text-6xl font-bold tabular-nums" animationType={animationType} />
+              <div className="rounded-lg p-4 md:p-6 min-w-[80px] md:min-w-[110px]" style={{ backgroundColor: `${gold}0D`, border: `1px solid ${gold}33` }}>
+                <AnimatedNumber value={u.value} color={gold} className="text-5xl md:text-7xl font-bold tabular-nums" animationType={animationType} />
               </div>
               <div className="text-sm mt-2" style={{ color: `${gold}AA` }}>{u.label}</div>
             </div>
@@ -375,10 +375,10 @@ function FlipStyle({ timeLeft, bgColor, textColor, title, animationType }: Style
       <div className="flex justify-center items-center gap-3 md:gap-6" dir="rtl">
         {units.map((u, i) => (
           <div key={i} className="text-center">
-            <div className="relative rounded-lg overflow-hidden min-w-[60px] md:min-w-[80px]" style={{ backgroundColor: bg }}>
+            <div className="relative rounded-lg overflow-hidden min-w-[80px] md:min-w-[110px]" style={{ backgroundColor: bg }}>
               <div className="absolute inset-x-0 top-1/2 h-px bg-black/30 z-10" />
-              <div className="p-3 md:p-5">
-                <AnimatedNumber value={u.value} color={text} className="text-4xl md:text-6xl font-bold tabular-nums font-mono" animationType={animationType} />
+              <div className="p-4 md:p-6">
+                <AnimatedNumber value={u.value} color={text} className="text-5xl md:text-7xl font-bold tabular-nums font-mono" animationType={animationType} />
               </div>
               <div className="absolute bottom-0 inset-x-0 h-1/2 bg-black/10" />
             </div>
@@ -403,8 +403,8 @@ function LuxuryStyle({ timeLeft, title }: StyleProps) {
         <div className="flex justify-center items-center gap-3 md:gap-6" dir="rtl">
           {units.map((u, i) => (
             <div key={i} className="text-center">
-              <div className="rounded-xl p-3 md:p-5 min-w-[60px] md:min-w-[80px]" style={{ background: 'linear-gradient(180deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))', border: '1px solid rgba(212,175,55,0.3)', boxShadow: '0 4px 20px rgba(212,175,55,0.1)' }}>
-                <span className="text-4xl md:text-6xl font-bold tabular-nums" dir="ltr" style={{ direction: 'ltr', background: 'linear-gradient(180deg, #ffd700, #d4af37)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              <div className="rounded-xl p-4 md:p-6 min-w-[80px] md:min-w-[110px]" style={{ background: 'linear-gradient(180deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))', border: '1px solid rgba(212,175,55,0.3)', boxShadow: '0 4px 20px rgba(212,175,55,0.1)' }}>
+                <span className="text-5xl md:text-7xl font-bold tabular-nums" dir="ltr" style={{ direction: 'ltr', background: 'linear-gradient(180deg, #ffd700, #d4af37)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                   {String(u.value).padStart(2, '0')}
                 </span>
               </div>
