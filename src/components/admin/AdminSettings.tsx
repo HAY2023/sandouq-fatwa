@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
 import { CountdownTimerPreview, COUNTDOWN_STYLES, COUNTDOWN_ANIMATIONS } from '@/components/CountdownTimer';
 import { 
   MessageSquare, Calendar, Timer, Clock, Hash, 
