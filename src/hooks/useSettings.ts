@@ -26,7 +26,7 @@ export function useSettings() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('settings')
-        .select('id, is_box_open, next_session_date, video_url, video_title, show_countdown, show_question_count, show_install_page, countdown_style, countdown_bg_color, countdown_text_color, countdown_border_color, countdown_title, content_filter_enabled, countdown_animation_type')
+        .select('id, is_box_open, next_session_date, video_url, video_title, show_countdown, show_question_count, show_install_page, countdown_style, countdown_bg_color, countdown_text_color, countdown_border_color, countdown_title, content_filter_enabled, countdown_animation_type, countdown_font_size')
         .maybeSingle();
       
       if (error) throw error;
