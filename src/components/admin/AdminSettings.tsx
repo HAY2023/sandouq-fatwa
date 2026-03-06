@@ -31,6 +31,7 @@ interface AdminSettingsProps {
   savingCountdownColors: boolean;
   savedCountdownStyle: number;
   countdownTitle: string;
+  countdownFontSize: number;
   onToggleBox: (v: boolean) => void;
   onToggleCountdown: (v: boolean) => void;
   onToggleQuestionCount: (v: boolean) => void;
@@ -48,6 +49,8 @@ interface AdminSettingsProps {
   onSaveCountdownColors: () => void;
   onCountdownTitleChange: (v: string) => void;
   onSaveCountdownTitle: () => void;
+  onCountdownFontSizeChange: (v: number) => void;
+  onSaveCountdownFontSize: () => void;
 }
 
 export function AdminSettings(props: AdminSettingsProps) {
