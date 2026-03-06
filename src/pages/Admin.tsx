@@ -372,6 +372,7 @@ const AdminPage = () => {
       setCountdownBorderColor(settings.countdown_border_color ?? '#166534');
       setCountdownTitle(settings.countdown_title ?? 'حلقة الإفتاء ستكون بعد');
       setCountdownAnimationType(settings.countdown_animation_type ?? 1);
+      setCountdownFontSize((settings as any).countdown_font_size ?? 100);
     }
   }, [settings]);
 
