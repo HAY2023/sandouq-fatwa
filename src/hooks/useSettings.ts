@@ -86,6 +86,7 @@ export function useUpdateSettingsAuthenticated() {
         p_countdown_title: params.countdown_title,
         p_content_filter_enabled: params.content_filter_enabled,
         p_countdown_animation_type: params.countdown_animation_type,
+        p_countdown_font_size: params.countdown_font_size,
       } as any);
       
       if (error) throw error;
