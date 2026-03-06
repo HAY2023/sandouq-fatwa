@@ -141,6 +141,7 @@ const AdminPage = () => {
   const [countdownBorderColor, setCountdownBorderColor] = useState('#166534');
   const [savingCountdownColors, setSavingCountdownColors] = useState(false);
   const [countdownTitle, setCountdownTitle] = useState('حلقة الإفتاء ستكون بعد');
+  const [countdownFontSize, setCountdownFontSize] = useState(100);
   const [localVideos, setLocalVideos] = useState<VideoType[]>([]);
   
   // Announcement states
