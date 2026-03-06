@@ -47,6 +47,11 @@ function getTimeUnits(timeLeft: StyleProps['timeLeft'], labelsAr = true) {
   ];
 }
 
+// Helper: fontSize is a percentage (50-200), default 100
+function getFontScale(fontSize?: number) {
+  return (fontSize ?? 100) / 100;
+}
+
 // ===== Animation Types =====
 // 1: Flip (بطاقة تنقلب)
 // 2: Fade (تلاشي)
