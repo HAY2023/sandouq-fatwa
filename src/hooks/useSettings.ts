@@ -17,6 +17,7 @@ export interface Settings {
   countdown_title: string | null;
   content_filter_enabled: boolean | null;
   countdown_animation_type: number | null;
+  countdown_font_size: number | null;
 }
 
 export function useSettings() {
