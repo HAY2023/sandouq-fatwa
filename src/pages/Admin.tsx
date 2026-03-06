@@ -836,6 +836,23 @@ const AdminPage = () => {
     setIsLoading(false);
   };
 
+  const handleSaveCountdownFontSize = async () => {
+    if (!storedPassword) return;
+    setIsLoading(true);
+    try {
+      const success = await updateSettings.mutateAsync({
+        password: storedPassword,
+        countdown_font_size: countdownFontSize,
+      } as any);
+      if (success) {
+        toast({ title: 'تم التحديث', description: 'تم حفظ حجم الأرقام' });
+      }
+    } catch {
+      toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
+    }
+    setIsLoading(false);
+  };
+
   const handleToggleQuestionCount = async () => {
     if (!storedPassword) return;
     setIsLoading(true);
