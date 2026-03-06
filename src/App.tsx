@@ -64,13 +64,15 @@ const App = () => {
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/admin" element={<Admin />} />
-                <Route path="/security-logs" element={<SecurityLogs />} />
-                <Route path="/install" element={<Install />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background"><div className="text-muted-foreground">...</div></div>}>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/admin" element={<Admin />} />
+                  <Route path="/security-logs" element={<SecurityLogs />} />
+                  <Route path="/install" element={<Install />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
             </BrowserRouter>
           </TooltipProvider>
         </DirectionHandler>
