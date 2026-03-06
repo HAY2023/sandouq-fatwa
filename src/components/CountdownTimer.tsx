@@ -438,7 +438,7 @@ const STYLE_COMPONENTS: Record<number, React.FC<StyleProps>> = {
   6: NeonStyle, 7: WarmGradientStyle, 8: IslamicStyle, 9: FlipStyle, 10: LuxuryStyle,
 };
 
-export function CountdownTimer({ targetDate, style = 1, bgColor, textColor, borderColor, title, animationType = 1 }: CountdownTimerProps) {
+export function CountdownTimer({ targetDate, style = 1, bgColor, textColor, borderColor, title, animationType = 1, fontSize }: CountdownTimerProps) {
   const [timeLeft, setTimeLeft] = useState(calculateTimeLeft(targetDate));
   useEffect(() => {
     const timer = setInterval(() => setTimeLeft(calculateTimeLeft(targetDate)), 1000);
@@ -447,14 +447,24 @@ export function CountdownTimer({ targetDate, style = 1, bgColor, textColor, bord
 
   if (!timeLeft) return <ExpiredState />;
 
+  const scale = getFontScale(fontSize);
   const StyleComponent = STYLE_COMPONENTS[style] || LEDStyle;
-  return <StyleComponent timeLeft={timeLeft} bgColor={bgColor} textColor={textColor} borderColor={borderColor} title={title || DEFAULT_TITLE} animationType={animationType} />;
+  return (
+    <div style={{ transform: `scale(${scale})`, transformOrigin: 'top center' }}>
+      <StyleComponent timeLeft={timeLeft} bgColor={bgColor} textColor={textColor} borderColor={borderColor} title={title || DEFAULT_TITLE} animationType={animationType} />
+    </div>
+  );
 }
 
-export function CountdownTimerPreview({ style, bgColor, textColor, borderColor, animationType }: { style: number; bgColor?: string; textColor?: string; borderColor?: string; animationType?: number }) {
+export function CountdownTimerPreview({ style, bgColor, textColor, borderColor, animationType, fontSize }: { style: number; bgColor?: string; textColor?: string; borderColor?: string; animationType?: number; fontSize?: number }) {
   const previewTimeLeft = { days: 3, hours: 5, minutes: 23, seconds: 45 };
+  const scale = getFontScale(fontSize);
   const StyleComponent = STYLE_COMPONENTS[style] || LEDStyle;
-  return <StyleComponent timeLeft={previewTimeLeft} bgColor={bgColor} textColor={textColor} borderColor={borderColor} title={DEFAULT_TITLE} animationType={animationType} />;
+  return (
+    <div style={{ transform: `scale(${scale})`, transformOrigin: 'top center' }}>
+      <StyleComponent timeLeft={previewTimeLeft} bgColor={bgColor} textColor={textColor} borderColor={borderColor} title={DEFAULT_TITLE} animationType={animationType} />
+    </div>
+  );
 }
 
 export const COUNTDOWN_STYLES = [
