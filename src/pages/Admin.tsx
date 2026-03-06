@@ -2423,6 +2423,9 @@ const AdminPage = () => {
               onCountdownTitleChange={setCountdownTitle}
               onSaveCountdownTitle={handleSaveCountdownTitle}
               countdownAnimationType={countdownAnimationType}
+              countdownFontSize={countdownFontSize}
+              onCountdownFontSizeChange={setCountdownFontSize}
+              onSaveCountdownFontSize={handleSaveCountdownFontSize}
             />
           </TabsContent>
         </Tabs>
