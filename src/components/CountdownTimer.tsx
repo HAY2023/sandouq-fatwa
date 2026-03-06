@@ -9,6 +9,7 @@ interface CountdownTimerProps {
   borderColor?: string;
   title?: string;
   animationType?: number;
+  fontSize?: number;
 }
 
 interface StyleProps {
@@ -18,6 +19,7 @@ interface StyleProps {
   borderColor?: string;
   title: string;
   animationType?: number;
+  fontSize?: number;
 }
 
 const DEFAULT_TITLE = 'حلقة الإفتاء ستكون بعد';
