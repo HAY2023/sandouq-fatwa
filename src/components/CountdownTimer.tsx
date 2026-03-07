@@ -9,7 +9,6 @@ interface CountdownTimerProps {
   borderColor?: string;
   title?: string;
   animationType?: number;
-  fontSize?: number;
 }
 
 interface StyleProps {
@@ -19,7 +18,6 @@ interface StyleProps {
   borderColor?: string;
   title: string;
   animationType?: number;
-  fontSize?: number;
 }
 
 const DEFAULT_TITLE = 'حلقة الإفتاء ستكون بعد';
@@ -45,11 +43,6 @@ function getTimeUnits(timeLeft: StyleProps['timeLeft'], labelsAr = true) {
     { value: timeLeft.minutes, label: labels.m },
     { value: timeLeft.seconds, label: labels.s },
   ];
-}
-
-// Helper: fontSize is a percentage (50-200), default 100
-function getFontScale(fontSize?: number) {
-  return (fontSize ?? 100) / 100;
 }
 
 // ===== Animation Types =====
@@ -438,7 +431,7 @@ const STYLE_COMPONENTS: Record<number, React.FC<StyleProps>> = {
   6: NeonStyle, 7: WarmGradientStyle, 8: IslamicStyle, 9: FlipStyle, 10: LuxuryStyle,
 };
 
-export function CountdownTimer({ targetDate, style = 1, bgColor, textColor, borderColor, title, animationType = 1, fontSize }: CountdownTimerProps) {
+export function CountdownTimer({ targetDate, style = 1, bgColor, textColor, borderColor, title, animationType = 1 }: CountdownTimerProps) {
   const [timeLeft, setTimeLeft] = useState(calculateTimeLeft(targetDate));
   useEffect(() => {
     const timer = setInterval(() => setTimeLeft(calculateTimeLeft(targetDate)), 1000);
@@ -447,24 +440,14 @@ export function CountdownTimer({ targetDate, style = 1, bgColor, textColor, bord
 
   if (!timeLeft) return <ExpiredState />;
 
-  const scale = getFontScale(fontSize);
   const StyleComponent = STYLE_COMPONENTS[style] || LEDStyle;
-  return (
-    <div style={{ transform: `scale(${scale})`, transformOrigin: 'top center' }}>
-      <StyleComponent timeLeft={timeLeft} bgColor={bgColor} textColor={textColor} borderColor={borderColor} title={title || DEFAULT_TITLE} animationType={animationType} />
-    </div>
-  );
+  return <StyleComponent timeLeft={timeLeft} bgColor={bgColor} textColor={textColor} borderColor={borderColor} title={title || DEFAULT_TITLE} animationType={animationType} />;
 }
 
-export function CountdownTimerPreview({ style, bgColor, textColor, borderColor, animationType, fontSize }: { style: number; bgColor?: string; textColor?: string; borderColor?: string; animationType?: number; fontSize?: number }) {
+export function CountdownTimerPreview({ style, bgColor, textColor, borderColor, animationType }: { style: number; bgColor?: string; textColor?: string; borderColor?: string; animationType?: number }) {
   const previewTimeLeft = { days: 3, hours: 5, minutes: 23, seconds: 45 };
-  const scale = getFontScale(fontSize);
   const StyleComponent = STYLE_COMPONENTS[style] || LEDStyle;
-  return (
-    <div style={{ transform: `scale(${scale})`, transformOrigin: 'top center' }}>
-      <StyleComponent timeLeft={previewTimeLeft} bgColor={bgColor} textColor={textColor} borderColor={borderColor} title={DEFAULT_TITLE} animationType={animationType} />
-    </div>
-  );
+  return <StyleComponent timeLeft={previewTimeLeft} bgColor={bgColor} textColor={textColor} borderColor={borderColor} title={DEFAULT_TITLE} animationType={animationType} />;
 }
 
 export const COUNTDOWN_STYLES = [

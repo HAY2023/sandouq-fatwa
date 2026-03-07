@@ -4,7 +4,6 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
 import { CountdownTimerPreview, COUNTDOWN_STYLES, COUNTDOWN_ANIMATIONS } from '@/components/CountdownTimer';
 import { 
   MessageSquare, Calendar, Timer, Clock, Hash, 
@@ -31,7 +30,6 @@ interface AdminSettingsProps {
   savingCountdownColors: boolean;
   savedCountdownStyle: number;
   countdownTitle: string;
-  countdownFontSize: number;
   onToggleBox: (v: boolean) => void;
   onToggleCountdown: (v: boolean) => void;
   onToggleQuestionCount: (v: boolean) => void;
@@ -49,8 +47,6 @@ interface AdminSettingsProps {
   onSaveCountdownColors: () => void;
   onCountdownTitleChange: (v: string) => void;
   onSaveCountdownTitle: () => void;
-  onCountdownFontSizeChange: (v: number) => void;
-  onSaveCountdownFontSize: () => void;
 }
 
 export function AdminSettings(props: AdminSettingsProps) {
@@ -227,38 +223,16 @@ export function AdminSettings(props: AdminSettingsProps) {
                   {props.savingCountdownColors ? 'جارٍ الحفظ...' : 'حفظ الألوان'}
                 </Button>
 
-                {/* حجم الأرقام */}
-                <div className="pt-2 border-t border-border">
-                  <h4 className="font-medium text-sm flex items-center gap-2 mb-3">📏 حجم الأرقام ({props.countdownFontSize}%)</h4>
-                  <Slider
-                    value={[props.countdownFontSize]}
-                    onValueChange={(val) => props.onCountdownFontSizeChange(val[0])}
-                    min={50}
-                    max={200}
-                    step={10}
-                    className="mb-3"
-                  />
-                  <div className="flex justify-between text-[10px] text-muted-foreground">
-                    <span>صغير 50%</span>
-                    <span>عادي 100%</span>
-                    <span>كبير 200%</span>
-                  </div>
-                  <Button onClick={props.onSaveCountdownFontSize} disabled={props.isLoading} variant="outline" size="sm" className="w-full mt-2">
-                    {props.isLoading ? 'جارٍ الحفظ...' : 'حفظ الحجم'}
-                  </Button>
-                </div>
-
                 {/* معاينة */}
                 <div className="pt-2 border-t border-border">
                   <h4 className="text-xs text-muted-foreground mb-2">معاينة:</h4>
-                  <div className="max-w-md mx-auto overflow-hidden">
+                  <div className="max-w-md mx-auto">
                     <CountdownTimerPreview 
                       style={props.countdownStyle}
                       bgColor={props.countdownBgColor}
                       textColor={props.countdownTextColor}
                       borderColor={props.countdownBorderColor}
                       animationType={props.countdownAnimationType}
-                      fontSize={props.countdownFontSize}
                     />
                   </div>
                 </div>

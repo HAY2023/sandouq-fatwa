@@ -141,7 +141,6 @@ const AdminPage = () => {
   const [countdownBorderColor, setCountdownBorderColor] = useState('#166534');
   const [savingCountdownColors, setSavingCountdownColors] = useState(false);
   const [countdownTitle, setCountdownTitle] = useState('حلقة الإفتاء ستكون بعد');
-  const [countdownFontSize, setCountdownFontSize] = useState(100);
   const [localVideos, setLocalVideos] = useState<VideoType[]>([]);
   
   // Announcement states
@@ -372,7 +371,6 @@ const AdminPage = () => {
       setCountdownBorderColor(settings.countdown_border_color ?? '#166534');
       setCountdownTitle(settings.countdown_title ?? 'حلقة الإفتاء ستكون بعد');
       setCountdownAnimationType(settings.countdown_animation_type ?? 1);
-      setCountdownFontSize((settings as any).countdown_font_size ?? 100);
     }
   }, [settings]);
 
@@ -829,23 +827,6 @@ const AdminPage = () => {
       });
       if (success) {
         toast({ title: 'تم التحديث', description: 'تم حفظ عنوان العداد التنازلي' });
-      }
-    } catch {
-      toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
-    }
-    setIsLoading(false);
-  };
-
-  const handleSaveCountdownFontSize = async () => {
-    if (!storedPassword) return;
-    setIsLoading(true);
-    try {
-      const success = await updateSettings.mutateAsync({
-        password: storedPassword,
-        countdown_font_size: countdownFontSize,
-      } as any);
-      if (success) {
-        toast({ title: 'تم التحديث', description: 'تم حفظ حجم الأرقام' });
       }
     } catch {
       toast({ title: 'خطأ', description: 'فشل التحديث', variant: 'destructive' });
@@ -2423,9 +2404,6 @@ const AdminPage = () => {
               onCountdownTitleChange={setCountdownTitle}
               onSaveCountdownTitle={handleSaveCountdownTitle}
               countdownAnimationType={countdownAnimationType}
-              countdownFontSize={countdownFontSize}
-              onCountdownFontSizeChange={setCountdownFontSize}
-              onSaveCountdownFontSize={handleSaveCountdownFontSize}
             />
           </TabsContent>
         </Tabs>

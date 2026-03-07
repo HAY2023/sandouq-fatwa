@@ -203,7 +203,6 @@ const Index = () => {
               borderColor={settings.countdown_border_color ?? undefined}
               title={settings.countdown_title ?? undefined}
               animationType={settings.countdown_animation_type ?? 1}
-              fontSize={(settings as any).countdown_font_size ?? 100}
             />
           </div>
         </section>
