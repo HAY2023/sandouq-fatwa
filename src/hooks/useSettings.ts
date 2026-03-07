@@ -67,6 +67,9 @@ export function useUpdateSettingsAuthenticated() {
       countdown_title?: string;
       content_filter_enabled?: boolean;
       countdown_animation_type?: number;
+      maintenance_mode?: boolean;
+      maintenance_message?: string;
+      countdown_font_size?: number;
     }) => {
       const { data, error } = await supabase.rpc('update_settings_authenticated', {
         p_password: params.password,
@@ -84,6 +87,9 @@ export function useUpdateSettingsAuthenticated() {
         p_countdown_title: params.countdown_title,
         p_content_filter_enabled: params.content_filter_enabled,
         p_countdown_animation_type: params.countdown_animation_type,
+        p_maintenance_mode: params.maintenance_mode,
+        p_maintenance_message: params.maintenance_message,
+        p_countdown_font_size: params.countdown_font_size,
       } as any);
       
       if (error) throw error;

@@ -380,6 +380,7 @@ export type Database = {
           countdown_animation_type: number | null
           countdown_bg_color: string | null
           countdown_border_color: string | null
+          countdown_font_size: number | null
           countdown_style: number | null
           countdown_text_color: string | null
           countdown_title: string | null
@@ -401,6 +402,7 @@ export type Database = {
           countdown_animation_type?: number | null
           countdown_bg_color?: string | null
           countdown_border_color?: string | null
+          countdown_font_size?: number | null
           countdown_style?: number | null
           countdown_text_color?: string | null
           countdown_title?: string | null
@@ -422,6 +424,7 @@ export type Database = {
           countdown_animation_type?: number | null
           countdown_bg_color?: string | null
           countdown_border_color?: string | null
+          countdown_font_size?: number | null
           countdown_style?: number | null
           countdown_text_color?: string | null
           countdown_title?: string | null
@@ -767,6 +770,7 @@ export type Database = {
           p_countdown_animation_type?: number
           p_countdown_bg_color?: string
           p_countdown_border_color?: string
+          p_countdown_font_size?: number
           p_countdown_style?: number
           p_countdown_text_color?: string
           p_countdown_title?: string
