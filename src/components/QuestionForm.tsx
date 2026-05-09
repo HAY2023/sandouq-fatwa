@@ -322,16 +322,27 @@ export function QuestionForm() {
             <span className="text-destructive">{t('form.required')}</span>
           </label>
         <div className="space-y-3">
-            <Textarea
-              value={questionText}
-              onChange={(e) => {
-                setQuestionText(e.target.value);
-                setContentWarning(null);
-              }}
-              placeholder={t('form.questionPlaceholder')}
-              className="min-h-[120px] resize-none bg-background w-full"
-              dir={isRTL ? 'rtl' : 'ltr'}
-            />
+            <div className="relative">
+              <Textarea
+                value={questionText}
+                onChange={(e) => {
+                  setQuestionText(e.target.value);
+                  setContentWarning(null);
+                }}
+                placeholder={t('form.questionPlaceholder')}
+                readOnly={isCorrecting}
+                className={`min-h-[120px] resize-none bg-background w-full transition-opacity ${isCorrecting ? 'opacity-70 cursor-wait' : ''}`}
+                dir={isRTL ? 'rtl' : 'ltr'}
+              />
+              {isCorrecting && (
+                <div className="absolute inset-0 flex items-center justify-center bg-background/40 backdrop-blur-[1px] rounded-md pointer-events-none">
+                  <div className="flex items-center gap-2 bg-accent/90 text-accent-foreground px-3 py-1.5 rounded-full text-xs font-medium shadow-md">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    {i18n.language === 'ar' ? 'جارٍ التصحيح...' : 'Correcting...'}
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="flex gap-3 justify-center">
               <VoiceInput 
                 onTranscript={handleVoiceTranscript}
