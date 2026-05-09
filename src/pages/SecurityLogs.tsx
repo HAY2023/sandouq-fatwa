@@ -156,6 +156,23 @@ export default function SecurityLogs() {
     }
   };
 
+  const handleDeleteAllLogs = async () => {
+    try {
+      const { data, error } = await supabase.rpc('delete_all_access_logs_authenticated', {
+        p_password: storedPassword,
+      });
+      if (error) throw error;
+      if (typeof data === 'number' && data >= 0) {
+        toast({ title: 'تم المسح', description: `تم حذف ${data} سجل` });
+        setLogs([]);
+      } else {
+        throw new Error('غير مصرح');
+      }
+    } catch (error) {
+      toast({ title: 'خطأ', description: 'فشل في حذف جميع السجلات', variant: 'destructive' });
+    }
+  };
+
   const detectVpnIndicators = (log: SecurityLog): string[] => {
     const indicators: string[] = [];
     
