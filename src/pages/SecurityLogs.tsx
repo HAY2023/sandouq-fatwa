@@ -156,6 +156,23 @@ export default function SecurityLogs() {
     }
   };
 
+  const handleDeleteAllLogs = async () => {
+    try {
+      const { data, error } = await supabase.rpc('delete_all_access_logs_authenticated', {
+        p_password: storedPassword,
+      });
+      if (error) throw error;
+      if (typeof data === 'number' && data >= 0) {
+        toast({ title: 'تم المسح', description: `تم حذف ${data} سجل` });
+        setLogs([]);
+      } else {
+        throw new Error('غير مصرح');
+      }
+    } catch (error) {
+      toast({ title: 'خطأ', description: 'فشل في حذف جميع السجلات', variant: 'destructive' });
+    }
+  };
+
   const detectVpnIndicators = (log: SecurityLog): string[] => {
     const indicators: string[] = [];
     
@@ -276,10 +293,39 @@ export default function SecurityLogs() {
           <TabsContent value="logs">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="w-5 h-5" />
-                  سجلات محاولات الدخول
-                </CardTitle>
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="w-5 h-5" />
+                    سجلات محاولات الدخول
+                  </CardTitle>
+                  {logs.length > 0 && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">
+                          <Trash2 className="w-4 h-4 ml-2" />
+                          حذف جميع السجلات
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent dir="rtl">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>حذف جميع سجلات الأمان</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            سيتم حذف <strong>{logs.length}</strong> سجل نهائياً ولا يمكن التراجع. هل أنت متأكد؟
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={handleDeleteAllLogs}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            تأكيد الحذف
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 {logs.length === 0 ? (
