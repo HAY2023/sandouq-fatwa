@@ -1287,6 +1287,24 @@ const AdminPage = () => {
                   <FileText className="w-4 h-4 ml-2" />
                   PDF
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    try {
+                      toast({ title: 'جارٍ بناء الأرشيف...', description: 'قد يستغرق بضع ثوانٍ' });
+                      const { buildAndDownloadArchive } = await import('@/lib/archiveUtils');
+                      const res = await buildAndDownloadArchive(storedPassword);
+                      toast({ title: '✓ تم تحميل الأرشيف', description: `${res.filename} (${(res.size/1024).toFixed(1)} KB)` });
+                    } catch (e) {
+                      toast({ title: 'فشل بناء الأرشيف', description: String(e), variant: 'destructive' });
+                    }
+                  }}
+                  className="bg-amber-600 hover:bg-amber-700 text-white border-amber-600"
+                >
+                  <FileSpreadsheet className="w-4 h-4 ml-2" />
+                  أرشيف كامل (ZIP)
+                </Button>
                 {questions.length > 0 && (
                   <Button
                     variant="outline"
