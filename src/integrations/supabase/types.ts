@@ -560,6 +560,10 @@ export type Database = {
         Args: { p_log_id: string; p_password: string }
         Returns: boolean
       }
+      delete_all_access_logs_authenticated: {
+        Args: { p_password: string }
+        Returns: number
+      }
       delete_all_questions_authenticated: {
         Args: { p_password: string }
         Returns: boolean
