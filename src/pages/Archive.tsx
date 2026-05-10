@@ -26,21 +26,38 @@ export default function Archive() {
     if (!adminPassword) return;
     setIsVerifying(true);
     try {
-      // اختبار كلمة المرور باستدعاء RPC يتطلب صلاحيات الإدارة
-      const { data, error } = await supabase.rpc('get_questions_count_authenticated', {
-        p_password: adminPassword,
-      });
-      if (error) throw error;
-      if (data === -1 || data === null) {
+      // فحص حالة القفل أولاً
+      const { data: lockStatus } = await supabase.rpc('check_admin_lock_status');
+      if (lockStatus && (lockStatus as any).is_locked) {
+        const mins = Math.ceil((lockStatus as any).remaining_seconds / 60);
         toast({
-          title: 'كلمة المرور غير صحيحة',
-          description: 'يرجى إدخال كلمة مرور المسؤول الصحيحة',
+          title: '🔒 الحساب مقفل',
+          description: `تم قفل الحساب بسبب محاولات فاشلة. حاول بعد ${mins} دقيقة.`,
           variant: 'destructive',
         });
-      } else {
+        setIsVerifying(false);
+        return;
+      }
+
+      const { data: isValid, error } = await supabase.rpc('verify_admin_password', {
+        input_password: adminPassword,
+      });
+      if (error) throw error;
+
+      if (isValid === true) {
         setStoredPassword(adminPassword);
         setIsAuthenticated(true);
         toast({ title: 'تم التحقق', description: 'يمكنك الآن إنشاء الأرشيف المشفّر' });
+      } else {
+        const { data: newLock } = await supabase.rpc('check_admin_lock_status');
+        const remaining = 5 - ((newLock as any)?.failed_attempts || 0);
+        toast({
+          title: 'كلمة المرور غير صحيحة',
+          description: remaining > 0
+            ? `متبقي ${remaining} محاولات قبل القفل`
+            : 'تم قفل الحساب لمدة 15 دقيقة',
+          variant: 'destructive',
+        });
       }
     } catch (err: any) {
       toast({ title: 'خطأ', description: err.message || 'فشل التحقق', variant: 'destructive' });
