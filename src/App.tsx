@@ -13,6 +13,7 @@ import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import SecurityLogs from "./pages/SecurityLogs";
 import Install from "./pages/Install";
+import Archive from "./pages/Archive";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
