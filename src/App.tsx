@@ -70,6 +70,7 @@ const App = () => {
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/security-logs" element={<SecurityLogs />} />
                 <Route path="/install" element={<Install />} />
+                <Route path="/archive" element={<Archive />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
