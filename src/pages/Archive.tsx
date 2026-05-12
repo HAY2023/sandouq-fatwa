@@ -9,8 +9,10 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Lock, Archive as ArchiveIcon, Home, Loader2, Download, ShieldCheck, Trash2, AlertTriangle, RefreshCw } from 'lucide-react';
-import { ZipWriter, BlobWriter, TextReader } from '@zip.js/zip.js';
+import { Lock, Archive as ArchiveIcon, Home, Loader2, Download, ShieldCheck, Trash2, AlertTriangle, RefreshCw, Eye, FileText } from 'lucide-react';
+import { ZipWriter, ZipReader, BlobWriter, BlobReader, TextReader, TextWriter } from '@zip.js/zip.js';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const ARCHIVE_ZIP_PASSWORD = '2020';
 
@@ -54,6 +56,10 @@ export default function Archive() {
   const [isResetting, setIsResetting] = useState(false);
   const [archives, setArchives] = useState<StoredArchive[]>([]);
   const [loadingList, setLoadingList] = useState(false);
+  const [viewArchive, setViewArchive] = useState<StoredArchive | null>(null);
+  const [viewLoading, setViewLoading] = useState(false);
+  const [viewFiles, setViewFiles] = useState<{ name: string; content: string }[]>([]);
+  const [activeFile, setActiveFile] = useState<string>('');
 
   const loadArchives = async (pwd: string) => {
     setLoadingList(true);
@@ -215,6 +221,34 @@ export default function Archive() {
     URL.revokeObjectURL(url);
   };
 
+  const handleView = async (archive: StoredArchive) => {
+    setViewArchive(archive);
+    setViewLoading(true);
+    setViewFiles([]);
+    try {
+      const { data, error } = await supabase.rpc('get_site_archive_authenticated', {
+        p_password: storedPassword, p_archive_id: archive.id,
+      });
+      if (error || !data || !(data as any[])[0]) throw error || new Error('فشل الجلب');
+      const blob = base64ToBlob((data as any[])[0].data_b64);
+      const reader = new ZipReader(new BlobReader(blob), { password: ARCHIVE_ZIP_PASSWORD });
+      const entries = await reader.getEntries();
+      const files: { name: string; content: string }[] = [];
+      for (const entry of entries) {
+        if (entry.directory) continue;
+        const text = await (entry as any).getData(new TextWriter());
+        files.push({ name: entry.filename, content: text });
+      }
+      await reader.close();
+      setViewFiles(files);
+      setActiveFile(files[0]?.name || '');
+    } catch (err: any) {
+      toast({ title: 'فشل فك التشفير', description: err.message, variant: 'destructive' });
+      setViewArchive(null);
+    }
+    setViewLoading(false);
+  };
+
   const handleDelete = async (id: string) => {
     const { error } = await supabase.rpc('delete_site_archive_authenticated', {
       p_password: storedPassword, p_archive_id: id,
@@ -339,6 +373,9 @@ export default function Archive() {
                       </p>
                     </div>
                     <div className="flex gap-1">
+                      <Button size="icon" variant="ghost" onClick={() => handleView(a)} title="عرض المحتوى">
+                        <Eye className="w-4 h-4" />
+                      </Button>
                       <Button size="icon" variant="ghost" onClick={() => handleDownload(a)} title="تنزيل">
                         <Download className="w-4 h-4" />
                       </Button>
@@ -369,6 +406,33 @@ export default function Archive() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={!!viewArchive} onOpenChange={(o) => !o && setViewArchive(null)}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" /> {viewArchive?.filename}
+            </DialogTitle>
+          </DialogHeader>
+          {viewLoading ? (
+            <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin" /></div>
+          ) : (
+            <div className="flex-1 overflow-hidden flex flex-col gap-3">
+              <div className="flex flex-wrap gap-1">
+                {viewFiles.map((f) => (
+                  <Button key={f.name} size="sm" variant={activeFile === f.name ? 'default' : 'outline'}
+                    onClick={() => setActiveFile(f.name)}>{f.name}</Button>
+                ))}
+              </div>
+              <ScrollArea className="flex-1 rounded-md border bg-muted/30 p-3">
+                <pre className="text-xs whitespace-pre-wrap break-words font-mono" dir="ltr">
+                  {viewFiles.find((f) => f.name === activeFile)?.content || ''}
+                </pre>
+              </ScrollArea>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
