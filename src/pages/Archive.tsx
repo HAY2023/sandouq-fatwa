@@ -373,6 +373,9 @@ export default function Archive() {
                       </p>
                     </div>
                     <div className="flex gap-1">
+                      <Button size="icon" variant="ghost" onClick={() => handleView(a)} title="عرض المحتوى">
+                        <Eye className="w-4 h-4" />
+                      </Button>
                       <Button size="icon" variant="ghost" onClick={() => handleDownload(a)} title="تنزيل">
                         <Download className="w-4 h-4" />
                       </Button>
