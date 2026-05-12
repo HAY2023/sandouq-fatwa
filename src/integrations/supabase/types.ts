@@ -443,6 +443,42 @@ export type Database = {
         }
         Relationships: []
       }
+      site_archives: {
+        Row: {
+          created_at: string
+          data: string
+          filename: string
+          id: string
+          logs_count: number
+          note: string | null
+          questions_count: number
+          reports_count: number
+          size_bytes: number
+        }
+        Insert: {
+          created_at?: string
+          data: string
+          filename: string
+          id?: string
+          logs_count?: number
+          note?: string | null
+          questions_count?: number
+          reports_count?: number
+          size_bytes?: number
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          filename?: string
+          id?: string
+          logs_count?: number
+          note?: string | null
+          questions_count?: number
+          reports_count?: number
+          size_bytes?: number
+        }
+        Relationships: []
+      }
       user_reports: {
         Row: {
           created_at: string | null
@@ -584,6 +620,10 @@ export type Database = {
         Args: { p_password: string; p_question_ids: string[] }
         Returns: boolean
       }
+      delete_site_archive_authenticated: {
+        Args: { p_archive_id: string; p_password: string }
+        Returns: boolean
+      }
       delete_user_report_authenticated: {
         Args: { p_password: string; p_report_id: string }
         Returns: boolean
@@ -684,6 +724,13 @@ export type Database = {
           timezone: string
         }[]
       }
+      get_site_archive_authenticated: {
+        Args: { p_archive_id: string; p_password: string }
+        Returns: {
+          data_b64: string
+          filename: string
+        }[]
+      }
       get_user_reports_authenticated: {
         Args: { p_password: string }
         Returns: {
@@ -699,6 +746,19 @@ export type Database = {
       is_user_blocked: {
         Args: { p_fingerprint_id?: string; p_ip_address?: string }
         Returns: boolean
+      }
+      list_site_archives_authenticated: {
+        Args: { p_password: string }
+        Returns: {
+          created_at: string
+          filename: string
+          id: string
+          logs_count: number
+          note: string
+          questions_count: number
+          reports_count: number
+          size_bytes: number
+        }[]
       }
       log_admin_access: {
         Args: {
@@ -736,6 +796,23 @@ export type Database = {
       reorder_videos_authenticated: {
         Args: { p_password: string; p_video_ids: string[] }
         Returns: boolean
+      }
+      reset_all_site_data_authenticated: {
+        Args: { p_password: string }
+        Returns: Json
+      }
+      save_site_archive_authenticated: {
+        Args: {
+          p_data_b64: string
+          p_filename: string
+          p_logs_count: number
+          p_note?: string
+          p_password: string
+          p_questions_count: number
+          p_reports_count: number
+          p_size_bytes: number
+        }
+        Returns: string
       }
       unblock_user_authenticated: {
         Args: { p_blocked_id: string; p_password: string }
