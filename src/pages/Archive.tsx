@@ -406,6 +406,33 @@ export default function Archive() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={!!viewArchive} onOpenChange={(o) => !o && setViewArchive(null)}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" /> {viewArchive?.filename}
+            </DialogTitle>
+          </DialogHeader>
+          {viewLoading ? (
+            <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin" /></div>
+          ) : (
+            <div className="flex-1 overflow-hidden flex flex-col gap-3">
+              <div className="flex flex-wrap gap-1">
+                {viewFiles.map((f) => (
+                  <Button key={f.name} size="sm" variant={activeFile === f.name ? 'default' : 'outline'}
+                    onClick={() => setActiveFile(f.name)}>{f.name}</Button>
+                ))}
+              </div>
+              <ScrollArea className="flex-1 rounded-md border bg-muted/30 p-3">
+                <pre className="text-xs whitespace-pre-wrap break-words font-mono" dir="ltr">
+                  {viewFiles.find((f) => f.name === activeFile)?.content || ''}
+                </pre>
+              </ScrollArea>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
