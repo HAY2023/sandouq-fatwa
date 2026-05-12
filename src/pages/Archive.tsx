@@ -235,8 +235,8 @@ export default function Archive() {
       const entries = await reader.getEntries();
       const files: { name: string; content: string }[] = [];
       for (const entry of entries) {
-        if (entry.directory || !entry.getData) continue;
-        const text = await entry.getData(new TextWriter());
+        if (entry.directory) continue;
+        const text = await (entry as any).getData(new TextWriter());
         files.push({ name: entry.filename, content: text });
       }
       await reader.close();
