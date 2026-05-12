@@ -221,6 +221,34 @@ export default function Archive() {
     URL.revokeObjectURL(url);
   };
 
+  const handleView = async (archive: StoredArchive) => {
+    setViewArchive(archive);
+    setViewLoading(true);
+    setViewFiles([]);
+    try {
+      const { data, error } = await supabase.rpc('get_site_archive_authenticated', {
+        p_password: storedPassword, p_archive_id: archive.id,
+      });
+      if (error || !data || !(data as any[])[0]) throw error || new Error('فشل الجلب');
+      const blob = base64ToBlob((data as any[])[0].data_b64);
+      const reader = new ZipReader(new BlobReader(blob), { password: ARCHIVE_ZIP_PASSWORD });
+      const entries = await reader.getEntries();
+      const files: { name: string; content: string }[] = [];
+      for (const entry of entries) {
+        if (entry.directory || !entry.getData) continue;
+        const text = await entry.getData(new TextWriter());
+        files.push({ name: entry.filename, content: text });
+      }
+      await reader.close();
+      setViewFiles(files);
+      setActiveFile(files[0]?.name || '');
+    } catch (err: any) {
+      toast({ title: 'فشل فك التشفير', description: err.message, variant: 'destructive' });
+      setViewArchive(null);
+    }
+    setViewLoading(false);
+  };
+
   const handleDelete = async (id: string) => {
     const { error } = await supabase.rpc('delete_site_archive_authenticated', {
       p_password: storedPassword, p_archive_id: id,
