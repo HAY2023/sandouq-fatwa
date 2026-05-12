@@ -56,6 +56,10 @@ export default function Archive() {
   const [isResetting, setIsResetting] = useState(false);
   const [archives, setArchives] = useState<StoredArchive[]>([]);
   const [loadingList, setLoadingList] = useState(false);
+  const [viewArchive, setViewArchive] = useState<StoredArchive | null>(null);
+  const [viewLoading, setViewLoading] = useState(false);
+  const [viewFiles, setViewFiles] = useState<{ name: string; content: string }[]>([]);
+  const [activeFile, setActiveFile] = useState<string>('');
 
   const loadArchives = async (pwd: string) => {
     setLoadingList(true);
