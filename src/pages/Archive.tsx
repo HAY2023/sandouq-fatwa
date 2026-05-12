@@ -9,8 +9,10 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Lock, Archive as ArchiveIcon, Home, Loader2, Download, ShieldCheck, Trash2, AlertTriangle, RefreshCw } from 'lucide-react';
-import { ZipWriter, BlobWriter, TextReader } from '@zip.js/zip.js';
+import { Lock, Archive as ArchiveIcon, Home, Loader2, Download, ShieldCheck, Trash2, AlertTriangle, RefreshCw, Eye, FileText } from 'lucide-react';
+import { ZipWriter, ZipReader, BlobWriter, BlobReader, TextReader, TextWriter } from '@zip.js/zip.js';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const ARCHIVE_ZIP_PASSWORD = '2020';
 
