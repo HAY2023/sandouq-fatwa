@@ -10,11 +10,11 @@ import { useTranslation } from "react-i18next";
 import { SplashScreen } from "@/components/SplashScreen";
 import { ConnectionStatus } from "@/components/ui/ConnectionStatus";
 import Index from "./pages/Index";
-import Admin from "./pages/Admin";
-import SecurityLogs from "./pages/SecurityLogs";
-import Install from "./pages/Install";
-import Archive from "./pages/Archive";
-import NotFound from "./pages/NotFound";
+const Admin = React.lazy(() => import("./pages/Admin"));
+const SecurityLogs = React.lazy(() => import("./pages/SecurityLogs"));
+const Install = React.lazy(() => import("./pages/Install"));
+const Archive = React.lazy(() => import("./pages/Archive"));
+const NotFound = React.lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
@@ -65,14 +65,16 @@ const App = () => {
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/admin" element={<Admin />} />
-                <Route path="/security-logs" element={<SecurityLogs />} />
-                <Route path="/install" element={<Install />} />
-                <Route path="/archive" element={<Archive />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center animate-fade-in"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/admin" element={<Admin />} />
+                  <Route path="/security-logs" element={<SecurityLogs />} />
+                  <Route path="/install" element={<Install />} />
+                  <Route path="/archive" element={<Archive />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </React.Suspense>
             </BrowserRouter>
           </TooltipProvider>
         </DirectionHandler>
