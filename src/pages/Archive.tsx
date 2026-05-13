@@ -263,7 +263,7 @@ export default function Archive() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-background" dir="rtl">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-background animate-fade-in" dir="rtl">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-3">
