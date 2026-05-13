@@ -10,11 +10,11 @@ import { useTranslation } from "react-i18next";
 import { SplashScreen } from "@/components/SplashScreen";
 import { ConnectionStatus } from "@/components/ui/ConnectionStatus";
 import Index from "./pages/Index";
-import Admin from "./pages/Admin";
-import SecurityLogs from "./pages/SecurityLogs";
-import Install from "./pages/Install";
-import Archive from "./pages/Archive";
-import NotFound from "./pages/NotFound";
+const Admin = React.lazy(() => import("./pages/Admin"));
+const SecurityLogs = React.lazy(() => import("./pages/SecurityLogs"));
+const Install = React.lazy(() => import("./pages/Install"));
+const Archive = React.lazy(() => import("./pages/Archive"));
+const NotFound = React.lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
