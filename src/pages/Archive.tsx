@@ -247,7 +247,7 @@ export default function Archive() {
       setViewArchive(null);
     }
     setViewLoading(false);
-  };
+  }, [storedPassword, toast]);
 
   const handleDelete = useCallback(async (id: string) => {
     const { error } = await supabase.rpc('delete_site_archive_authenticated', {
