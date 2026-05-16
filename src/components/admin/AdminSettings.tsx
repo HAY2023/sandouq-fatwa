@@ -303,3 +303,5 @@ function AdminSettingsInner(props: AdminSettingsProps) {
     </div>
   );
 }
+
+export const AdminSettings = memo(AdminSettingsInner);
