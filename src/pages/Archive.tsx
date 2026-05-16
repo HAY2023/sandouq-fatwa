@@ -201,7 +201,7 @@ export default function Archive() {
     setIsBuilding(false);
   };
 
-  const handleDownload = async (archive: StoredArchive) => {
+  const handleDownload = useCallback(async (archive: StoredArchive) => {
     const { data, error } = await supabase.rpc('get_site_archive_authenticated', {
       p_password: storedPassword, p_archive_id: archive.id,
     });
@@ -219,9 +219,9 @@ export default function Archive() {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-  };
+  }, [storedPassword, toast]);
 
-  const handleView = async (archive: StoredArchive) => {
+  const handleView = useCallback(async (archive: StoredArchive) => {
     setViewArchive(archive);
     setViewLoading(true);
     setViewFiles([]);
