@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area } from 'recharts';
 import { BarChart3, Users, MessageSquare, TrendingUp, Globe, Monitor, Smartphone as SmartphoneIcon, Tablet, Eye } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
@@ -32,7 +32,7 @@ interface AdminStatsProps {
 
 const CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
-export function AdminStats({ questions, accessLogs }: AdminStatsProps) {
+function AdminStatsInner({ questions, accessLogs }: AdminStatsProps) {
   // ملخص عام
   const summary = useMemo(() => {
     const today = new Date();
@@ -360,3 +360,6 @@ export function AdminStats({ questions, accessLogs }: AdminStatsProps) {
     </div>
   );
 }
+
+export const AdminStats = memo(AdminStatsInner);
+

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -201,7 +201,7 @@ export default function Archive() {
     setIsBuilding(false);
   };
 
-  const handleDownload = async (archive: StoredArchive) => {
+  const handleDownload = useCallback(async (archive: StoredArchive) => {
     const { data, error } = await supabase.rpc('get_site_archive_authenticated', {
       p_password: storedPassword, p_archive_id: archive.id,
     });
@@ -219,9 +219,9 @@ export default function Archive() {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-  };
+  }, [storedPassword, toast]);
 
-  const handleView = async (archive: StoredArchive) => {
+  const handleView = useCallback(async (archive: StoredArchive) => {
     setViewArchive(archive);
     setViewLoading(true);
     setViewFiles([]);
@@ -247,9 +247,9 @@ export default function Archive() {
       setViewArchive(null);
     }
     setViewLoading(false);
-  };
+  }, [storedPassword, toast]);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     const { error } = await supabase.rpc('delete_site_archive_authenticated', {
       p_password: storedPassword, p_archive_id: id,
     });
@@ -259,7 +259,17 @@ export default function Archive() {
     }
     toast({ title: 'تم الحذف' });
     await loadArchives(storedPassword);
-  };
+  }, [storedPassword, toast]);
+
+  const sortedArchives = useMemo(
+    () => [...archives].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
+    [archives]
+  );
+
+  const activeFileContent = useMemo(
+    () => viewFiles.find((f) => f.name === activeFile)?.content || '',
+    [viewFiles, activeFile]
+  );
 
   if (!isAuthenticated) {
     return (
@@ -361,45 +371,14 @@ export default function Archive() {
               <p className="text-sm text-muted-foreground text-center py-6">لا توجد أرشيفات بعد</p>
             ) : (
               <div className="space-y-2">
-                {archives.map((a) => (
-                  <div key={a.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{a.filename}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(a.created_at).toLocaleString('ar')} · {(a.size_bytes / 1024).toFixed(1)} KB
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {a.questions_count} سؤال · {a.logs_count} سجل · {a.reports_count} بلاغ
-                      </p>
-                    </div>
-                    <div className="flex gap-1">
-                      <Button size="icon" variant="ghost" onClick={() => handleView(a)} title="عرض المحتوى">
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" onClick={() => handleDownload(a)} title="تنزيل">
-                        <Download className="w-4 h-4" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button size="icon" variant="ghost" className="text-destructive" title="حذف">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent dir="rtl">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>حذف الأرشيف؟</AlertDialogTitle>
-                            <AlertDialogDescription>{a.filename}</AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(a.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                              حذف
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </div>
+                {sortedArchives.map((a) => (
+                  <ArchiveRow
+                    key={a.id}
+                    archive={a}
+                    onView={handleView}
+                    onDownload={handleDownload}
+                    onDelete={handleDelete}
+                  />
                 ))}
               </div>
             )}
@@ -426,7 +405,7 @@ export default function Archive() {
               </div>
               <ScrollArea className="flex-1 rounded-md border bg-muted/30 p-3">
                 <pre className="text-xs whitespace-pre-wrap break-words font-mono" dir="ltr">
-                  {viewFiles.find((f) => f.name === activeFile)?.content || ''}
+                  {activeFileContent}
                 </pre>
               </ScrollArea>
             </div>
@@ -436,3 +415,53 @@ export default function Archive() {
     </div>
   );
 }
+
+interface ArchiveRowProps {
+  archive: StoredArchive;
+  onView: (a: StoredArchive) => void;
+  onDownload: (a: StoredArchive) => void;
+  onDelete: (id: string) => void;
+}
+
+const ArchiveRow = memo(function ArchiveRow({ archive: a, onView, onDownload, onDelete }: ArchiveRowProps) {
+  return (
+    <div className="flex items-center justify-between p-3 rounded-lg border bg-card hover-lift">
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-sm truncate">{a.filename}</p>
+        <p className="text-xs text-muted-foreground">
+          {new Date(a.created_at).toLocaleString('ar')} · {(a.size_bytes / 1024).toFixed(1)} KB
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {a.questions_count} سؤال · {a.logs_count} سجل · {a.reports_count} بلاغ
+        </p>
+      </div>
+      <div className="flex gap-1">
+        <Button size="icon" variant="ghost" onClick={() => onView(a)} title="عرض المحتوى">
+          <Eye className="w-4 h-4" />
+        </Button>
+        <Button size="icon" variant="ghost" onClick={() => onDownload(a)} title="تنزيل">
+          <Download className="w-4 h-4" />
+        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button size="icon" variant="ghost" className="text-destructive" title="حذف">
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent dir="rtl">
+            <AlertDialogHeader>
+              <AlertDialogTitle>حذف الأرشيف؟</AlertDialogTitle>
+              <AlertDialogDescription>{a.filename}</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>إلغاء</AlertDialogCancel>
+              <AlertDialogAction onClick={() => onDelete(a.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                حذف
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </div>
+  );
+});

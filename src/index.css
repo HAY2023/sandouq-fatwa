@@ -44,9 +44,20 @@
   animation: shimmer 3s ease-in-out infinite;
 }
 
+/* Unified motion tokens — single source of truth for durations & easing */
+:root {
+  --motion-fast: 180ms;
+  --motion-base: 280ms;
+  --motion-slow: 460ms;
+  --motion-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 /* Smooth utility classes for refined interactions */
 .hover-lift {
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease;
+  transition: transform var(--motion-base) var(--motion-ease),
+              box-shadow var(--motion-base) var(--motion-ease);
+  will-change: transform;
 }
 .hover-lift:hover {
   transform: translateY(-2px);
@@ -54,10 +65,16 @@
 }
 
 .hover-scale {
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--motion-fast) var(--motion-ease);
+  will-change: transform;
 }
 .hover-scale:hover {
   transform: scale(1.03);
+}
+
+/* Unified animate-fade-in (overrides Tailwind keyframe timing for consistency) */
+.animate-fade-in {
+  animation: fade-in var(--motion-base) var(--motion-ease-out) both;
 }
 
 /* Smooth scroll for the whole site */
