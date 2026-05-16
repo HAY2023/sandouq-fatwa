@@ -249,7 +249,7 @@ export default function Archive() {
     setViewLoading(false);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     const { error } = await supabase.rpc('delete_site_archive_authenticated', {
       p_password: storedPassword, p_archive_id: id,
     });
@@ -259,7 +259,17 @@ export default function Archive() {
     }
     toast({ title: 'تم الحذف' });
     await loadArchives(storedPassword);
-  };
+  }, [storedPassword, toast]);
+
+  const sortedArchives = useMemo(
+    () => [...archives].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
+    [archives]
+  );
+
+  const activeFileContent = useMemo(
+    () => viewFiles.find((f) => f.name === activeFile)?.content || '',
+    [viewFiles, activeFile]
+  );
 
   if (!isAuthenticated) {
     return (
