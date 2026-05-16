@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -49,7 +49,7 @@ interface AdminSettingsProps {
   onSaveCountdownTitle: () => void;
 }
 
-export function AdminSettings(props: AdminSettingsProps) {
+function AdminSettingsInner(props: AdminSettingsProps) {
   const [expandedSection, setExpandedSection] = useState<string | null>('general');
 
   const toggleSection = (section: string) => {
