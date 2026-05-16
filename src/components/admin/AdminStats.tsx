@@ -360,3 +360,6 @@ function AdminStatsInner({ questions, accessLogs }: AdminStatsProps) {
     </div>
   );
 }
+
+export const AdminStats = memo(AdminStatsInner);
+
